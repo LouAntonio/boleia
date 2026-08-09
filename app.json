@@ -1,0 +1,51 @@
+{
+	"expo": {
+		"name": "Flash Delivery Angola",
+		"slug": "Flash-Delivery-Angola",
+		"owner": "ft_lantonio",
+		"version": "1.0.0",
+		"scheme": "flash-delivery-angola",
+		"orientation": "portrait",
+		"icon": "./assets/images/logo.png",
+		"userInterfaceStyle": "automatic",
+		"newArchEnabled": true,
+		"splash": {
+			"image": "./assets/images/logo.png",
+			"resizeMode": "contain",
+			"backgroundColor": "#ffffff"
+		},
+		"ios": {
+			"supportsTablet": true
+		},
+		"android": {
+			"adaptiveIcon": {
+				"foregroundImage": "./assets/images/logo.png",
+				"backgroundColor": "#ffffff"
+			},
+			"edgeToEdgeEnabled": true,
+			"predictiveBackGestureEnabled": false
+		},
+		"web": {
+			"favicon": "./assets/images/logo.png",
+			"bundler": "metro"
+		},
+		"plugins": [
+			"expo-secure-store",
+			"expo-font",
+			"@react-native-community/datetimepicker",
+			"expo-web-browser",
+			"expo-notifications"
+		],
+		"extra": {
+			"eas": {
+				"projectId": "e06035b3-ac23-4b7e-a122-f36b6c556e9c"
+			}
+		},
+		"runtimeVersion": {
+			"policy": "appVersion"
+		},
+		"updates": {
+			"url": "https://u.expo.dev/e06035b3-ac23-4b7e-a122-f36b6c556e9c"
+		}
+	}
+}
