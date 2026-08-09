@@ -17,10 +17,8 @@ export default function BookingsScreen() {
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
-	const { rides, bookings } = useDbStore((s) => ({
-		rides: s.db.rides,
-		bookings: s.db.bookings,
-	}));
+	const rides = useDbStore((s) => s.db.rides);
+	const bookings = useDbStore((s) => s.db.bookings);
 	const mine = bookings.filter((b) => b.passengerId === 'u_me_001');
 	const withRide = mine.flatMap((b) => {
 		const ride = rides.find((r) => r.id === b.rideId);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -24,10 +24,15 @@ export default function NotificationsScreen() {
 		>();
 	const { themeColors } = useThemeColors();
 	const currentRole = useAppStore((s) => s.currentRole);
-	const notifications = useDbStore((s) =>
-		s.db.notifications
-			.filter((n) => n.userId === 'u_me_001')
-			.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
+	const allNotifications = useDbStore((s) => s.db.notifications);
+	const notifications = useMemo(
+		() =>
+			allNotifications
+				.filter((n) => n.userId === 'u_me_001')
+				.sort(
+					(a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+				),
+		[allNotifications],
 	);
 
 	const open = (n: (typeof notifications)[number]) => {

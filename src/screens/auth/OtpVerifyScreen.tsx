@@ -40,7 +40,7 @@ export default function OtpVerifyScreen() {
 				useAppStore.getState().markProfileReady();
 				navigationRef.reset({
 					index: 0,
-					routes: [{ name: 'Main', params: { screen: 'Main' } }],
+					routes: [{ name: 'App', params: { screen: 'Main' } }],
 				});
 			}
 		}, 400);

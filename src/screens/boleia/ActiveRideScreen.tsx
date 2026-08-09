@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
@@ -27,17 +27,19 @@ export default function ActiveRideScreen() {
 	const ride = useDbStore((s) =>
 		s.db.rides.find((r) => r.id === route.params.rideId),
 	);
-	const passengers = useDbStore((s) => {
+	const bookings = useDbStore((s) => s.db.bookings);
+	const users = useDbStore((s) => s.db.users);
+	const passengers = useMemo(() => {
 		if (!ride) return [];
-		return s.db.bookings
+		return bookings
 			.filter(
 				(b) =>
 					b.rideId === route.params.rideId &&
 					(b.status === 'em_viagem' || b.status === 'confirmada'),
 			)
-			.map((b) => s.db.users.find((u) => u.id === b.passengerId))
+			.map((b) => users.find((u) => u.id === b.passengerId))
 			.filter((u): u is NonNullable<typeof u> => !!u);
-	});
+	}, [ride, bookings, users, route.params.rideId]);
 
 	if (!ride || ride.status === 'cancelada') {
 		return (
