@@ -161,7 +161,9 @@ export type SosEvent = {
 	rideId: string;
 	fromUserId: string;
 	message: string;
+	status: 'ativa' | 'assistida';
 	createdAt: string;
+	resolvedAt: string | null;
 };
 
 export type Database = {

@@ -100,6 +100,7 @@ export default function BookingsScreen() {
 											navigation.navigate('Review', {
 												rideId: ride.id,
 												toUserId: ride.driverId,
+												subject: 'driver',
 											})
 										}
 									/>

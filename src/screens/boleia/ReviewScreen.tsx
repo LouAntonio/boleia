@@ -25,7 +25,15 @@ export default function ReviewScreen() {
 	const ride = useDbStore((s) =>
 		s.db.rides.find((r) => r.id === route.params.rideId),
 	);
-	const already = submittedReview('u_me_001', route.params.rideId);
+	const already = submittedReview(
+		'u_me_001',
+		route.params.rideId,
+		route.params.toUserId,
+	);
+	const subjectLabel =
+		route.params.subject === 'passenger'
+			? 'Avaliar passageiro'
+			: 'Avaliar motorista';
 
 	const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(5);
 	const [comment, setComment] = useState('');
@@ -67,7 +75,7 @@ export default function ReviewScreen() {
 					className="font-display text-[20px]"
 					style={{ color: themeColors.text }}
 				>
-					Avaliar
+					{subjectLabel}
 				</Text>
 			</View>
 

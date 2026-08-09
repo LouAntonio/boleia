@@ -151,10 +151,22 @@ export function sendSos(
 		rideId,
 		fromUserId,
 		message,
+		status: 'ativa',
 		createdAt: nowISO(),
+		resolvedAt: null,
 	};
 	useDbStore.getState().mutate((db) => {
 		db.sos.unshift(event);
 	});
 	return event;
+}
+
+export function resolveSos(eventId: string): void {
+	useDbStore.getState().mutate((db) => {
+		const event = db.sos.find((e) => e.id === eventId);
+		if (event && event.status === 'ativa') {
+			event.status = 'assistida';
+			event.resolvedAt = nowISO();
+		}
+	});
 }

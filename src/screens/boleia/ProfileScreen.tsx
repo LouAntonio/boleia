@@ -11,6 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import RoleSwitch from '../../components/RoleSwitch';
 import StatusStamp from '../../components/StatusStamp';
+import { Ionicons } from '@expo/vector-icons';
 
 const THEMES: { mode: ThemeMode; label: string }[] = [
 	{ mode: 'light', label: 'Claro' },
@@ -225,6 +226,43 @@ export default function ProfileScreen() {
 							);
 						})}
 					</View>
+				</View>
+
+				{/* Segurança */}
+				<View className="mt-6">
+					<Text
+						className="font-sansBold text-[15px] mb-2"
+						style={{ color: themeColors.text }}
+					>
+						Segurança
+					</Text>
+					<Pressable
+						onPress={() => navigation.navigate('SosCenter')}
+						className="flex-row items-center justify-between px-4 py-3.5 rounded-xl border"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<View className="flex-row items-center">
+							<Ionicons
+								name="shield-checkmark-outline"
+								size={20}
+								color={themeColors.laterite}
+							/>
+							<Text
+								className="font-sansMedium text-[14px] ml-3"
+								style={{ color: themeColors.text }}
+							>
+								Central de segurança
+							</Text>
+						</View>
+						<Ionicons
+							name="chevron-forward"
+							size={18}
+							color={themeColors.border}
+						/>
+					</Pressable>
 				</View>
 			</ScrollView>
 		</SafeAreaView>

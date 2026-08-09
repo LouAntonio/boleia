@@ -1,5 +1,5 @@
 // Acesso a dados mock — camada fina sobre a DB. Funções puras/síncronas
-// (latência simulada no hook useMockCall, Fases 3+).
+// (latência simulada nos ecrãs de auth, Fases 3+).
 import { useDbStore } from '../db';
 import { UID, nowISO } from '../helpers';
 import { OtpChallenge, BoleiaUser, Booking, Ride } from '../../types/boleia';

@@ -243,6 +243,58 @@ export default function TripsScreen() {
 											</View>
 										</View>
 									)}
+
+									{ride.status === 'concluida' &&
+										bookings
+											.filter(
+												(b) => b.status === 'concluida',
+											)
+											.map((b) => {
+												const pax = users.find(
+													(u) =>
+														u.id === b.passengerId,
+												);
+												return (
+													<View
+														key={b.id}
+														className="pt-3 border-t flex-row items-center justify-between"
+														style={{
+															borderTopColor:
+																themeColors.border,
+														}}
+													>
+														<Text
+															className="font-sansMedium text-[13px]"
+															style={{
+																color: themeColors.text,
+															}}
+														>
+															{pax
+																? `${pax.firstName} ${pax.lastName}`
+																: 'Passageiro'}
+														</Text>
+														<View className="flex-1 ml-3">
+															<BoleiaButton
+																small
+																variant="outline"
+																title="Avaliar passageiro"
+																onPress={() =>
+																	navigation.navigate(
+																		'Review',
+																		{
+																			rideId: ride.id,
+																			toUserId:
+																				b.passengerId,
+																			subject:
+																				'passenger',
+																		},
+																	)
+																}
+															/>
+														</View>
+													</View>
+												);
+											})}
 								</View>
 							)}
 						</View>

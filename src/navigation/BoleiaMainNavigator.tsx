@@ -10,6 +10,7 @@ import PublishTripScreen from '../screens/boleia/PublishTripScreen';
 import RideDetailScreen from '../screens/boleia/RideDetailScreen';
 import PublicProfileScreen from '../screens/boleia/PublicProfileScreen';
 import ActiveRideScreen from '../screens/boleia/ActiveRideScreen';
+import SosCenterScreen from '../screens/boleia/SosCenterScreen';
 import ReviewScreen from '../screens/boleia/ReviewScreen';
 import NotificationsScreen from '../screens/boleia/NotificationsScreen';
 import { advanceLive } from '../mock/repos/liveRepo';
@@ -51,6 +52,7 @@ export default function BoleiaMainNavigator() {
 				component={PublicProfileScreen}
 			/>
 			<Stack.Screen name="ActiveRide" component={ActiveRideScreen} />
+			<Stack.Screen name="SosCenter" component={SosCenterScreen} />
 			<Stack.Screen name="Review" component={ReviewScreen} />
 			<Stack.Screen
 				name="Notifications"

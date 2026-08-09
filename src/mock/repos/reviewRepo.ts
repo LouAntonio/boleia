@@ -13,10 +13,16 @@ export function reviewsFor(userId: string): Review[] {
 export function submittedReview(
 	byUserId: string,
 	rideId: string,
+	toUserId: string,
 ): Review | undefined {
 	return useDbStore
 		.getState()
-		.db.reviews.find((r) => r.byUserId === byUserId && r.rideId === rideId);
+		.db.reviews.find(
+			(r) =>
+				r.byUserId === byUserId &&
+				r.rideId === rideId &&
+				r.toUserId === toUserId,
+		);
 }
 
 export function writeReview(input: {
@@ -27,7 +33,11 @@ export function writeReview(input: {
 	comment: string;
 }): void {
 	if (input.comment.trim().length < 3) return;
-	const existing = submittedReview(input.byUserId, input.rideId);
+	const existing = submittedReview(
+		input.byUserId,
+		input.rideId,
+		input.toUserId,
+	);
 	if (existing) return;
 
 	useDbStore.getState().mutate((db) => {

@@ -31,7 +31,7 @@ export default function SplashScreen({
 		const timer = setTimeout(() => {
 			const { profileReady } = useAppStore.getState();
 			if (profileReady) {
-				navigation.replace('Main', { screen: 'Main' });
+				navigation.replace('App', { screen: 'Main' });
 			} else {
 				navigation.replace('Onboarding');
 			}

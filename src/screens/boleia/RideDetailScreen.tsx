@@ -16,10 +16,10 @@ import { useDbStore } from '../../mock/db';
 import { fmtKz, initials } from '../../mock/helpers';
 import { PaymentKind } from '../../types/boleia';
 
-const METHODS: { kind: PaymentKind; label: string }[] = [
+const METHODS: { kind: PaymentKind; label: string; soon?: boolean }[] = [
 	{ kind: 'carteira', label: 'Carteira Boleia' },
 	{ kind: 'dinheiro', label: 'Pagamento ao motorista' },
-	{ kind: 'multicaixa', label: 'Multicaixa' },
+	{ kind: 'multicaixa', label: 'Multicaixa Express', soon: true },
 ];
 
 export default function RideDetailScreen() {
@@ -141,6 +141,7 @@ export default function RideDetailScreen() {
 									navigation.navigate('Review', {
 										rideId: ride.id,
 										toUserId: ride.driverId,
+										subject: 'driver',
 									})
 								}
 							/>
@@ -325,7 +326,8 @@ export default function RideDetailScreen() {
 					<View>
 						{METHODS.map((m) => {
 							const isCarteira = m.kind === 'carteira';
-							const low = isCarteira && !walletOk;
+							const low =
+								(isCarteira && !walletOk) || m.soon === true;
 							const active = method === m.kind;
 							return (
 								<Pressable
@@ -341,18 +343,38 @@ export default function RideDetailScreen() {
 										opacity: low ? 0.45 : 1,
 									}}
 								>
-									<Text
-										className="font-sansMedium text-[14px]"
-										style={{ color: themeColors.text }}
-									>
-										{m.label}
-										{isCarteira && (
-											<Text className="font-mono text-[12px]">
-												{'  '}
-												{me ? fmtKz(me.wallet) : ''}
-											</Text>
+									<View className="flex-row items-center">
+										<Text
+											className="font-sansMedium text-[14px]"
+											style={{ color: themeColors.text }}
+										>
+											{m.label}
+											{isCarteira && (
+												<Text className="font-mono text-[12px]">
+													{'  '}
+													{me ? fmtKz(me.wallet) : ''}
+												</Text>
+											)}
+										</Text>
+										{m.soon && (
+											<View
+												className="ml-2 rounded-full px-2 py-0.5 border"
+												style={{
+													borderColor:
+														themeColors.border,
+												}}
+											>
+												<Text
+													className="font-mono text-[9px] uppercase tracking-wider"
+													style={{
+														color: themeColors.secondary,
+													}}
+												>
+													Em breve
+												</Text>
+											</View>
 										)}
-									</Text>
+									</View>
 									<Ionicons
 										name={
 											active
@@ -370,6 +392,15 @@ export default function RideDetailScreen() {
 							);
 						})}
 					</View>
+
+					<Text
+						className="font-sans text-[12px] mt-0.5 mb-1"
+						style={{ color: themeColors.secondary }}
+					>
+						Multicaixa Express chega em breve — nessa altura poderás
+						pagar por levantamento no terminal. Por agora, usa a
+						carteira Boleia ou paga ao motorista.
+					</Text>
 
 					{result ? (
 						result.ok ? (

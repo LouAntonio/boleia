@@ -17,7 +17,7 @@ export default function RootNavigator() {
 			<Stack.Screen name="Splash" component={SplashScreen} />
 			<Stack.Screen name="Onboarding" component={OnboardingScreen} />
 			<Stack.Screen name="Auth" component={BoleiaAuthNavigator} />
-			<Stack.Screen name="Main" component={BoleiaMainNavigator} />
+			<Stack.Screen name="App" component={BoleiaMainNavigator} />
 		</Stack.Navigator>
 	);
 }

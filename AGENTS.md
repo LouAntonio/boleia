@@ -1,9 +1,9 @@
-# AGENTS.md — Flash Delivery Angola
+# AGENTS.md — Boleia (Angola)
 
 ## Project
 
 - Expo (SDK ~54) + React Native 0.81.5 + React 19.1.0 + TypeScript ~5.9.2
-- App name: `flash-delivery-angola`
+- App name: `boleia` (mobilidade partilhada interprovincial, demo mock)
 - New architecture enabled (`newArchEnabled: true` in app.json)
 - Single-package app (not a monorepo)
 
@@ -30,22 +30,29 @@ Run order: `npm ci` → `typecheck` → `lint` → `format:check` → `doctor` (
 
 - **Entry point**: `index.ts` → `App.tsx` → `RootNavigator` (`src/navigation/RootNavigator.tsx`)
 - **Routing**: React Navigation native-stack, three-level hierarchy:
-    - `RootNavigator` → `SplashScreen` → `OnboardingScreen` → `AuthNavigator` → `MainNavigator`
+    - `RootNavigator` → `SplashScreen` → `OnboardingScreen` → `BoleiaAuthNavigator` → `BoleiaMainNavigator`
+    - `BoleiaAuthNavigator`: `PhoneEntry` → `OtpVerify` → `ProfileSetup`
+    - `BoleiaMainNavigator`: tabs (`PassengerTabs` / `DriverTabs`) + stack `Kyc`, `Vehicle`, `PublishTrip`, `RideDetail`, `PublicProfile`, `ActiveRide`, `Review`, `SosCenter`, `Notifications`
 - **Styling**: NativeWind (Tailwind CSS for RN). Import `'./global.css'` in `App.tsx`. Metro config wired via `withNativeWind()`.
-- **Custom theme colors** (tailwind.config.js): `primary` (#FFD700), `secondary` (#231F20), `off-white` (#F4F4F4), `soft-black` (#121212)
-- **State management**: Zustand (`src/store/`) for theme; React Query (`@tanstack/react-query`) via `src/lib/queryClient.ts` for server state
-- **API layer**: `src/api/` directory exists but is currently empty — use `axios` + `react-query` when adding API code
-- **Source tree**: `src/{api,components,constants,hooks,lib,navigation,screens,store,types,utils}`
+- **Custom theme colors** (`src/store/colors.ts` + tailwind.config.js): `primary` (#F2A900), `secondary`, `laterite` (#B4531F), `mato`, `error`, `border`, `card`, `background`, `text`
+- **State management**: Zustand for local state. Server state is **mock** — `src/mock/db.ts` (persist em AsyncStorage) + `src/mock/repos/*` (repositórios síncronos). React Query exists but the demo não usa API real.
+- **Mock layer**: `src/mock/` — `db.ts` (zustand persist), `seed.ts` (dataset Angola), `locale.ts` (municípios/rotas), `helpers.ts`, `repos/` (`authRepo`, `driverRepo`, `rideRepo`, `bookingRepo`, `reviewRepo`, `liveRepo`)
+- **Simulação "ao vivo"**: `liveRepo.startRide` põe a viagem `em_curso`; `advanceLive` avança `vinculos` por intervalo (7s no `BoleiaMainNavigator`) e `finalizeRide` conclui as reservas e credita o motorista (90% do valor).
+- **Pagamentos**: `carteira` (desconto/refund), `dinheiro` (ao motorista). **`multicaixa`/MCX é placeholder ("Em breve")** — bloqueado na UI de `RideDetailScreen`, não chega ao repo.
+- **Source tree**: `src/{components,hooks,lib,mock,navigation,screens,store,types,utils}` (não existe `src/api/` — o cliente usa o mock)
 
 ## Style conventions
 
 - Prettier config: tabs, tabWidth=4, single quotes, trailing commas, semicolons
 - ESLint: extends `@react-native`
+- Microcopy em PT-AO ("Entra", "verifica o teu BI", "bater certo")
+- Ecrãs de detalhe Boleia usam Header com botão `chevron-back` e scroll `px-5`
 
 ## Quirks & gotchas
 
 - **`/android` and `/ios` are gitignored**: this is a prebuild / CNG workflow. Run `npx expo prebuild` to regenerate native directories. Do NOT commit native folders.
 - **Expo Updates** configured with OTA URL and `appVersion` runtime policy. EAS project ID in `app.json` but no `eas.json` committed yet.
 - **No test framework** is configured. If adding tests, use Jest + React Native Testing Library (the `@react-native` ESLint config assumes this convention).
-- **`src/api/` is an empty directory**: likely scaffolding for future API modules. Use axios instances, not bare `axios` calls.
+- **DB mock persistida** em AsyncStorage (`boleia-db`, versão `DB_VERSION`). Mudanças de schema em `seed.ts` exigem incrementar `DB_VERSION` ou reset para re-semear.
+- **Demo OTP**: código fixo `773214` (ver `PhoneEntryScreen`/`OtpVerifyScreen`).
 - **No `.env` files** committed. Use `.env` + `.env.local` (gitignored) for secrets.
