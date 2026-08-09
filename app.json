@@ -1,10 +1,10 @@
 {
 	"expo": {
-		"name": "Flash Delivery Angola",
-		"slug": "Flash-Delivery-Angola",
+		"name": "Boleia",
+		"slug": "boleia",
 		"owner": "ft_lantonio",
-		"version": "1.0.0",
-		"scheme": "flash-delivery-angola",
+		"version": "0.1.0",
+		"scheme": "boleia",
 		"orientation": "portrait",
 		"icon": "./assets/images/logo.png",
 		"userInterfaceStyle": "automatic",
@@ -12,7 +12,7 @@
 		"splash": {
 			"image": "./assets/images/logo.png",
 			"resizeMode": "contain",
-			"backgroundColor": "#ffffff"
+			"backgroundColor": "#F7F3E7"
 		},
 		"ios": {
 			"supportsTablet": true
@@ -20,7 +20,7 @@
 		"android": {
 			"adaptiveIcon": {
 				"foregroundImage": "./assets/images/logo.png",
-				"backgroundColor": "#ffffff"
+				"backgroundColor": "#F7F3E7"
 			},
 			"edgeToEdgeEnabled": true,
 			"predictiveBackGestureEnabled": false

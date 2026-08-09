@@ -7,54 +7,43 @@ import { Appearance, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from './src/lib/navigationRef';
-import * as Notifications from 'expo-notifications';
+import { useFonts as useHanken } from '@expo-google-fonts/hanken-grotesk';
+import {
+	HankenGrotesk_400Regular,
+	HankenGrotesk_500Medium,
+	HankenGrotesk_700Bold,
+} from '@expo-google-fonts/hanken-grotesk';
+import {
+	BricolageGrotesque_700Bold,
+	BricolageGrotesque_800ExtraBold,
+} from '@expo-google-fonts/bricolage-grotesque';
+import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono';
+import * as SplashScreen from 'expo-splash-screen';
 import { useThemeStore } from './src/store/themeStore';
 import { useThemeColors } from './src/hooks/useThemeColors';
-import { registerPushTokenOnServer } from './src/services/notifications';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 
-type NotificationData = {
-	type?: string;
-	tripId?: string;
-};
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function App() {
 	const { theme } = useThemeStore();
 	const { isDark } = useThemeColors();
 
-	// Registar push token no arranque
+	const [fontsLoaded] = useHanken({
+		HankenGrotesk_400Regular,
+		HankenGrotesk_500Medium,
+		HankenGrotesk_700Bold,
+		BricolageGrotesque_700Bold,
+		BricolageGrotesque_800ExtraBold,
+		IBMPlexMono_400Regular,
+	});
+
 	useEffect(() => {
-		registerPushTokenOnServer();
-	}, []);
-
-	// Deep linking de notificações push
-	useEffect(() => {
-		const sub = Notifications.addNotificationResponseReceivedListener(
-			(response) => {
-				const data = response.notification.request.content
-					.data as NotificationData;
-
-				if (!data.type || !navigationRef.isReady()) return;
-
-				switch (data.type) {
-					case 'trip_status':
-					case 'trip_offer':
-						if (data.tripId) {
-							navigationRef.navigate('Main', {
-								screen: 'ActiveTrip',
-								params: { tripId: data.tripId },
-							});
-						}
-						break;
-					default:
-						break;
-				}
-			},
-		);
-
-		return () => sub.remove();
-	}, []);
+		if (fontsLoaded) {
+			SplashScreen.hideAsync();
+		}
+	}, [fontsLoaded]);
 
 	// Sincronizar a preferência do utilizador com a Appearance API
 	useEffect(() => {
@@ -64,6 +53,10 @@ export default function App() {
 			Appearance.setColorScheme(theme); // forçar light/dark
 		}
 	}, [theme]);
+
+	if (!fontsLoaded) {
+		return null;
+	}
 
 	return (
 		<QueryClientProvider client={queryClient}>

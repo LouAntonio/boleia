@@ -19,33 +19,33 @@ import Animated, {
 	FadeInUp,
 } from 'react-native-reanimated';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { colors } from '../store/colors';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { RootStackParamList } from '../types/navigation';
+import { BoleiaRootStackParamList } from '../types/navigation';
+import { useAppStore } from '../store/appStore';
 
 const { width, height } = Dimensions.get('window');
 
 const SLIDES = [
 	{
 		id: '1',
-		title: 'Moto Táxi Rápido',
+		title: 'Viaja entre províncias a preço de boleia',
 		description:
-			'Chegue ao seu destino de forma rápida e segura com os nossos motoristas parceiros em Angola.',
+			'Partilha o lugar vazio na tua viatura ou encontra um motorista de confiança para a tua rota, a partir de Luanda.',
 		image: require('../../assets/images/onboarding_1.png'),
 	},
 	{
 		id: '2',
-		title: 'Pedidos Simples',
+		title: 'Paragens combinadas, pedidos claros',
 		description:
-			'Faça encomendas ou peça para buscar produtos com apenas alguns cliques no app.',
+			'Escolhe o embarque e o desembarque. O motorista confirma a tua reserva e avisas se os planos mudam.',
 		image: require('../../assets/images/onboarding_2.png'),
 	},
 	{
 		id: '3',
-		title: 'Segurança em 1º Lugar',
+		title: 'Motoristas verificados',
 		description:
-			'Motoristas verificados e acompanhamento da viagem em tempo real para sua proteção.',
+			'Bilhete de Identidade verificado, viatura registada e avaliações bilaterais. Viajas com quem cumpre.',
 		image: require('../../assets/images/onboarding_3.png'),
 	},
 ];
@@ -65,26 +65,16 @@ const Dot = ({
 			index * width,
 			(index + 1) * width,
 		];
-
 		const dotWidth = interpolate(
 			scrollX.value,
 			inputRange,
 			[8, 22, 8],
 			Extrapolation.CLAMP,
 		);
-
-		const opacity = interpolate(
-			scrollX.value,
-			inputRange,
-			[0.3, 1, 0.3],
-			Extrapolation.CLAMP,
-		);
-
 		return {
 			width: dotWidth,
-			opacity,
 			backgroundColor:
-				opacity > 0.7 ? themeColors.primary : themeColors.border,
+				dotWidth > 12 ? themeColors.primary : themeColors.border,
 		};
 	});
 
@@ -94,7 +84,7 @@ const Dot = ({
 export default function OnboardingScreen() {
 	const navigation =
 		useNavigation<
-			NativeStackNavigationProp<RootStackParamList, 'Onboarding'>
+			NativeStackNavigationProp<BoleiaRootStackParamList, 'Onboarding'>
 		>();
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const flatListRef = useRef<Animated.FlatList<any>>(null);
@@ -108,6 +98,11 @@ export default function OnboardingScreen() {
 		},
 	});
 
+	const finish = () => {
+		useAppStore.getState().completeOnboarding();
+		navigation.replace('Auth', { screen: 'PhoneEntry' });
+	};
+
 	const handleNext = () => {
 		if (currentIndex < SLIDES.length - 1) {
 			flatListRef.current?.scrollToIndex({
@@ -115,7 +110,7 @@ export default function OnboardingScreen() {
 				animated: true,
 			});
 		} else {
-			navigation.replace('Auth', { screen: 'Login' });
+			finish();
 		}
 	};
 
@@ -124,17 +119,16 @@ export default function OnboardingScreen() {
 			className="flex-1"
 			style={{ backgroundColor: themeColors.background }}
 		>
-			{/* Skip Button */}
 			<TouchableOpacity
 				className="absolute top-14 right-6 z-10 px-4 py-2"
-				onPress={() => navigation.replace('Auth', { screen: 'Login' })}
+				onPress={finish}
 				activeOpacity={0.7}
 			>
 				<Text
-					className="text-sm font-black uppercase tracking-widest"
-					style={{ color: themeColors.primary }}
+					className="font-sansBold text-[13px] uppercase tracking-widest"
+					style={{ color: themeColors.laterite }}
 				>
-					Pular
+					Saltar
 				</Text>
 			</TouchableOpacity>
 
@@ -154,7 +148,7 @@ export default function OnboardingScreen() {
 					setCurrentIndex(index);
 				}}
 				keyExtractor={(item) => item.id}
-				renderItem={({ item, index: _index }) => (
+				renderItem={({ item }) => (
 					<View style={{ width }} className="flex-1 px-10 pt-16">
 						<Animated.View
 							entering={FadeInUp.duration(800).delay(200)}
@@ -169,38 +163,32 @@ export default function OnboardingScreen() {
 						</Animated.View>
 
 						<View className="items-center">
-							<View className="items-center mb-6">
-								<Animated.Text
-									entering={FadeInDown.duration(600).delay(
-										400,
-									)}
-									className="text-[25px] font-black tracking-tighter text-center"
-									// eslint-disable-next-line react-native/no-inline-styles
-									style={{
-										color: themeColors.text,
-										lineHeight: 42,
-									}}
-								>
-									{item.title}
-								</Animated.Text>
-								<Animated.View
-									entering={FadeInDown.duration(600).delay(
-										500,
-									)}
-									className="h-1.5 w-14 rounded-full mt-2"
-									style={{
-										backgroundColor: themeColors.primary,
-									}}
-								/>
-							</View>
 							<Animated.Text
-								entering={FadeInDown.duration(600).delay(700)}
-								className="text-[15px] font-medium text-center leading-relaxed"
+								entering={FadeInDown.duration(600).delay(400)}
+								className="font-display text-[26px] text-center"
 								// eslint-disable-next-line react-native/no-inline-styles
 								style={{
-									color: isDark ? '#A1A1AA' : '#64748B',
+									color: themeColors.text,
+									lineHeight: 40,
+								}}
+							>
+								{item.title}
+							</Animated.Text>
+							<Animated.View
+								entering={FadeInDown.duration(600).delay(500)}
+								className="h-1.5 w-14 rounded-full mt-3"
+								style={{
+									backgroundColor: themeColors.laterite,
+								}}
+							/>
+							<Animated.Text
+								entering={FadeInDown.duration(600).delay(700)}
+								className="font-sans text-[15px] text-center leading-relaxed"
+								// eslint-disable-next-line react-native/no-inline-styles
+								style={{
+									color: isDark ? '#C9C4B6' : '#4A4552',
 									paddingHorizontal: 20,
-									letterSpacing: 0.2,
+									marginTop: 14,
 								}}
 							>
 								{item.description}
@@ -210,7 +198,6 @@ export default function OnboardingScreen() {
 				)}
 			/>
 
-			{/* Footer */}
 			<View className="px-8 pb-12 pt-4">
 				<View className="flex-row justify-between items-center">
 					<View className="flex-row items-center">
@@ -225,7 +212,7 @@ export default function OnboardingScreen() {
 					</View>
 
 					<TouchableOpacity
-						className="w-16 h-16 rounded-full items-center justify-center elevation-5 shadow-lg"
+						className="w-[64px] h-[64px] rounded-full items-center justify-center elevation-5 shadow-lg"
 						// eslint-disable-next-line react-native/no-inline-styles
 						style={{
 							backgroundColor: themeColors.primary,
@@ -238,8 +225,9 @@ export default function OnboardingScreen() {
 						activeOpacity={0.8}
 					>
 						<Text
-							className="text-2xl font-black"
-							style={{ color: colors.light.text }}
+							className="font-display text-[22px]"
+							// eslint-disable-next-line react-native/no-inline-styles
+							style={{ color: themeColors.text }}
 						>
 							{currentIndex === SLIDES.length - 1 ? '✓' : '→'}
 						</Text>

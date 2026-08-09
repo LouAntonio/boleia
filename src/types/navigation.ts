@@ -37,3 +37,44 @@ export type RootStackParamList = {
 	Auth: NavigatorScreenParams<AuthStackParamList>;
 	Main: NavigatorScreenParams<MainStackParamList>;
 };
+
+// ---------- Árvore Boleia (substitui a anterior nas fases seguintes) ----------
+
+export type BoleiaAuthStackParamList = {
+	PhoneEntry: undefined;
+	OtpVerify: { phone: string };
+	ProfileSetup: { phone: string };
+};
+
+export type PassengerTabsParamList = {
+	PassengerHome: undefined;
+	PassengerSearch: undefined;
+	PassengerBookings: undefined;
+	PassengerProfile: undefined;
+};
+
+export type DriverTabsParamList = {
+	DriverHome: undefined;
+	DriverPublish: undefined;
+	DriverTrips: undefined;
+	DriverProfile: undefined;
+};
+
+export type BoleiaMainStackParamList = {
+	Main: undefined;
+	Kyc: undefined;
+	Vehicle: undefined;
+	PublishTrip: undefined;
+	RideDetail: { rideId: string };
+	PublicProfile: { userId: string };
+	ActiveRide: { rideId: string };
+	Review: { rideId: string; toUserId: string };
+	Notifications: undefined;
+};
+
+export type BoleiaRootStackParamList = {
+	Splash: undefined;
+	Onboarding: undefined;
+	Auth: NavigatorScreenParams<BoleiaAuthStackParamList>;
+	Main: NavigatorScreenParams<BoleiaMainStackParamList>;
+};
