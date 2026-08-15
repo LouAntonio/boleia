@@ -4,15 +4,23 @@ import { useThemeColors } from '../hooks/useThemeColors';
 
 // Perfuração do bilhete — linha tracejada interrompida por dois pontos
 // (linha → laterite), a mesma assinatura do ticket da Home.
-export default function Perforation({ tight = false }: { tight?: boolean }) {
+export default function Perforation({
+	tight = false,
+	flush = false,
+}: {
+	tight?: boolean;
+	flush?: boolean;
+}) {
 	const { themeColors } = useThemeColors();
 
 	return (
 		<View
 			className={
-				tight
-					? 'flex-row items-center justify-center my-3'
-					: 'flex-row items-center justify-center my-6'
+				flush
+					? 'flex-row items-center justify-center my-0'
+					: tight
+						? 'flex-row items-center justify-center my-3'
+						: 'flex-row items-center justify-center my-6'
 			}
 		>
 			<View

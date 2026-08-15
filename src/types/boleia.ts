@@ -71,7 +71,10 @@ export type KYC = {
 	userId: string;
 	fullName: string;
 	biNumber: string; // bilhete de identidade
-	biPhotoUri: string | null;
+	selfies: string[]; // 3 selfies de rosto
+	biFrontUri: string | null; // BI — frente
+	biBackUri: string | null; // BI — verso
+	licensePhotoUri: string | null; // carta de condução
 	licenseNumber: string | null;
 	licenseExpiry: string | null; // yyyy-mm-dd
 	status: KycStatus;
@@ -88,7 +91,7 @@ export type Vehicle = {
 	color: string;
 	plate: string; // matrícula AG-00-00-AG
 	seats: number; // lotação total (motorista + lugares)
-	photoUri: string | null;
+	photos: string[]; // mínimo 3 fotos da viatura
 	status: KycStatus;
 	verifiedAt: string | null;
 };

@@ -8,20 +8,23 @@ const VERIFY_MS = 2600;
 export function submitKyc(
 	userId: string,
 	input: {
-		biNumber: string;
-		licenseNumber: string;
-		licenseExpiry: string; // yyyy-mm-dd
-		biPhotoUri: string | null;
+		selfies: string[];
+		biFrontUri: string;
+		biBackUri: string;
+		licensePhotoUri: string;
 	},
 ): KYC {
 	const kyc: KYC = {
 		id: UID.next('kyc'),
 		userId,
 		fullName: '',
-		biNumber: input.biNumber.trim(),
-		biPhotoUri: input.biPhotoUri,
-		licenseNumber: input.licenseNumber.trim(),
-		licenseExpiry: input.licenseExpiry,
+		biNumber: '',
+		selfies: input.selfies,
+		biFrontUri: input.biFrontUri,
+		biBackUri: input.biBackUri,
+		licensePhotoUri: input.licensePhotoUri,
+		licenseNumber: '',
+		licenseExpiry: null,
 		status: 'pendente',
 		rejectionReason: null,
 		submissionDate: nowISO(),
@@ -59,7 +62,7 @@ export function submitVehicle(
 		color: string;
 		plate: string;
 		seats: number;
-		photoUri: string | null;
+		photos: string[];
 	},
 ): Vehicle {
 	const vehicle: Vehicle = {
@@ -70,7 +73,7 @@ export function submitVehicle(
 		color: input.color.trim(),
 		plate: input.plate.toUpperCase().trim(),
 		seats: input.seats,
-		photoUri: input.photoUri,
+		photos: input.photos,
 		status: 'pendente',
 		verifiedAt: null,
 	};

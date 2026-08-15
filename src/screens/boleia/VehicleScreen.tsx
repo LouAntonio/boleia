@@ -4,20 +4,134 @@ import {
 	Text,
 	TextInput,
 	ScrollView,
-	Image,
 	Pressable,
 	ActivityIndicator,
+	KeyboardTypeOptions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import BoleiaButton from '../../components/BoleiaButton';
-import StatusStamp from '../../components/StatusStamp';
+import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
 import { useDbStore } from '../../mock/db';
 import { submitVehicle } from '../../mock/repos/driverRepo';
+
+const CELU = '#F7F3E7';
+const BAND_LATERITE = '#B4531F';
+const BAND_MATO = '#1F7A5B';
+const MAX_PHOTOS = 6;
+
+// Card com banda tingida (viatura/motorista = mato).
+function SectionCard({
+	band,
+	icon,
+	title,
+	subtitle,
+	children,
+}: {
+	band: string;
+	icon: React.ComponentProps<typeof Ionicons>['name'];
+	title: string;
+	subtitle: string;
+	children: React.ReactNode;
+}) {
+	const { themeColors } = useThemeColors();
+
+	return (
+		<View
+			className="rounded-3xl border overflow-hidden mb-4"
+			style={{
+				borderColor: themeColors.border,
+				backgroundColor: themeColors.card,
+			}}
+		>
+			<View
+				className="flex-row items-center px-4 py-2.5"
+				style={{ backgroundColor: band }}
+			>
+				<View
+					className="w-7 h-7 rounded-full items-center justify-center"
+					style={{ backgroundColor: `${CELU}26` }}
+				>
+					<Ionicons name={icon} size={15} color={CELU} />
+				</View>
+				<View className="flex-1 ml-2.5">
+					<Text
+						className="font-display text-[15px]"
+						style={{ color: CELU }}
+					>
+						{title}
+					</Text>
+					<Text
+						className="font-mono text-[8px] uppercase tracking-[2px] mt-0.5"
+						style={{ color: CELU, opacity: 0.85 }}
+					>
+						{subtitle}
+					</Text>
+				</View>
+			</View>
+			<View className="px-4 py-4">{children}</View>
+		</View>
+	);
+}
+
+// Campo de formulário — rótulo mono em `secondary` (a11y), caixa em `background`.
+function Field({
+	label,
+	value,
+	setter,
+	placeholder,
+	autoCapitalize = 'words',
+	keyboardType = 'default',
+	mono = false,
+}: {
+	label: string;
+	value: string;
+	setter: (v: string) => void;
+	placeholder: string;
+	autoCapitalize?: 'none' | 'words' | 'characters';
+	keyboardType?: KeyboardTypeOptions;
+	mono?: boolean;
+}) {
+	const { themeColors } = useThemeColors();
+
+	return (
+		<View className="flex-1">
+			<Text
+				className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+				style={{ color: themeColors.secondary }}
+			>
+				{label}
+			</Text>
+			<View
+				className="rounded-xl border px-3.5"
+				style={{
+					borderColor: themeColors.border,
+					backgroundColor: themeColors.background,
+				}}
+			>
+				<TextInput
+					value={value}
+					onChangeText={setter}
+					placeholder={placeholder}
+					placeholderTextColor={themeColors.border}
+					autoCapitalize={autoCapitalize}
+					keyboardType={keyboardType}
+					className={
+						mono
+							? 'py-3 font-mono text-[15px] uppercase'
+							: 'py-3 font-sans text-[15px]'
+					}
+					style={{ color: themeColors.text }}
+				/>
+			</View>
+		</View>
+	);
+}
 
 export default function VehicleScreen() {
 	const navigation =
@@ -32,9 +146,7 @@ export default function VehicleScreen() {
 	const [color, setColor] = useState(me?.vehicle?.color ?? '');
 	const [plate, setPlate] = useState(me?.vehicle?.plate ?? '');
 	const [seats, setSeats] = useState(String(me?.vehicle?.seats ?? 4));
-	const [photoUri, setPhotoUri] = useState<string | null>(
-		me?.vehicle?.photoUri ?? null,
-	);
+	const [photos, setPhotos] = useState<string[]>(me?.vehicle?.photos ?? []);
 	const [submitting, setSubmitting] = useState(false);
 
 	const vehicle = me?.vehicle;
@@ -44,15 +156,20 @@ export default function VehicleScreen() {
 	const canSubmit =
 		make.trim().length > 0 &&
 		model.trim().length > 0 &&
-		plate.trim().length >= 6;
+		color.trim().length > 0 &&
+		plate.trim().length >= 6 &&
+		photos.filter(Boolean).length >= 3;
 
-	const pickPhoto = async () => {
+	const pickOne = async (set: (uri: string) => void) => {
 		const res = await ImagePicker.launchImageLibraryAsync({
 			mediaTypes: ['images'],
 			quality: 0.6,
 		});
-		if (!res.canceled) setPhotoUri(res.assets[0].uri);
+		if (!res.canceled) set(res.assets[0].uri);
 	};
+
+	const removeAt = (i: number) =>
+		setPhotos((prev) => prev.filter((_, j) => j !== i));
 
 	const submit = () => {
 		if (!canSubmit) return;
@@ -63,45 +180,10 @@ export default function VehicleScreen() {
 			color,
 			plate,
 			seats: seatCount,
-			photoUri,
+			photos: photos.filter(Boolean),
 		});
 		setTimeout(() => setSubmitting(false), 300);
 	};
-
-	const field = (
-		labelText: string,
-		value: string,
-		setter: (v: string) => void,
-		placeholder: string,
-	) => (
-		<View className="mb-4">
-			<Text
-				className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5"
-				style={{ color: themeColors.laterite }}
-			>
-				{labelText}
-			</Text>
-			<View
-				className="rounded-xl border px-3.5"
-				style={{
-					borderColor: themeColors.border,
-					backgroundColor: themeColors.card,
-				}}
-			>
-				<TextInput
-					value={value}
-					onChangeText={setter}
-					placeholder={placeholder}
-					placeholderTextColor={themeColors.border}
-					autoCapitalize={
-						labelText === 'Matrícula' ? 'characters' : 'words'
-					}
-					className="py-3 font-sans text-[15px]"
-					style={{ color: themeColors.text }}
-				/>
-			</View>
-		</View>
-	);
 
 	return (
 		<SafeAreaView
@@ -109,101 +191,311 @@ export default function VehicleScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<ScrollView
-				className="flex-1 px-5 pt-12"
+				className="flex-1 px-5"
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
-				<View className="flex-row items-center justify-between mb-4">
-					<Text
-						className="font-display text-[22px]"
-						style={{ color: themeColors.text }}
+				<View className="flex-row items-center pt-1 pb-4">
+					<Pressable
+						onPress={() => navigation.goBack()}
+						className="w-9 h-9 rounded-full items-center justify-center border mr-3"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
 					>
-						A tua viatura
-					</Text>
-					{status !== 'nao_submetido' && (
-						<StatusStamp status={status} />
-					)}
+						<Ionicons
+							name="chevron-back"
+							size={18}
+							color={themeColors.text}
+						/>
+					</Pressable>
+					<View className="flex-1">
+						<View className="flex-row items-center mb-1">
+							<Ionicons
+								name="checkmark-circle"
+								size={11}
+								color={themeColors.laterite}
+							/>
+							<Text
+								className="font-mono text-[9px] uppercase tracking-[3px] ml-1"
+								style={{ color: themeColors.secondary }}
+							>
+								Viatura · Registo
+							</Text>
+						</View>
+						<Text
+							className="font-display text-[22px] leading-6"
+							style={{ color: themeColors.text }}
+						>
+							Regista a tua viatura
+						</Text>
+					</View>
 				</View>
 
 				{status === 'verificado' ? (
-					<View>
-						<Text
-							className="font-sans text-[14px] leading-6"
-							style={{ color: themeColors.secondary }}
+					<View
+						className="rounded-3xl border overflow-hidden"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<View
+							className="px-4 py-3 flex-row items-center"
+							style={{ backgroundColor: BAND_MATO }}
 						>
-							Viatura verificada. Já podes publicar viagens a
-							partir do painel de motorista.
-						</Text>
-						<View className="mt-6">
-							<BoleiaButton
-								title="Voltar ao painel"
-								onPress={() => navigation.goBack()}
-							/>
+							<View
+								className="w-9 h-9 rounded-full items-center justify-center"
+								style={{ backgroundColor: `${CELU}26` }}
+							>
+								<Ionicons
+									name="checkmark"
+									size={18}
+									color={CELU}
+								/>
+							</View>
+							<View className="flex-1 ml-3">
+								<Text
+									className="font-display text-[16px]"
+									style={{ color: CELU }}
+								>
+									Viatura verificada
+								</Text>
+								<Text
+									className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
+									style={{ color: CELU, opacity: 0.85 }}
+								>
+									Lista para publicar
+								</Text>
+							</View>
+						</View>
+						<View className="px-4 py-4">
+							<Text
+								className="font-sans text-[13px] leading-5"
+								style={{ color: themeColors.secondary }}
+							>
+								Viatura verificada. Já podes publicar viagens a
+								partir do painel de motorista.
+							</Text>
+							<View className="mt-4">
+								<BoleiaButton
+									title="Voltar ao painel"
+									onPress={() => navigation.goBack()}
+									strong
+								/>
+							</View>
 						</View>
 					</View>
 				) : status === 'pendente' ? (
-					<View className="items-center py-10">
-						<ActivityIndicator color={themeColors.laterite} />
-						<Text
-							className="font-sans mt-4"
-							style={{ color: themeColors.secondary }}
+					<View
+						className="rounded-3xl border overflow-hidden"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<View
+							className="px-4 py-3 flex-row items-center"
+							style={{ backgroundColor: BAND_LATERITE }}
 						>
-							A verificar a viatura… (demo)
-						</Text>
+							<View
+								className="w-9 h-9 rounded-full items-center justify-center"
+								style={{ backgroundColor: `${CELU}26` }}
+							>
+								<ActivityIndicator color={CELU} size="small" />
+							</View>
+							<View className="flex-1 ml-3">
+								<Text
+									className="font-display text-[16px]"
+									style={{ color: CELU }}
+								>
+									A verificar
+								</Text>
+								<Text
+									className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
+									style={{ color: CELU, opacity: 0.85 }}
+								>
+									Processo em análise
+								</Text>
+							</View>
+						</View>
+						<View className="px-4 py-4">
+							<Text
+								className="font-sans text-[13px] leading-5"
+								style={{ color: themeColors.secondary }}
+							>
+								Estamos a confirmar os dados da viatura. Leva só
+								uns segundos neste demo.
+							</Text>
+						</View>
 					</View>
 				) : (
 					<View>
-						{field('Marca', make, setMake, 'ex.: Toyota')}
-						{field('Modelo', model, setModel, 'ex.: Hiace')}
-						{field('Cor', color, setColor, 'ex.: Branca')}
-						{field(
-							'Matrícula',
-							plate,
-							setPlate,
-							'ex.: LG-12-35-BT',
-						)}
-						{field(
-							`Lotação (${seatCount} lugares)`,
-							seats,
-							(t) => setSeats(t.replace(/\D/g, '').slice(0, 2)),
-							'ex.: 12',
-						)}
-
-						<Text
-							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5"
-							style={{ color: themeColors.laterite }}
+						<SectionCard
+							band={BAND_MATO}
+							icon="car-sport-outline"
+							title="Dados da viatura"
+							subtitle="Características"
 						>
-							Foto (opcional)
-						</Text>
-						<Pressable
-							onPress={pickPhoto}
-							className="rounded-xl border items-center justify-center mb-4 overflow-hidden"
-							style={{
-								borderColor: themeColors.border,
-								backgroundColor: themeColors.card,
-								height: 110,
-							}}
-						>
-							{photoUri ? (
-								<Image
-									source={{ uri: photoUri }}
-									className="w-full h-full"
-									resizeMode="cover"
+							<View className="flex-row gap-2 mb-3">
+								<Field
+									label="Marca"
+									value={make}
+									setter={setMake}
+									placeholder="ex.: Toyota"
 								/>
+								<Field
+									label="Modelo"
+									value={model}
+									setter={setModel}
+									placeholder="ex.: Hiace"
+								/>
+							</View>
+							<View className="flex-row gap-2 mb-3">
+								<Field
+									label="Cor"
+									value={color}
+									setter={setColor}
+									placeholder="ex.: Branca"
+								/>
+								<Field
+									label={`Lotação (${seatCount})`}
+									value={seats}
+									setter={(t) =>
+										setSeats(
+											t.replace(/\D/g, '').slice(0, 2),
+										)
+									}
+									placeholder="ex.: 12"
+									keyboardType="numeric"
+									mono
+								/>
+							</View>
+							<Field
+								label="Matrícula"
+								value={plate}
+								setter={setPlate}
+								placeholder="ex.: LG-12-35-BT"
+								autoCapitalize="characters"
+								mono
+							/>
+						</SectionCard>
+
+						<SectionCard
+							band={BAND_MATO}
+							icon="images-outline"
+							title="Fotos da viatura"
+							subtitle="Mínimo 3 Fotos"
+						>
+							<View className="mb-4">
+								<ProgressRail
+									done={Math.min(
+										photos.filter(Boolean).length,
+										3,
+									)}
+									total={3}
+								/>
+							</View>
+
+							<View className="flex-row gap-2 mb-2">
+								{[0, 1, 2].map((i) => (
+									<PhotoSlot
+										key={i}
+										uri={photos[i] ?? null}
+										label={`Foto ${i + 1}`}
+										onPick={() =>
+											pickOne((u) =>
+												setPhotos((prev) =>
+													i < prev.length
+														? prev.map((p, j) =>
+																j === i ? u : p,
+															)
+														: [...prev, u],
+												),
+											)
+										}
+										onRemove={
+											photos[i]
+												? () => removeAt(i)
+												: undefined
+										}
+									/>
+								))}
+							</View>
+
+							{photos.length > 3 ? (
+								<View className="flex-row gap-2">
+									{photos
+										.slice(3, MAX_PHOTOS)
+										.map((uri, i) => (
+											<PhotoSlot
+												key={i + 3}
+												uri={uri}
+												label={`Foto ${i + 4}`}
+												onPick={() =>
+													pickOne((u) =>
+														setPhotos((prev) =>
+															prev.map((p, j) =>
+																j === i + 3
+																	? u
+																	: p,
+															),
+														),
+													)
+												}
+												onRemove={() => removeAt(i + 3)}
+											/>
+										))}
+								</View>
+							) : null}
+
+							{photos.length < MAX_PHOTOS ? (
+								<Pressable
+									onPress={() =>
+										pickOne((u) =>
+											setPhotos((prev) =>
+												prev.length < MAX_PHOTOS
+													? [...prev, u]
+													: prev,
+											),
+										)
+									}
+									className="rounded-2xl border items-center justify-center py-3.5 mt-2 flex-row"
+									style={({ pressed }) => ({
+										borderColor: themeColors.border,
+										borderStyle: 'dashed',
+										backgroundColor: themeColors.card,
+										opacity: pressed ? 0.8 : 1,
+									})}
+								>
+									<Ionicons
+										name="add"
+										size={17}
+										color={themeColors.laterite}
+									/>
+									<Text
+										className="font-mono text-[10px] uppercase tracking-[2px] ml-2"
+										style={{ color: themeColors.secondary }}
+									>
+										Adicionar fotos
+									</Text>
+								</Pressable>
 							) : (
 								<Text
-									className="font-sans text-[13px]"
+									className="font-sans text-[11px] mt-2 text-center"
 									style={{ color: themeColors.secondary }}
 								>
-									+ Selecionar foto
+									Máximo de {MAX_PHOTOS} fotos atingido.
 								</Text>
 							)}
-						</Pressable>
+						</SectionCard>
 
 						<BoleiaButton
 							title="Registar viatura"
 							onPress={submit}
 							loading={submitting}
 							disabled={!canSubmit}
+							strong
 						/>
 					</View>
 				)}
