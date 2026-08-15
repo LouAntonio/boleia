@@ -55,6 +55,7 @@ export default function ResetPasswordScreen() {
 				}}
 				isPassword
 				placeholder="Mínimo de 6 caracteres"
+				leftIcon="lock-closed-outline"
 				autoCapitalize="none"
 			/>
 			<Input
@@ -66,6 +67,7 @@ export default function ResetPasswordScreen() {
 				}}
 				isPassword
 				placeholder="Repete a senha"
+				leftIcon="lock-closed-outline"
 				autoCapitalize="none"
 				onSubmitEditing={submit}
 				returnKeyType="go"
@@ -90,6 +92,7 @@ export default function ResetPasswordScreen() {
 					onPress={submit}
 					loading={pending}
 					disabled={!canSubmit}
+					strong
 				/>
 			</View>
 		</AuthShell>

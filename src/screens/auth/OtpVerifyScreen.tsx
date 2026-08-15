@@ -68,7 +68,7 @@ export default function OtpVerifyScreen() {
 					</Text>
 					<Pressable onPress={resend}>
 						<Text
-							className="font-sansBold text-[13px]"
+							className="font-sansBold text-[13px] uppercase tracking-wider"
 							style={{ color: themeColors.laterite }}
 						>
 							{resent ? 'Reenviado ✓' : 'Reenviar SMS'}
@@ -121,6 +121,7 @@ export default function OtpVerifyScreen() {
 					onPress={continueRecovery}
 					loading={pending}
 					disabled={code.length < 6}
+					strong
 				/>
 			</View>
 		</AuthShell>

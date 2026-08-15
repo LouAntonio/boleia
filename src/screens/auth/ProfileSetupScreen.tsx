@@ -56,6 +56,7 @@ export default function ProfileSetupScreen() {
 				value={firstName}
 				onChangeText={setFirstName}
 				placeholder="O teu primeiro nome"
+				leftIcon="person-outline"
 				autoCapitalize="words"
 			/>
 			<Input
@@ -63,6 +64,7 @@ export default function ProfileSetupScreen() {
 				value={lastName}
 				onChangeText={setLastName}
 				placeholder="O teu apelido"
+				leftIcon="person-outline"
 				autoCapitalize="words"
 			/>
 			<Input
@@ -86,6 +88,7 @@ export default function ProfileSetupScreen() {
 					onPress={save}
 					loading={pending}
 					disabled={!canSave}
+					strong
 				/>
 			</View>
 		</AuthShell>

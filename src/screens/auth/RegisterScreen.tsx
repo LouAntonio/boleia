@@ -65,7 +65,7 @@ export default function RegisterScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Boleia · Angola"
+			eyebrow="Boleia"
 			title="Cria a tua conta"
 			subtitle="O mesmo perfil serve para viajares como passageiro ou montares a tua boleia como motorista."
 			back={() => navigation.goBack()}
@@ -79,7 +79,7 @@ export default function RegisterScreen() {
 					</Text>
 					<Pressable onPress={() => navigation.goBack()}>
 						<Text
-							className="font-sansBold text-[13px]"
+							className="font-sansBold text-[13px] uppercase tracking-wider"
 							style={{ color: themeColors.laterite }}
 						>
 							Entrar
@@ -98,6 +98,7 @@ export default function RegisterScreen() {
 							setError(null);
 						}}
 						placeholder="Ex.: Maria"
+						leftIcon="person-outline"
 						autoCapitalize="words"
 					/>
 				</View>
@@ -110,6 +111,7 @@ export default function RegisterScreen() {
 							setError(null);
 						}}
 						placeholder="Ex.: Santos"
+						leftIcon="person-outline"
 						autoCapitalize="words"
 					/>
 				</View>
@@ -123,6 +125,7 @@ export default function RegisterScreen() {
 				}}
 				keyboardType="phone-pad"
 				placeholder="9XX XXX XXX"
+				leftIcon="call-outline"
 				maxLength={11}
 			/>
 			<Input
@@ -134,6 +137,7 @@ export default function RegisterScreen() {
 				}}
 				isPassword
 				placeholder="Mínimo de 6 caracteres"
+				leftIcon="lock-closed-outline"
 				autoCapitalize="none"
 			/>
 			<Input
@@ -145,6 +149,7 @@ export default function RegisterScreen() {
 				}}
 				isPassword
 				placeholder="Repete a senha"
+				leftIcon="lock-closed-outline"
 				autoCapitalize="none"
 				onSubmitEditing={submit}
 				returnKeyType="go"
@@ -191,6 +196,7 @@ export default function RegisterScreen() {
 					onPress={submit}
 					loading={pending}
 					disabled={!canSubmit}
+					strong
 				/>
 			</View>
 		</AuthShell>

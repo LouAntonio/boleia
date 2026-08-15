@@ -14,6 +14,7 @@ interface InputProps extends TextInputProps {
 	label?: string;
 	error?: string;
 	isPassword?: boolean;
+	leftIcon?: keyof typeof Ionicons.glyphMap;
 	containerStyle?: any;
 }
 
@@ -21,6 +22,7 @@ export default function Input({
 	label,
 	error,
 	isPassword,
+	leftIcon,
 	containerStyle,
 	...props
 }: InputProps) {
@@ -92,6 +94,24 @@ export default function Input({
 					containerStyle,
 				]}
 			>
+				{leftIcon && (
+					<Ionicons
+						name={leftIcon}
+						size={22}
+						color={
+							isFocused
+								? themeColors.primary
+								: isDark
+									? '#888'
+									: '#666'
+						}
+						style={[
+							styles.leftIcon,
+							// eslint-disable-next-line react-native/no-inline-styles
+							props.multiline && { marginTop: 4 },
+						]}
+					/>
+				)}
 				<TextInput
 					className="flex-1 text-base"
 					style={[
@@ -145,5 +165,8 @@ const styles = StyleSheet.create({
 	},
 	inputContainer: {
 		height: 58,
+	},
+	leftIcon: {
+		marginRight: 12,
 	},
 });

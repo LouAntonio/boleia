@@ -64,6 +64,7 @@ export default function ForgotPasswordScreen() {
 				}}
 				keyboardType="phone-pad"
 				placeholder="9XX XXX XXX"
+				leftIcon="call-outline"
 				maxLength={11}
 			/>
 			{error ? (
@@ -81,6 +82,7 @@ export default function ForgotPasswordScreen() {
 					onPress={submit}
 					loading={pending}
 					disabled={!canSubmit}
+					strong
 				/>
 			</View>
 		</AuthShell>

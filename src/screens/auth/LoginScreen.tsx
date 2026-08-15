@@ -58,7 +58,7 @@ export default function LoginScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Boleia · Angola"
+			eyebrow="Boleia"
 			title="Entra com o teu número"
 			subtitle="Tel e senha. Se te esqueceres da senha, recuperas com um código por SMS."
 			footer={
@@ -68,7 +68,7 @@ export default function LoginScreen() {
 						className="items-center py-2"
 					>
 						<Text
-							className="font-sansBold text-[13px]"
+							className="font-sansBold text-[13px] uppercase tracking-wider"
 							style={{ color: themeColors.laterite }}
 						>
 							Esqueci-me da senha
@@ -99,7 +99,7 @@ export default function LoginScreen() {
 							onPress={() => navigation.navigate('Register')}
 						>
 							<Text
-								className="font-sansBold text-[13px]"
+								className="font-sansBold text-[13px] uppercase tracking-wider"
 								style={{ color: themeColors.laterite }}
 							>
 								Criar conta
@@ -118,6 +118,7 @@ export default function LoginScreen() {
 				}}
 				keyboardType="phone-pad"
 				placeholder="9XX XXX XXX"
+				leftIcon="call-outline"
 				maxLength={11}
 			/>
 			<Input
@@ -129,6 +130,7 @@ export default function LoginScreen() {
 				}}
 				isPassword
 				placeholder="A tua senha"
+				leftIcon="lock-closed-outline"
 				autoCapitalize="none"
 				onSubmitEditing={submit}
 				returnKeyType="go"
@@ -147,6 +149,7 @@ export default function LoginScreen() {
 				onPress={submit}
 				loading={pending}
 				disabled={!canSubmit}
+				strong
 			/>
 		</AuthShell>
 	);
