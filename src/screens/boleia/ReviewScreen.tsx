@@ -71,12 +71,20 @@ export default function ReviewScreen() {
 						color={themeColors.text}
 					/>
 				</Pressable>
-				<Text
-					className="font-display text-[20px]"
-					style={{ color: themeColors.text }}
-				>
-					{subjectLabel}
-				</Text>
+				<View className="flex-1">
+					<Text
+						className="font-mono text-[10px] uppercase tracking-[3px]"
+						style={{ color: themeColors.laterite }}
+					>
+						{subjectLabel}
+					</Text>
+					<Text
+						className="font-display text-[20px] -mt-0.5"
+						style={{ color: themeColors.text }}
+					>
+						Como correu a viagem?
+					</Text>
+				</View>
 			</View>
 
 			<ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
@@ -124,7 +132,13 @@ export default function ReviewScreen() {
 							color={themeColors.mato}
 						/>
 						<Text
-							className="font-sansBold text-[16px] mt-2"
+							className="font-mono text-[10px] uppercase tracking-[3px] mt-2"
+							style={{ color: themeColors.mato }}
+						>
+							Recibo
+						</Text>
+						<Text
+							className="font-sansBold text-[16px] mt-0.5"
 							style={{ color: themeColors.mato }}
 						>
 							Avaliação guardada

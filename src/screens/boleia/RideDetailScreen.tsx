@@ -7,11 +7,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import TripStripCard from '../../components/TripStripCard';
-import StatusStamp from '../../components/StatusStamp';
 import BoleiaButton from '../../components/BoleiaButton';
 import SectionTitle from '../../components/SectionTitle';
 import { rideProgress } from '../../mock/repos/rideRepo';
 import { requestBooking } from '../../mock/repos/bookingRepo';
+import BookingStub from '../../components/BookingStub';
 import { useDbStore } from '../../mock/db';
 import { fmtKz, initials } from '../../mock/helpers';
 import { PaymentKind } from '../../types/boleia';
@@ -80,73 +80,53 @@ export default function RideDetailScreen() {
 				style={{ backgroundColor: themeColors.background }}
 			>
 				<Header
-					title="Detalhe da viagem"
+					title={ride.routeName}
 					onBack={() => navigation.goBack()}
 				/>
 				<ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-					<TripStripCard ride={ride} />
-					<View
-						className="mt-4 p-4 rounded-2xl border"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<View className="flex-row items-center justify-between">
-							<Text
-								className="font-sansBold text-[15px]"
-								style={{ color: themeColors.text }}
-							>
-								A tua reserva
-							</Text>
-							<StatusStamp status={myBooking.status} />
-						</View>
-						<Text
-							className="font-sans text-[13px] mt-1"
-							style={{ color: themeColors.secondary }}
-						>
-							{myBooking.seats} lugar
-							{myBooking.seats > 1 ? 'es' : ''} ·{' '}
-							{fmtKz(myBooking.amount)} ·{' '}
-							{stops[myBooking.pickStopIndex].name} →{' '}
-							{stops[myBooking.dropStopIndex].name}
-						</Text>
-						{myBooking.status === 'pedido' && (
-							<Text
-								className="font-sans text-[12px] mt-2"
-								style={{ color: themeColors.laterite }}
-							>
-								O motorista confirma em ~6s (demo).
-							</Text>
-						)}
-					</View>
-					{myBooking.status === 'em_viagem' && (
-						<View className="mt-4">
-							<BoleiaButton
-								title="Acompanhar ao vivo"
-								onPress={() =>
-									navigation.navigate('ActiveRide', {
-										rideId: ride.id,
-									})
-								}
-							/>
-						</View>
-					)}
-					{myBooking.status === 'concluida' && (
-						<View className="mt-4">
-							<BoleiaButton
-								title="Avaliar motorista"
-								variant="outline"
-								onPress={() =>
-									navigation.navigate('Review', {
-										rideId: ride.id,
-										toUserId: ride.driverId,
-										subject: 'driver',
-									})
-								}
-							/>
-						</View>
-					)}
+					<BookingStub
+						booking={myBooking}
+						ride={ride}
+						note={`${stops[myBooking.pickStopIndex].name} → ${stops[myBooking.dropStopIndex].name}`}
+						footer={
+							myBooking.status === 'pedido' ? (
+								<Text
+									className="font-sans text-[12px]"
+									style={{ color: themeColors.laterite }}
+								>
+									O motorista confirma em ~6s (demo).
+								</Text>
+							) : myBooking.status === 'confirmada' ? (
+								<Text
+									className="font-sans text-[12px]"
+									style={{ color: themeColors.secondary }}
+								>
+									Apresenta o teu número ao embarcar.
+								</Text>
+							) : myBooking.status === 'em_viagem' ? (
+								<BoleiaButton
+									title="Acompanhar ao vivo"
+									onPress={() =>
+										navigation.navigate('ActiveRide', {
+											rideId: ride.id,
+										})
+									}
+								/>
+							) : myBooking.status === 'concluida' ? (
+								<BoleiaButton
+									title="Avaliar motorista"
+									variant="outline"
+									onPress={() =>
+										navigation.navigate('Review', {
+											rideId: ride.id,
+											toUserId: ride.driverId,
+											subject: 'driver',
+										})
+									}
+								/>
+							) : undefined
+						}
+					/>
 				</ScrollView>
 			</SafeAreaView>
 		);
@@ -405,25 +385,32 @@ export default function RideDetailScreen() {
 					{result ? (
 						result.ok ? (
 							<View
-								className="mt-4 p-4 rounded-2xl border"
+								className="mt-4 p-4 rounded-2xl border flex-row items-center"
 								style={{
 									borderColor: themeColors.mato,
 									backgroundColor: themeColors.card,
 								}}
 							>
-								<Text
-									className="font-sansBold text-[15px]"
-									style={{ color: themeColors.mato }}
-								>
-									Pedido enviado ✓
-								</Text>
-								<Text
-									className="font-sans text-[13px] mt-1"
-									style={{ color: themeColors.secondary }}
-								>
-									O motorista confirma em ~6s (demo). Segue o
-									estado em Reservas.
-								</Text>
+								<Ionicons
+									name="checkmark-circle"
+									size={28}
+									color={themeColors.mato}
+								/>
+								<View className="flex-1 ml-3">
+									<Text
+										className="font-sansBold text-[15px]"
+										style={{ color: themeColors.mato }}
+									>
+										Pedido enviado
+									</Text>
+									<Text
+										className="font-sans text-[13px] mt-0.5"
+										style={{ color: themeColors.secondary }}
+									>
+										O motorista confirma em ~6s (demo).
+										Segue o estado em Reservas.
+									</Text>
+								</View>
 							</View>
 						) : (
 							<Text
@@ -497,12 +484,20 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 					color={themeColors.text}
 				/>
 			</Pressable>
-			<Text
-				className="font-display text-[20px]"
-				style={{ color: themeColors.text }}
-			>
-				{title}
-			</Text>
+			<View className="flex-1">
+				<Text
+					className="font-mono text-[10px] uppercase tracking-[3px]"
+					style={{ color: themeColors.laterite }}
+				>
+					Detalhe da viagem
+				</Text>
+				<Text
+					className="font-display text-[20px] -mt-0.5"
+					style={{ color: themeColors.text }}
+				>
+					{title}
+				</Text>
+			</View>
 		</View>
 	);
 }

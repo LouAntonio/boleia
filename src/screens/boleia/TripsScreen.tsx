@@ -3,7 +3,7 @@ import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useDbStore } from '../../mock/db';
-import { fmtKz } from '../../mock/helpers';
+import { fmtKz, initials } from '../../mock/helpers';
 import SectionTitle from '../../components/SectionTitle';
 import TripStripCard from '../../components/TripStripCard';
 import StatusStamp from '../../components/StatusStamp';
@@ -31,12 +31,20 @@ export default function TripsScreen() {
 				className="flex-1 px-5"
 				style={{ backgroundColor: themeColors.background }}
 			>
-				<Text
-					className="font-display text-[22px] mb-4 mt-2"
-					style={{ color: themeColors.text }}
-				>
-					As tuas viagens
-				</Text>
+				<View className="mt-2 mb-4">
+					<Text
+						className="font-mono text-[10px] uppercase tracking-[3px]"
+						style={{ color: themeColors.laterite }}
+					>
+						Viagens · talões
+					</Text>
+					<Text
+						className="font-display text-[22px] -mt-0.5"
+						style={{ color: themeColors.text }}
+					>
+						As tuas viagens
+					</Text>
+				</View>
 				<SectionTitle tone="laterite">
 					Ainda nada publicado
 				</SectionTitle>
@@ -56,12 +64,28 @@ export default function TripsScreen() {
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
-			<Text
-				className="font-display text-[22px] mb-4 mt-2"
-				style={{ color: themeColors.text }}
-			>
-				As tuas viagens
-			</Text>
+			<View className="mt-2 mb-4">
+				<Text
+					className="font-mono text-[10px] uppercase tracking-[3px]"
+					style={{ color: themeColors.laterite }}
+				>
+					Viagens · talões
+				</Text>
+				<Text
+					className="font-display text-[22px] -mt-0.5"
+					style={{ color: themeColors.text }}
+				>
+					As tuas viagens
+				</Text>
+				<Text
+					className="font-mono text-[11px]"
+					style={{ color: themeColors.secondary }}
+				>
+					{mine.length} viagem
+					{mine.length === 1 ? '' : 's'} publicada
+					{mine.length === 1 ? '' : 's'}
+				</Text>
+			</View>
 			<ScrollView
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 48 }}
@@ -153,16 +177,39 @@ export default function TripsScreen() {
 													}}
 												>
 													<View className="flex-row items-center justify-between">
-														<Text
-															className="font-sansBold text-[14px]"
-															style={{
-																color: themeColors.text,
-															}}
-														>
-															{pax
-																? `${pax.firstName} ${pax.lastName}`
-																: 'Passageiro'}
-														</Text>
+														<View className="flex-row items-center flex-1 mr-2">
+															<View
+																className="w-8 h-8 rounded-full items-center justify-center mr-2"
+																style={{
+																	backgroundColor:
+																		themeColors.border,
+																}}
+															>
+																<Text
+																	className="font-sansBold text-[11px]"
+																	style={{
+																		color: themeColors.text,
+																	}}
+																>
+																	{pax
+																		? initials(
+																				pax.firstName,
+																				pax.lastName,
+																			)
+																		: '?'}
+																</Text>
+															</View>
+															<Text
+																className="font-sansBold text-[14px]"
+																style={{
+																	color: themeColors.text,
+																}}
+															>
+																{pax
+																	? `${pax.firstName} ${pax.lastName}`
+																	: 'Passageiro'}
+															</Text>
+														</View>
 														<Text
 															className="font-mono text-[13px]"
 															style={{
@@ -182,12 +229,31 @@ export default function TripsScreen() {
 															color: themeColors.secondary,
 														}}
 													>
-														{ride.origin.name} →{' '}
-														{ride.destination.name}{' '}
-														·{' '}
+														BL-
+														{b.id
+															.replace(/^bk_/, '')
+															.toUpperCase()}
+														{' · '}
+														{
+															ride.origin.name
+														} →{' '}
+														{ride.destination.name}
+													</Text>
+													<Text
+														className="font-mono text-[11px]"
+														style={{
+															color: themeColors.secondary,
+														}}
+													>
+														Saída{' '}
 														{ride.departure.slice(
 															0,
 															10,
+														)}
+														{' · '}
+														{ride.departure.slice(
+															11,
+															16,
 														)}
 													</Text>
 													<View className="flex-row mt-2.5">
@@ -263,16 +329,39 @@ export default function TripsScreen() {
 																themeColors.border,
 														}}
 													>
-														<Text
-															className="font-sansMedium text-[13px]"
-															style={{
-																color: themeColors.text,
-															}}
-														>
-															{pax
-																? `${pax.firstName} ${pax.lastName}`
-																: 'Passageiro'}
-														</Text>
+														<View className="flex-row items-center mr-2">
+															<View
+																className="w-8 h-8 rounded-full items-center justify-center mr-2"
+																style={{
+																	backgroundColor:
+																		themeColors.border,
+																}}
+															>
+																<Text
+																	className="font-sansBold text-[11px]"
+																	style={{
+																		color: themeColors.text,
+																	}}
+																>
+																	{pax
+																		? initials(
+																				pax.firstName,
+																				pax.lastName,
+																			)
+																		: '?'}
+																</Text>
+															</View>
+															<Text
+																className="font-sansMedium text-[13px]"
+																style={{
+																	color: themeColors.text,
+																}}
+															>
+																{pax
+																	? `${pax.firstName} ${pax.lastName}`
+																	: 'Passageiro'}
+															</Text>
+														</View>
 														<View className="flex-1 ml-3">
 															<BoleiaButton
 																small

@@ -1,15 +1,20 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useDbStore } from '../../mock/db';
-import { fmtKz } from '../../mock/helpers';
-import TripStripCard from '../../components/TripStripCard';
-import StatusStamp from '../../components/StatusStamp';
+import BookingStub from '../../components/BookingStub';
 import BoleiaButton from '../../components/BoleiaButton';
 import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { BoleiaMainStackParamList } from '../../types/navigation';
+import {
+	BoleiaMainStackParamList,
+	PassengerTabsParamList,
+} from '../../types/navigation';
+
+const UPCOMING = ['pedido', 'confirmada', 'em_viagem'];
+const HISTORY = ['concluida', 'recusada', 'cancelada', 'expirada'];
 
 export default function BookingsScreen() {
 	const { themeColors } = useThemeColors();
@@ -17,97 +22,211 @@ export default function BookingsScreen() {
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
+	const tabNavigation =
+		useNavigation<BottomTabNavigationProp<PassengerTabsParamList>>();
+	const [tab, setTab] = useState<'upcoming' | 'history'>('upcoming');
+
 	const rides = useDbStore((s) => s.db.rides);
 	const bookings = useDbStore((s) => s.db.bookings);
-	const mine = bookings.filter((b) => b.passengerId === 'u_me_001');
-	const withRide = mine.flatMap((b) => {
-		const ride = rides.find((r) => r.id === b.rideId);
-		return ride ? [{ booking: b, ride }] : [];
-	});
+	const all = useMemo(
+		() =>
+			bookings
+				.filter((b) => b.passengerId === 'u_me_001')
+				.flatMap((b) => {
+					const ride = rides.find((r) => r.id === b.rideId);
+					return ride ? [{ booking: b, ride }] : [];
+				}),
+		[bookings, rides],
+	);
+
+	const upcoming = useMemo(
+		() =>
+			all
+				.filter((x) => UPCOMING.includes(x.booking.status))
+				.sort(
+					(a, b) =>
+						Date.parse(a.ride.departure) -
+						Date.parse(b.ride.departure),
+				),
+		[all],
+	);
+
+	const history = useMemo(
+		() =>
+			all
+				.filter((x) => HISTORY.includes(x.booking.status))
+				.sort(
+					(a, b) =>
+						Date.parse(b.ride.departure) -
+						Date.parse(a.ride.departure),
+				),
+		[all],
+	);
+
+	const list = tab === 'upcoming' ? upcoming : history;
 
 	return (
 		<SafeAreaView
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
-			<ScrollView
-				className="flex-1"
-				contentContainerStyle={{ paddingBottom: 40 }}
-			>
+			<View className="mt-2">
 				<Text
-					className="font-display text-[22px] mb-4 mt-2"
+					className="font-mono text-[10px] uppercase tracking-[3px]"
+					style={{ color: themeColors.laterite }}
+				>
+					Reservas · bilhetes
+				</Text>
+				<Text
+					className="font-display text-[22px]"
 					style={{ color: themeColors.text }}
 				>
 					As tuas reservas
 				</Text>
-
-				{withRide.length === 0 ? (
+				{all.length > 0 ? (
 					<Text
-						className="font-sans text-[13px]"
+						className="font-mono text-[11px] mt-0.5"
 						style={{ color: themeColors.secondary }}
 					>
-						Ainda não tens reservas. Pesquisa uma viagem e pede uma
-						boleia.
+						{upcoming.length} próxima
+						{upcoming.length === 1 ? '' : 's'} · {history.length} no
+						histórico
 					</Text>
-				) : (
-					withRide.map(({ booking, ride }) => (
-						<View key={booking.id} className="mb-4">
-							<TripStripCard
-								ride={ride}
+				) : null}
+			</View>
+
+			{all.length === 0 ? (
+				<View className="flex-1 justify-center pb-10">
+					<View
+						className="items-center p-5 rounded-2xl border"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<Text
+							className="font-display text-[18px]"
+							style={{ color: themeColors.text }}
+						>
+							Ainda não tens reservas
+						</Text>
+						<Text
+							className="font-sans text-[13px] text-center mt-1 leading-5"
+							style={{ color: themeColors.secondary }}
+						>
+							Pesquisa uma viagem e pede uma boleia. O bilhete
+							aparece aqui.
+						</Text>
+						<View className="w-full mt-4">
+							<BoleiaButton
+								title="Procurar boleia"
 								onPress={() =>
-									navigation.navigate('RideDetail', {
-										rideId: ride.id,
-									})
+									tabNavigation.navigate('PassengerHome')
 								}
 							/>
-							<View
-								className="flex-row items-center justify-between px-4 py-2 border-b border-l border-r rounded-b-2xl"
-								style={{
-									borderColor: themeColors.border,
-									backgroundColor: themeColors.card,
-								}}
-							>
-								<StatusStamp status={booking.status} />
-								<Text
-									className="font-mono text-[13px]"
-									style={{ color: themeColors.secondary }}
-								>
-									{booking.seats} lugar
-									{booking.seats > 1 ? 'es' : ''} ·{' '}
-									{fmtKz(booking.amount)}
-								</Text>
-							</View>
-							{booking.status === 'em_viagem' && (
-								<View className="mt-2">
-									<BoleiaButton
-										title="Acompanhar viagem ao vivo"
-										onPress={() =>
-											navigation.navigate('ActiveRide', {
-												rideId: ride.id,
-											})
-										}
-									/>
-								</View>
-							)}
-							{booking.status === 'concluida' && (
-								<View className="mt-2">
-									<BoleiaButton
-										title="Avaliar motorista"
-										variant="outline"
-										onPress={() =>
-											navigation.navigate('Review', {
-												rideId: ride.id,
-												toUserId: ride.driverId,
-												subject: 'driver',
-											})
-										}
-									/>
-								</View>
-							)}
 						</View>
-					))
-				)}
-			</ScrollView>
+					</View>
+				</View>
+			) : (
+				<ScrollView
+					className="flex-1"
+					contentContainerStyle={{ paddingBottom: 40 }}
+				>
+					<View
+						className="flex-row rounded-full p-1 border mt-3 mb-4"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						{(
+							[
+								{ key: 'upcoming', label: 'Próximas' },
+								{ key: 'history', label: 'Histórico' },
+							] as const
+						).map((opt) => {
+							const active = tab === opt.key;
+							return (
+								<Pressable
+									key={opt.key}
+									onPress={() => setTab(opt.key)}
+									className="flex-1 rounded-full py-2 items-center"
+									style={{
+										backgroundColor: active
+											? themeColors.text
+											: 'transparent',
+									}}
+								>
+									<Text
+										className="font-sansMedium text-[12px]"
+										style={{
+											color: active
+												? themeColors.card
+												: themeColors.secondary,
+										}}
+									>
+										{opt.label}
+									</Text>
+								</Pressable>
+							);
+						})}
+					</View>
+
+					{list.length === 0 ? (
+						<Text
+							className="font-sans text-[13px]"
+							style={{ color: themeColors.secondary }}
+						>
+							Nenhuma reserva{' '}
+							{tab === 'upcoming' ? 'próxima' : 'no histórico'}{' '}
+							por aqui.
+						</Text>
+					) : (
+						list.map(({ booking, ride }) => (
+							<View key={booking.id} className="mb-4">
+								<BookingStub
+									booking={booking}
+									ride={ride}
+									onPress={() =>
+										navigation.navigate('RideDetail', {
+											rideId: ride.id,
+										})
+									}
+									footer={
+										booking.status === 'em_viagem' ? (
+											<BoleiaButton
+												title="Acompanhar ao vivo"
+												onPress={() =>
+													navigation.navigate(
+														'ActiveRide',
+														{ rideId: ride.id },
+													)
+												}
+											/>
+										) : booking.status === 'concluida' ? (
+											<BoleiaButton
+												title="Avaliar motorista"
+												variant="outline"
+												onPress={() =>
+													navigation.navigate(
+														'Review',
+														{
+															rideId: ride.id,
+															toUserId:
+																ride.driverId,
+															subject: 'driver',
+														},
+													)
+												}
+											/>
+										) : undefined
+									}
+								/>
+							</View>
+						))
+					)}
+				</ScrollView>
+			)}
 		</SafeAreaView>
 	);
 }

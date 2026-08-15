@@ -105,7 +105,7 @@ export default function ActiveRideScreen() {
 				</Pressable>
 				<View className="flex-1">
 					<Text
-						className="font-sansMedium text-[11px] uppercase tracking-widest"
+						className="font-mono text-[10px] uppercase tracking-[3px]"
 						style={{ color: themeColors.laterite }}
 					>
 						Viagem ao vivo
@@ -117,14 +117,22 @@ export default function ActiveRideScreen() {
 						{ride.routeName}
 					</Text>
 				</View>
-				<View className="flex-row items-center">
-					<View
-						className="w-2.5 h-2.5 rounded-full mr-2"
-						style={{
-							backgroundColor: themeColors.mato,
-							opacity: ride.status === 'em_curso' ? 0.35 : 1,
-						}}
-					/>
+				<View className="items-end">
+					<View className="flex-row items-center mb-0.5">
+						<View
+							className="w-2 h-2 rounded-full mr-1.5"
+							style={{
+								backgroundColor: themeColors.mato,
+								opacity: ride.status === 'em_curso' ? 0.35 : 1,
+							}}
+						/>
+						<Text
+							className="font-mono text-[9px] uppercase tracking-[2px]"
+							style={{ color: themeColors.mato }}
+						>
+							Ao vivo
+						</Text>
+					</View>
 					<Text
 						className="font-mono text-[12px]"
 						style={{ color: themeColors.text }}
