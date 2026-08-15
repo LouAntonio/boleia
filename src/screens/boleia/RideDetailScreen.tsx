@@ -14,13 +14,6 @@ import { requestBooking } from '../../mock/repos/bookingRepo';
 import BookingStub from '../../components/BookingStub';
 import { useDbStore } from '../../mock/db';
 import { fmtKz, initials } from '../../mock/helpers';
-import { PaymentKind } from '../../types/boleia';
-
-const METHODS: { kind: PaymentKind; label: string; soon?: boolean }[] = [
-	{ kind: 'carteira', label: 'Carteira Boleia' },
-	{ kind: 'dinheiro', label: 'Pagamento ao motorista' },
-	{ kind: 'multicaixa', label: 'Multicaixa Express', soon: true },
-];
 
 export default function RideDetailScreen() {
 	const navigation =
@@ -33,7 +26,6 @@ export default function RideDetailScreen() {
 	const ride = useDbStore((s) =>
 		s.db.rides.find((r) => r.id === route.params.rideId),
 	);
-	const me = useDbStore((s) => s.db.users.find((u) => u.id === 'u_me_001'));
 	const driver = useDbStore((s) =>
 		s.db.users.find((u) => u.id === ride?.driverId),
 	);
@@ -49,7 +41,6 @@ export default function RideDetailScreen() {
 	const [pick, setPick] = useState(0);
 	const [drop, setDrop] = useState(ride ? ride.stops.length + 1 : 1);
 	const [seats, setSeats] = useState(1);
-	const [method, setMethod] = useState<PaymentKind>('carteira');
 	const [result, setResult] = useState<
 		{ ok: true; bookingId: string } | { ok: false; error: string } | null
 	>(null);
@@ -71,7 +62,6 @@ export default function RideDetailScreen() {
 	const available = ride.seatsTotal - ride.seatsTaken;
 	const total = seats * ride.pricePerSeat;
 	const stops = [ride.origin, ...ride.stops, ride.destination];
-	const walletOk = me ? me.wallet >= total : false;
 
 	if (myBooking) {
 		return (
@@ -303,83 +293,38 @@ export default function RideDetailScreen() {
 					>
 						Como pagas
 					</Text>
-					<View>
-						{METHODS.map((m) => {
-							const isCarteira = m.kind === 'carteira';
-							const low =
-								(isCarteira && !walletOk) || m.soon === true;
-							const active = method === m.kind;
-							return (
-								<Pressable
-									key={m.kind}
-									disabled={low}
-									onPress={() => setMethod(m.kind)}
-									className="flex-row items-center justify-between py-3 px-3.5 rounded-xl border mb-2"
-									style={{
-										borderColor: active
-											? themeColors.text
-											: themeColors.border,
-										backgroundColor: themeColors.card,
-										opacity: low ? 0.45 : 1,
-									}}
-								>
-									<View className="flex-row items-center">
-										<Text
-											className="font-sansMedium text-[14px]"
-											style={{ color: themeColors.text }}
-										>
-											{m.label}
-											{isCarteira && (
-												<Text className="font-mono text-[12px]">
-													{'  '}
-													{me ? fmtKz(me.wallet) : ''}
-												</Text>
-											)}
-										</Text>
-										{m.soon && (
-											<View
-												className="ml-2 rounded-full px-2 py-0.5 border"
-												style={{
-													borderColor:
-														themeColors.border,
-												}}
-											>
-												<Text
-													className="font-mono text-[9px] uppercase tracking-wider"
-													style={{
-														color: themeColors.secondary,
-													}}
-												>
-													Em breve
-												</Text>
-											</View>
-										)}
-									</View>
-									<Ionicons
-										name={
-											active
-												? 'radio-button-on'
-												: 'radio-button-off'
-										}
-										size={20}
-										color={
-											active
-												? themeColors.text
-												: themeColors.border
-										}
-									/>
-								</Pressable>
-							);
-						})}
+					<View
+						className="flex-row items-center justify-between px-3.5 py-3 rounded-xl border"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<View className="flex-row items-center">
+							<Ionicons
+								name="card"
+								size={18}
+								color={themeColors.text}
+							/>
+							<Text
+								className="font-sansMedium text-[14px] ml-2"
+								style={{ color: themeColors.text }}
+							>
+								Multicaixa Express
+							</Text>
+						</View>
+						<Ionicons
+							name="radio-button-on"
+							size={20}
+							color={themeColors.text}
+						/>
 					</View>
-
 					<Text
-						className="font-sans text-[12px] mt-0.5 mb-1"
+						className="font-sans text-[12px] mt-1.5"
 						style={{ color: themeColors.secondary }}
 					>
-						Multicaixa Express chega em breve — nessa altura poderás
-						pagar por levantamento no terminal. Por agora, usa a
-						carteira Boleia ou paga ao motorista.
+						Pagas por Multicaixa Express quando confirmares o
+						pedido.
 					</Text>
 
 					{result ? (
@@ -434,7 +379,7 @@ export default function RideDetailScreen() {
 											rideId: ride.id,
 											passengerId: 'u_me_001',
 											seats,
-											paymentMethod: method,
+											paymentMethod: 'multicaixa',
 											pickStopIndex: pick,
 											dropStopIndex: drop,
 										});
@@ -448,10 +393,7 @@ export default function RideDetailScreen() {
 															res.error ===
 															'cheia'
 																? 'Já não há lugares suficientes nesta viagem.'
-																: res.error ===
-																	  'sem_fundos'
-																	? 'Carteira sem saldo. Escolhe outro método de pagamento.'
-																	: 'Pedido inválido.',
+																: 'Pedido inválido.',
 													},
 										);
 									}, 400);
