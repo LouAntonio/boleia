@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -32,11 +33,12 @@ export default function RideDetailScreen() {
 	);
 	const bookings = useDbStore((s) => s.db.bookings);
 	const users = useDbStore((s) => s.db.users);
+	const sessionUserId = useSessionUserId();
 	const myBooking = useDbStore((s) =>
 		s.db.bookings.find(
 			(b) =>
 				b.rideId === route.params.rideId &&
-				b.passengerId === 'u_me_001' &&
+				b.passengerId === sessionUserId &&
 				b.status !== 'cancelada',
 		),
 	);
@@ -69,7 +71,7 @@ export default function RideDetailScreen() {
 		.filter(
 			(b) =>
 				b.rideId === ride.id &&
-				b.passengerId !== 'u_me_001' &&
+				b.passengerId !== sessionUserId &&
 				(b.status === 'confirmada' || b.status === 'em_viagem'),
 		)
 		.map((b) => users.find((u) => u.id === b.passengerId))
@@ -354,7 +356,7 @@ export default function RideDetailScreen() {
 									setTimeout(() => {
 										const res = requestBooking({
 											rideId: ride.id,
-											passengerId: 'u_me_001',
+											passengerId: sessionUserId,
 											seats,
 											paymentMethod: 'multicaixa',
 											pickStopIndex: pick,

@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUser, useSessionUserId } from '../../hooks/useSessionUser';
 import { useAppStore } from '../../store/appStore';
 import { useThemeStore, ThemeMode } from '../../store/themeStore';
 import { useDbStore } from '../../mock/db';
@@ -270,16 +271,17 @@ export default function ProfileScreen() {
 	const setRole = useAppStore((s) => s.setRole);
 	const theme = useThemeStore((s) => s.theme);
 	const setTheme = useThemeStore((s) => s.setTheme);
-	const me = useDbStore((s) => s.db.users.find((u) => u.id === 'u_me_001'));
+	const me = useSessionUser();
 	const bookings = useDbStore((s) => s.db.bookings);
 	const rides = useDbStore((s) => s.db.rides);
+	const sessionUserId = useSessionUserId();
 
-	const myBookings = bookings.filter((b) => b.passengerId === 'u_me_001');
+	const myBookings = bookings.filter((b) => b.passengerId === sessionUserId);
 	const feitas = myBookings.filter((b) => b.status === 'concluida').length;
 	const proximas = myBookings.filter((b) =>
 		['pedido', 'confirmada', 'em_viagem'].includes(b.status),
 	).length;
-	const myRides = rides.filter((r) => r.driverId === 'u_me_001');
+	const myRides = rides.filter((r) => r.driverId === sessionUserId);
 	const publicadas = myRides.length;
 	const concluidas = myRides.filter((r) => r.status === 'concluida').length;
 
@@ -403,7 +405,7 @@ export default function ProfileScreen() {
 								className="flex-row items-center mt-3.5 pt-3 border-t"
 								style={{ borderColor: themeColors.border }}
 							>
-								<QRStamp seed="u_me_001" size={34} />
+								<QRStamp seed={sessionUserId} size={34} />
 								<View className="flex-1 ml-3">
 									<Text
 										className="font-mono text-[9px] uppercase tracking-[2px]"

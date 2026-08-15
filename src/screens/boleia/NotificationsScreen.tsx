@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -24,15 +25,16 @@ export default function NotificationsScreen() {
 		>();
 	const { themeColors } = useThemeColors();
 	const currentRole = useAppStore((s) => s.currentRole);
+	const sessionUserId = useSessionUserId();
 	const allNotifications = useDbStore((s) => s.db.notifications);
 	const notifications = useMemo(
 		() =>
 			allNotifications
-				.filter((n) => n.userId === 'u_me_001')
+				.filter((n) => n.userId === sessionUserId)
 				.sort(
 					(a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
 				),
-		[allNotifications],
+		[allNotifications, sessionUserId],
 	);
 
 	const open = (n: (typeof notifications)[number]) => {
@@ -46,7 +48,10 @@ export default function NotificationsScreen() {
 				.getState()
 				.db.rides.find((r) => r.id === rideId);
 			if (ride) {
-				if (currentRole === 'driver' && ride.driverId === 'u_me_001') {
+				if (
+					currentRole === 'driver' &&
+					ride.driverId === sessionUserId
+				) {
 					navigation.navigate('RideDetail', { rideId });
 				} else {
 					navigation.navigate('RideDetail', { rideId });

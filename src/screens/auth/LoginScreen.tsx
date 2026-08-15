@@ -13,8 +13,8 @@ import { useAppStore } from '../../store/appStore';
 import { navigationRef } from '../../lib/navigationRef';
 import { maskPhone } from '../../utils/phone';
 
-const DEMO_PHONE = '923456789';
-const DEMO_PASSWORD = '123456';
+const DEMO_PHONE = '930673691';
+const DEMO_PASSWORD = 'senha';
 
 export default function LoginScreen() {
 	const navigation =
@@ -27,7 +27,7 @@ export default function LoginScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 
-	const canSubmit = normalizePhone(phone).length >= 9 && password.length >= 6;
+	const canSubmit = normalizePhone(phone).length >= 9 && password.length >= 5;
 
 	const submit = () => {
 		if (!canSubmit) return;
@@ -47,7 +47,7 @@ export default function LoginScreen() {
 			if (!res.user.firstName) {
 				navigation.navigate('ProfileSetup', { phone: res.user.phone });
 			} else {
-				useAppStore.getState().signIn();
+				useAppStore.getState().signIn(res.user.id);
 				navigationRef.reset({
 					index: 0,
 					routes: [{ name: 'App', params: { screen: 'Main' } }],

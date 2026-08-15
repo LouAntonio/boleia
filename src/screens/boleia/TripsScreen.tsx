@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
 import { fmtKz, initials } from '../../mock/helpers';
 import SectionTitle from '../../components/SectionTitle';
@@ -21,7 +22,7 @@ export default function TripsScreen() {
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
-	const mine = ridesForDriver('u_me_001');
+	const mine = ridesForDriver(useSessionUserId());
 	const allBookings = useDbStore((s) => s.db.bookings);
 	const users = useDbStore((s) => s.db.users);
 

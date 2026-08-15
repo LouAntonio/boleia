@@ -54,7 +54,7 @@ Run order: `npm ci` → `typecheck` → `lint` → `format:check` → `doctor` (
 - **Expo Updates** configured with OTA URL and `appVersion` runtime policy. EAS project ID in `app.json` but no `eas.json` committed yet.
 - **No test framework** is configured. If adding tests, use Jest + React Native Testing Library (the `@react-native` ESLint config assumes this convention).
 - **DB mock persistida** em AsyncStorage (`boleia-db`, versão `DB_VERSION`). Mudanças de schema em `seed.ts` exigem incrementar `DB_VERSION` ou reset para re-semear.
-- **Demo login**: tel `923456789` / senha `123456` (todos os utilizadores do seed). `mockHash` (djb2) em `authRepo` guarda as senhas como hash mock.
+- **Demo login**: 3 contas, senha `senha` para todas (mínimo de 5 caracteres nos ecrãs de senha). Lourenço António `930673691` (id `u_me_001`), Ariclene Queta `923151445` (id `u_002`), Fernando Macana `925550473` (id `u_003`). A sessão é **dinâmica**: `appStore.sessionUserId` guarda o utilizador que entra (`signIn(userId)`) e os ecrãs usam `useSessionUserId()`/`useSessionUser()` (`src/hooks/useSessionUser.ts`; fallback `u_me_001`). `mockHash` (djb2) em `authRepo` guarda as senhas como hash mock.
 - **Demo OTP**: código fixo `773214` (ver `ForgotPasswordScreen`/`OtpVerifyScreen`), usado só na recuperação de senha.
 - **Troca de papel** (passageiro ↔ motorista) só no ecrã de Perfil ("Modo de uso").
 - **Homepage**: carrossel `AdCarousel` (publicidade, imagens placeholder) + pesquisa `TripSearch` (intermunicipal/interprovincial, origem/destino, dia) com resultados inline.

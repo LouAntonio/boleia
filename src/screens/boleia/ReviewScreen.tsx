@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -20,6 +21,7 @@ export default function ReviewScreen() {
 		>();
 	const route = useRoute<RouteProp<BoleiaMainStackParamList, 'Review'>>();
 	const { themeColors } = useThemeColors();
+	const sessionUserId = useSessionUserId();
 
 	const target = useDbStore((s) =>
 		s.db.users.find((u) => u.id === route.params.toUserId),
@@ -28,7 +30,7 @@ export default function ReviewScreen() {
 		s.db.rides.find((r) => r.id === route.params.rideId),
 	);
 	const already = submittedReview(
-		'u_me_001',
+		sessionUserId,
 		route.params.rideId,
 		route.params.toUserId,
 	);
@@ -43,7 +45,7 @@ export default function ReviewScreen() {
 
 	const submit = () => {
 		writeReview({
-			byUserId: 'u_me_001',
+			byUserId: sessionUserId,
 			toUserId: route.params.toUserId,
 			rideId: route.params.rideId,
 			rating,

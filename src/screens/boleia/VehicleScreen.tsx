@@ -20,7 +20,7 @@ import { BoleiaMainStackParamList } from '../../types/navigation';
 import BoleiaButton from '../../components/BoleiaButton';
 import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
 import PhotoLightbox from '../../components/PhotoLightbox';
-import { useDbStore } from '../../mock/db';
+import { useSessionUser, useSessionUserId } from '../../hooks/useSessionUser';
 import { submitVehicle } from '../../mock/repos/driverRepo';
 
 const CELU = '#F7F3E7';
@@ -144,7 +144,8 @@ export default function VehicleScreen() {
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Vehicle'>
 		>();
 	const { themeColors } = useThemeColors();
-	const me = useDbStore((s) => s.db.users.find((u) => u.id === 'u_me_001'));
+	const me = useSessionUser();
+	const sessionUserId = useSessionUserId();
 
 	const [make, setMake] = useState(me?.vehicle?.make ?? '');
 	const [model, setModel] = useState(me?.vehicle?.model ?? '');
@@ -195,7 +196,7 @@ export default function VehicleScreen() {
 	const submit = () => {
 		if (!canSubmit) return;
 		setSubmitting(true);
-		submitVehicle('u_me_001', {
+		submitVehicle(sessionUserId, {
 			make,
 			model,
 			color,

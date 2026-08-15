@@ -31,7 +31,7 @@ export default function RegisterScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 
-	const passwordOk = password.length >= 6;
+	const passwordOk = password.length >= 5;
 	const canSubmit =
 		firstName.trim().length > 0 &&
 		lastName.trim().length > 0 &&
@@ -55,7 +55,7 @@ export default function RegisterScreen() {
 				);
 				return;
 			}
-			useAppStore.getState().signIn();
+			useAppStore.getState().signIn(res.user.id);
 			navigationRef.reset({
 				index: 0,
 				routes: [{ name: 'App', params: { screen: 'Main' } }],
@@ -136,7 +136,7 @@ export default function RegisterScreen() {
 					setError(null);
 				}}
 				isPassword
-				placeholder="Mínimo de 6 caracteres"
+				placeholder="Mínimo de 5 caracteres"
 				leftIcon="lock-closed-outline"
 				autoCapitalize="none"
 			/>

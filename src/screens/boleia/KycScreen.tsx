@@ -18,7 +18,7 @@ import { BoleiaMainStackParamList } from '../../types/navigation';
 import BoleiaButton from '../../components/BoleiaButton';
 import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
 import PhotoLightbox from '../../components/PhotoLightbox';
-import { useDbStore } from '../../mock/db';
+import { useSessionUser, useSessionUserId } from '../../hooks/useSessionUser';
 import { submitKyc } from '../../mock/repos/driverRepo';
 
 const CELU = '#F7F3E7';
@@ -85,7 +85,8 @@ export default function KycScreen() {
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Kyc'>
 		>();
 	const { themeColors } = useThemeColors();
-	const me = useDbStore((s) => s.db.users.find((u) => u.id === 'u_me_001'));
+	const me = useSessionUser();
+	const sessionUserId = useSessionUserId();
 
 	const [selfies, setSelfies] = useState<string[]>(() => {
 		const s = me?.kyc?.selfies ?? [];
@@ -137,7 +138,7 @@ export default function KycScreen() {
 	const submit = () => {
 		if (!canSubmit) return;
 		setSubmitting(true);
-		submitKyc('u_me_001', {
+		submitKyc(sessionUserId, {
 			selfies: selfies.filter(Boolean),
 			biFrontUri: biFront ?? '',
 			biBackUri: biBack ?? '',

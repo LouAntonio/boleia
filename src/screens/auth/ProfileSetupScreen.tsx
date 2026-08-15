@@ -36,7 +36,7 @@ export default function ProfileSetupScreen() {
 				lastName: lastName.trim(),
 				bio: bio.trim(),
 			});
-			useAppStore.getState().signIn();
+			useAppStore.getState().signIn(user.id);
 			navigationRef.reset({
 				index: 0,
 				routes: [{ name: 'App', params: { screen: 'Main' } }],

@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
 import TripListingCard from '../../components/TripListingCard';
 
@@ -18,11 +19,13 @@ export default function ExploreScreen() {
 		>();
 	const rides = useDbStore((s) => s.db.rides);
 	const bookings = useDbStore((s) => s.db.bookings);
+	const sessionUserId = useSessionUserId();
 
 	const reservedIds = new Set(
 		bookings
 			.filter(
-				(b) => b.passengerId === 'u_me_001' && b.status !== 'cancelada',
+				(b) =>
+					b.passengerId === sessionUserId && b.status !== 'cancelada',
 			)
 			.map((b) => b.rideId),
 	);

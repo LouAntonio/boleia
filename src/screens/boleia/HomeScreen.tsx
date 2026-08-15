@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUser } from '../../hooks/useSessionUser';
 import { useAppStore } from '../../store/appStore';
-import { useDbStore } from '../../mock/db';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -74,7 +74,7 @@ export default function HomeScreen() {
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
 	const currentRole = useAppStore((s) => s.currentRole);
-	const me = useDbStore((s) => s.db.users.find((u) => u.id === 'u_me_001'));
+	const me = useSessionUser();
 	const kycOk = me?.kyc?.status === 'verificado';
 	const vehicleOk = me?.vehicle?.status === 'verificado';
 

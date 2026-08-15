@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
 import BookingStub from '../../components/BookingStub';
 import HistoryReceipt from '../../components/HistoryReceipt';
@@ -30,15 +31,16 @@ export default function BookingsScreen() {
 
 	const rides = useDbStore((s) => s.db.rides);
 	const bookings = useDbStore((s) => s.db.bookings);
+	const sessionUserId = useSessionUserId();
 	const all = useMemo(
 		() =>
 			bookings
-				.filter((b) => b.passengerId === 'u_me_001')
+				.filter((b) => b.passengerId === sessionUserId)
 				.flatMap((b) => {
 					const ride = rides.find((r) => r.id === b.rideId);
 					return ride ? [{ booking: b, ride }] : [];
 				}),
-		[bookings, rides],
+		[bookings, rides, sessionUserId],
 	);
 
 	const upcoming = useMemo(

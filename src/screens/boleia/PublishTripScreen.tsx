@@ -18,6 +18,7 @@ import LocalityPicker from '../../components/LocalityPicker';
 import DatePicker from '../../components/DatePicker';
 import TimePicker from '../../components/TimePicker';
 import Perforation from '../../components/Perforation';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
 import {
 	createRide,
@@ -44,7 +45,7 @@ export default function PublishTripScreen() {
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'PublishTrip'>
 		>();
 	const { themeColors } = useThemeColors();
-	const driverId = 'u_me_001';
+	const driverId = useSessionUserId();
 	const me = useDbStore((s) => s.db.users.find((u) => u.id === driverId));
 	const vehicle = me?.vehicle;
 	const maxSeats = vehicle?.seats ?? 4;

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -22,6 +23,7 @@ export default function ActiveRideScreen() {
 	const route = useRoute<RouteProp<BoleiaMainStackParamList, 'ActiveRide'>>();
 	const { themeColors } = useThemeColors();
 	const currentRole = useAppStore((s) => s.currentRole);
+	const sessionUserId = useSessionUserId();
 	const [sosSent, setSosSent] = useState(false);
 
 	const ride = useDbStore((s) =>
@@ -246,7 +248,7 @@ export default function ActiveRideScreen() {
 							onPress={() => {
 								sendSos(
 									ride.id,
-									'u_me_001',
+									sessionUserId,
 									'Atenção — pedido de ajuda nesta viagem.',
 								);
 								setSosSent(true);

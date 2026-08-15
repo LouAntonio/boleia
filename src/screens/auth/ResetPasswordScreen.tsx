@@ -23,7 +23,7 @@ export default function ResetPasswordScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 
-	const passwordOk = password.length >= 6;
+	const passwordOk = password.length >= 5;
 	const canSubmit = passwordOk && confirm.length > 0 && password === confirm;
 
 	const submit = () => {
@@ -43,7 +43,7 @@ export default function ResetPasswordScreen() {
 		<AuthShell
 			eyebrow="Recuperação de senha"
 			title="Senha nova"
-			subtitle="Escolhe uma senha com pelo menos 6 caracteres. Vais usá-la para entrar a partir de agora."
+			subtitle="Escolhe uma senha com pelo menos 5 caracteres. Vais usá-la para entrar a partir de agora."
 			back={() => navigation.goBack()}
 		>
 			<Input
