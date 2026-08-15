@@ -32,21 +32,27 @@ const SLIDES = [
 		title: 'Viaja entre províncias a preço de boleia',
 		description:
 			'Partilha o lugar vazio na tua viatura ou encontra um motorista de confiança para a tua rota, a partir de Luanda.',
-		image: require('../../assets/images/onboarding_1.png'),
+		image: {
+			uri: 'https://images.unsplash.com/photo-1687917154293-69aa5d85fa42?auto=format&fit=crop&w=900&q=80',
+		},
 	},
 	{
 		id: '2',
 		title: 'Paragens combinadas, pedidos claros',
 		description:
 			'Escolhe o embarque e o desembarque. O motorista confirma a tua reserva e avisas se os planos mudam.',
-		image: require('../../assets/images/onboarding_2.png'),
+		image: {
+			uri: 'https://images.unsplash.com/photo-1711252675781-22845d855e08?auto=format&fit=crop&w=900&q=80',
+		},
 	},
 	{
 		id: '3',
 		title: 'Motoristas verificados',
 		description:
 			'Bilhete de Identidade verificado, viatura registada e avaliações bilaterais. Viajas com quem cumpre.',
-		image: require('../../assets/images/onboarding_3.png'),
+		image: {
+			uri: 'https://images.unsplash.com/photo-1706733788801-f71266d4ec71?auto=format&fit=crop&w=900&q=80',
+		},
 	},
 ];
 
@@ -158,7 +164,7 @@ export default function OnboardingScreen() {
 							<Image
 								source={item.image}
 								style={styles.illustration}
-								resizeMode="contain"
+								resizeMode="cover"
 							/>
 						</Animated.View>
 
@@ -247,5 +253,6 @@ const styles = StyleSheet.create({
 	illustration: {
 		width: width * 0.8,
 		height: width * 0.8,
+		borderRadius: 28,
 	},
 });

@@ -13,16 +13,13 @@ import { useAppStore } from '../../store/appStore';
 import { navigationRef } from '../../lib/navigationRef';
 import { maskPhone } from '../../utils/phone';
 
-const DEMO_PHONE = '930673691';
-const DEMO_PASSWORD = 'senha';
-
 export default function LoginScreen() {
 	const navigation =
 		useNavigation<
 			NativeStackNavigationProp<BoleiaAuthStackParamList, 'Login'>
 		>();
 	const { themeColors } = useThemeColors();
-	const [phone, setPhone] = useState(maskPhone(DEMO_PHONE));
+	const [phone, setPhone] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
@@ -74,20 +71,6 @@ export default function LoginScreen() {
 							Esqueci-me da senha
 						</Text>
 					</Pressable>
-					<View
-						className="rounded-xl border px-4 py-3 mt-4"
-						style={{
-							borderColor: themeColors.laterite,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<Text
-							className="font-mono text-[12px]"
-							style={{ color: themeColors.laterite }}
-						>
-							Demo: {DEMO_PHONE} / {DEMO_PASSWORD}
-						</Text>
-					</View>
 					<View className="flex-row justify-center pt-6">
 						<Text
 							className="font-sans text-[13px]"

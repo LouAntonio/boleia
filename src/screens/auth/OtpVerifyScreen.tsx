@@ -106,14 +106,7 @@ export default function OtpVerifyScreen() {
 				>
 					{error}
 				</Text>
-			) : (
-				<Text
-					className="font-sans text-[13px] mt-3"
-					style={{ color: themeColors.secondary }}
-				>
-					Demo: o código é 773214.
-				</Text>
-			)}
+			) : null}
 			<Perforation />
 			<View className="mt-1">
 				<BoleiaButton
