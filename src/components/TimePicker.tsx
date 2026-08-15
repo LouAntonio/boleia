@@ -90,7 +90,7 @@ export default function TimePicker({
 							: themeColors.secondary,
 					}}
 				>
-					{label}
+					{text}
 				</Text>
 			</Pressable>
 		);
