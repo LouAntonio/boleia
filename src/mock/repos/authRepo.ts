@@ -44,14 +44,15 @@ export function login(
 export function registerUser(
 	phone: string,
 	password: string,
+	profile: { firstName?: string; lastName?: string } = {},
 ): { ok: true; user: BoleiaUser } | { ok: false; error: 'existe' } {
 	const normalized = normalizePhone(phone);
 	if (findByPhone(normalized)) return { ok: false, error: 'existe' };
 
 	const user: BoleiaUser = {
 		id: UID.next('u'),
-		firstName: '',
-		lastName: '',
+		firstName: profile.firstName?.trim() ?? '',
+		lastName: profile.lastName?.trim() ?? '',
 		phone: normalized,
 		password: mockHash(password),
 		avatar: null,

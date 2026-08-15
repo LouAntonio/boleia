@@ -14,7 +14,6 @@ interface InputProps extends TextInputProps {
 	label?: string;
 	error?: string;
 	isPassword?: boolean;
-	leftIcon?: keyof typeof Ionicons.glyphMap;
 	containerStyle?: any;
 }
 
@@ -22,7 +21,6 @@ export default function Input({
 	label,
 	error,
 	isPassword,
-	leftIcon,
 	containerStyle,
 	...props
 }: InputProps) {
@@ -51,8 +49,6 @@ export default function Input({
 				: isFocused
 					? '#FFFFFF'
 					: '#F5F5F5',
-			shadowColor: isFocused ? themeColors.primary : 'transparent',
-			elevation: isFocused ? 2 : 0,
 		}),
 		[error, isFocused, isDark, themeColors],
 	);
@@ -71,7 +67,7 @@ export default function Input({
 		<View className="w-full mb-5">
 			{label && (
 				<Text
-					className="text-sm font-bold mb-2 ml-1"
+					className="font-mono text-[10px] uppercase tracking-[2px] mb-2"
 					style={[
 						labelStyle,
 						styles.labelOpacity,
@@ -96,24 +92,6 @@ export default function Input({
 					containerStyle,
 				]}
 			>
-				{leftIcon && (
-					<Ionicons
-						name={leftIcon}
-						size={22}
-						color={
-							isFocused
-								? themeColors.primary
-								: isDark
-									? '#888'
-									: '#666'
-						}
-						style={[
-							styles.leftIcon,
-							// eslint-disable-next-line react-native/no-inline-styles
-							props.multiline && { marginTop: 4 },
-						]}
-					/>
-				)}
 				<TextInput
 					className="flex-1 text-base"
 					style={[
@@ -160,18 +138,12 @@ export default function Input({
 
 const styles = StyleSheet.create({
 	labelOpacity: {
-		opacity: 0.8,
+		opacity: 0.75,
 	},
 	fullOpacity: {
 		opacity: 1,
 	},
 	inputContainer: {
 		height: 58,
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.1,
-		shadowRadius: 8,
-	},
-	leftIcon: {
-		marginRight: 12,
 	},
 });

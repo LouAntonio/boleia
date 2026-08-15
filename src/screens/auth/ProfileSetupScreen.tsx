@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, View } from 'react-native';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
-import { navigationRef } from '../../lib/navigationRef';
+import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
+import Input from '../../components/Input';
+import Perforation from '../../components/Perforation';
 import { findByPhone, updateUser } from '../../mock/repos/authRepo';
 import { useAppStore } from '../../store/appStore';
+import { navigationRef } from '../../lib/navigationRef';
 
 export default function ProfileSetupScreen() {
 	const route =
 		useRoute<RouteProp<BoleiaAuthStackParamList, 'ProfileSetup'>>();
+	const navigation = useNavigation();
 	const phone = route.params.phone;
 	const { themeColors } = useThemeColors();
 
@@ -41,84 +44,50 @@ export default function ProfileSetupScreen() {
 		}, 500);
 	};
 
-	const field = (
-		label: string,
-		value: string,
-		setter: (v: string) => void,
-	) => (
-		<View className="mb-4">
+	return (
+		<AuthShell
+			eyebrow="Conta criada"
+			title="Dados do teu perfil"
+			subtitle="O mesmo perfil serve para viajares como passageiro ou montares a tua boleia como motorista."
+			back={() => navigation.goBack()}
+		>
+			<Input
+				label="Primeiro nome"
+				value={firstName}
+				onChangeText={setFirstName}
+				placeholder="O teu primeiro nome"
+				autoCapitalize="words"
+			/>
+			<Input
+				label="Apelido"
+				value={lastName}
+				onChangeText={setLastName}
+				placeholder="O teu apelido"
+				autoCapitalize="words"
+			/>
+			<Input
+				label="Sobre ti (opcional)"
+				value={bio}
+				onChangeText={setBio}
+				placeholder="Ex.: costumo viajar ao fim-de-semana"
+				multiline
+			/>
 			<Text
-				className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5"
-				style={{ color: themeColors.laterite }}
+				className="font-sans text-[12px] -mt-2 mb-2"
+				style={{ color: themeColors.secondary }}
 			>
-				{label}
+				A seguir: podes verificar o BI e registar a viatura para
+				publicar viagens.
 			</Text>
-			<View
-				className="rounded-xl border px-3.5"
-				style={{
-					borderColor: themeColors.border,
-					backgroundColor: themeColors.card,
-				}}
-			>
-				<TextInput
-					value={value}
-					onChangeText={setter}
-					placeholderTextColor={themeColors.border}
-					className="py-3 font-sans text-[15px]"
-					style={{ color: themeColors.text }}
+			<Perforation />
+			<View className="mt-1">
+				<BoleiaButton
+					title="Começar a viajar"
+					onPress={save}
+					loading={pending}
+					disabled={!canSave}
 				/>
 			</View>
-		</View>
-	);
-
-	return (
-		<SafeAreaView
-			className="flex-1"
-			style={{ backgroundColor: themeColors.background }}
-		>
-			<ScrollView
-				className="flex-1 px-6 pt-14"
-				contentContainerStyle={{ paddingBottom: 32 }}
-			>
-				<Text
-					className="font-mono text-[11px] uppercase tracking-[3px]"
-					style={{ color: themeColors.laterite }}
-				>
-					Conta criada
-				</Text>
-				<Text
-					className="font-display text-[30px] mt-3"
-					style={{ color: themeColors.text }}
-				>
-					Dados do teu perfil
-				</Text>
-				<Text
-					className="font-sans text-[14px] mt-2 leading-5"
-					style={{ color: themeColors.secondary }}
-				>
-					O mesmo perfil serve para viajares como passageiro ou
-					montares a tua boleia como motorista.
-				</Text>
-
-				<View className="mt-8">
-					{field('Primeiro nome', firstName, setFirstName)}
-					{field('Apelido', lastName, setLastName)}
-					{field('Sobre ti (opcional)', bio, setBio)}
-					<Text
-						className="font-sans text-[12px] mb-6"
-						style={{ color: themeColors.secondary }}
-					>
-						A seguir: podes verificar o BI e registar a viatura para
-						publicar viagens.
-					</Text>
-					<BoleiaButton
-						title="Começar a viajar"
-						onPress={save}
-						loading={pending}
-						disabled={!canSave}
-					/>
-				</View>
-			</ScrollView>
-		</SafeAreaView>
+		</AuthShell>
 	);
 }

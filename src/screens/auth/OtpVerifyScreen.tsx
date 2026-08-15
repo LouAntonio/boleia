@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
+import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
+import Perforation from '../../components/Perforation';
 import { verifyOtp, requestOtp } from '../../mock/repos/authRepo';
 
 export default function OtpVerifyScreen() {
@@ -41,43 +42,43 @@ export default function OtpVerifyScreen() {
 	};
 
 	return (
-		<SafeAreaView
-			className="flex-1 px-6 pt-14"
-			style={{ backgroundColor: themeColors.background }}
+		<AuthShell
+			eyebrow="Confirmação"
+			title="Insere o código"
+			subtitle={
+				<>
+					Enviámos um SMS de 6 dígitos para{' '}
+					<Text
+						className="font-mono"
+						style={{ color: themeColors.text }}
+					>
+						+244 {phone}
+					</Text>
+					, só para definir a senha nova.
+				</>
+			}
+			back={() => navigation.goBack()}
+			footer={
+				<View className="flex-row items-center justify-center">
+					<Text
+						className="font-sans text-[13px]"
+						style={{ color: themeColors.secondary }}
+					>
+						Não recebeste?{' '}
+					</Text>
+					<Pressable onPress={resend}>
+						<Text
+							className="font-sansBold text-[13px]"
+							style={{ color: themeColors.laterite }}
+						>
+							{resent ? 'Reenviado ✓' : 'Reenviar SMS'}
+						</Text>
+					</Pressable>
+				</View>
+			}
 		>
-			<Pressable onPress={() => navigation.goBack()} className="mb-4">
-				<Text
-					className="font-sansBold text-[13px]"
-					style={{ color: themeColors.laterite }}
-				>
-					← Voltar
-				</Text>
-			</Pressable>
-			<Text
-				className="font-mono text-[11px] uppercase tracking-[3px]"
-				style={{ color: themeColors.laterite }}
-			>
-				Confirmação
-			</Text>
-			<Text
-				className="font-display text-[30px] mt-3"
-				style={{ color: themeColors.text }}
-			>
-				Insere o código
-			</Text>
-			<Text
-				className="font-sans text-[14px] mt-2 leading-5"
-				style={{ color: themeColors.secondary }}
-			>
-				Enviámos um SMS de 6 dígitos para{' '}
-				<Text className="font-mono" style={{ color: themeColors.text }}>
-					+244 {phone}
-				</Text>
-				, só para definir a senha nova.
-			</Text>
-
 			<View
-				className="mt-8 rounded-2xl border px-4"
+				className="rounded-2xl border-2 border-dashed px-4"
 				style={{
 					borderColor: error ? themeColors.error : themeColors.border,
 					backgroundColor: themeColors.card,
@@ -98,7 +99,6 @@ export default function OtpVerifyScreen() {
 					autoFocus
 				/>
 			</View>
-
 			{error ? (
 				<Text
 					className="font-sans text-[13px] mt-3"
@@ -114,8 +114,8 @@ export default function OtpVerifyScreen() {
 					Demo: o código é 773214.
 				</Text>
 			)}
-
-			<View className="mt-6">
+			<Perforation />
+			<View className="mt-1">
 				<BoleiaButton
 					title="Continuar"
 					onPress={continueRecovery}
@@ -123,23 +123,6 @@ export default function OtpVerifyScreen() {
 					disabled={code.length < 6}
 				/>
 			</View>
-
-			<View className="flex-row items-center justify-center mt-6">
-				<Text
-					className="font-sans text-[13px]"
-					style={{ color: themeColors.secondary }}
-				>
-					Não recebeste?{' '}
-				</Text>
-				<Pressable onPress={resend}>
-					<Text
-						className="font-sansBold text-[13px]"
-						style={{ color: themeColors.laterite }}
-					>
-						{resent ? 'Reenviado ✓' : 'Reenviar SMS'}
-					</Text>
-				</Pressable>
-			</View>
-		</SafeAreaView>
+		</AuthShell>
 	);
 }
