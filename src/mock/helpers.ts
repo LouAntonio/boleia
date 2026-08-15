@@ -30,6 +30,17 @@ export function fmtKz(value: number): string {
 	return `${grouped} Kz`;
 }
 
+// Formatação ao vivo para input de preço: 10000 -> "10 000" (só dígitos,
+// agrupados por milhar com espaço). Devolve também o valor numérico limpo.
+export function formatKzInput(raw: string): string {
+	const digits = raw.replace(/\D/g, '').slice(0, 8);
+	return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+export function parseKzInput(raw: string): number {
+	return Math.max(0, Number(raw.replace(/\D/g, '')) || 0);
+}
+
 export function nowISO(offsetMinutes = 0): string {
 	return new Date(Date.now() + offsetMinutes * 60000).toISOString();
 }

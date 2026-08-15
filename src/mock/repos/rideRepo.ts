@@ -1,6 +1,6 @@
 // Viagens — pesquisa útil, publicação e evolução de estado
 import { useDbStore } from '../db';
-import { UID, nowISO, hhmm, toAscii } from '../helpers';
+import { UID, nowISO, toAscii } from '../helpers';
 import { Ride, RouteStop } from '../../types/boleia';
 import { localityById, PROVINCE_COORDS } from '../locale';
 
@@ -9,8 +9,15 @@ export type RideInput = {
 	originLocalityId: string;
 	destinationLocalityId: string;
 	departureISO: string;
+	arrivalISO?: string; // chegada definida pelo motorista (opcional)
 	seatsTotal: number;
 	pricePerSeat: number;
+	stops?: RouteStopInput[];
+};
+
+export type RouteStopInput = {
+	localityId?: string; // vazio = ponto digitado à mão
+	name: string;
 };
 
 export type RideMode = 'intermunicipal' | 'interprovincial';
@@ -43,7 +50,9 @@ function covers(ride: Ride, query: { from?: string; to?: string }): boolean {
 		...ride.stops.map((s) => toAscii(s.name)),
 		toAscii(ride.destination.name),
 		toAscii(localityById(ride.origin.localityId).province),
-		...ride.stops.map((s) => toAscii(localityById(s.localityId).province)),
+		...ride.stops
+			.filter((s) => !!s.localityId)
+			.map((s) => toAscii(localityById(s.localityId).province)),
 		toAscii(localityById(ride.destination.localityId).province),
 	];
 	const has = (q?: string) =>
@@ -105,31 +114,26 @@ export function nextDays(count = 4): string[] {
 	return days;
 }
 
-export function createRide(input: RideInput): Ride {
+// Estima o trajeto de uma viagem: origem → paragens → destino, com hora e km
+// por paragem. A distância total vem das coordenadas representativas das
+// províncias; paragens sem coordenadas recebem km proporcional à ordem.
+// Partilhado entre a pista ao vivo da publicação e o createRide.
+export function estimateRoute(input: {
+	originLocalityId: string;
+	destinationLocalityId: string;
+	departureISO: string;
+	stops?: RouteStopInput[];
+}): {
+	origin: RouteStop;
+	stops: RouteStop[];
+	destination: RouteStop;
+	distanceKm: number;
+} {
 	const originLoc = localityById(input.originLocalityId);
 	const destLoc = localityById(input.destinationLocalityId);
 	const dep = new Date(input.departureISO);
 	dep.setSeconds(0, 0);
 
-	const buildStop = (loc: ReturnType<typeof localityById>, km: number) => {
-		const t = new Date(dep.getTime() + km * 1.05 * 60000);
-		return {
-			localityId: loc.id,
-			name: loc.municipality,
-			time: `${String(t.getHours()).padStart(2, '0')}:${String(
-				t.getMinutes(),
-			).padStart(2, '0')}`,
-			km,
-		};
-	};
-
-	// trajeto simplificado: origem → (opcional 1 paragem) → destino
-	const stops: RouteStop[] = [];
-	const mid = insertMidStop(
-		input.originLocalityId,
-		input.destinationLocalityId,
-	);
-	// distância estimada entre províncias (coordenadas representativas)
 	const originCoords = PROVINCE_COORDS[originLoc.province];
 	const destCoords = PROVINCE_COORDS[destLoc.province];
 	const distanceKm = Math.max(
@@ -141,35 +145,62 @@ export function createRide(input: RideInput): Ride {
 		),
 	);
 
-	const departure = dep.toISOString();
-	const arrival = new Date(
-		Date.parse(departure) + distanceKm * 1.22 * 60000,
-	).toISOString();
+	const origin: RouteStop = {
+		localityId: originLoc.id,
+		name: originLoc.municipality,
+		time: hhmmText(dep.getTime()),
+		km: 0,
+	};
 
-	if (mid) {
-		const midKm = Math.round(distanceKm * 0.45);
-		stops.push({
-			localityId: mid.id,
-			name: mid.municipality,
-			time: `${hhmmText(Date.parse(departure) + midKm * 1.05 * 60000)}`,
-			km: midKm,
-		});
-	}
+	const stops: RouteStop[] = (input.stops ?? [])
+		.map((s, i) => {
+			const n = (input.stops ?? []).length;
+			const km = Math.round(((i + 1) / (n + 1)) * distanceKm);
+			const name = s.name.trim() || localityById(s.localityId ?? '').name;
+			return {
+				localityId: s.localityId ?? '',
+				name,
+				time: hhmmText(dep.getTime() + km * 1.05 * 60000),
+				km,
+			};
+		})
+		.filter((s) => s.name.length > 0);
+
+	const arrival = new Date(dep.getTime() + distanceKm * 1.22 * 60000);
+	const destination: RouteStop = {
+		localityId: destLoc.id,
+		name: destLoc.municipality,
+		time: hhmmText(arrival.getTime()),
+		km: distanceKm,
+	};
+
+	return { origin, stops, destination, distanceKm };
+}
+
+export function createRide(input: RideInput): Ride {
+	const { origin, stops, destination, distanceKm } = estimateRoute({
+		originLocalityId: input.originLocalityId,
+		destinationLocalityId: input.destinationLocalityId,
+		departureISO: input.departureISO,
+		stops: input.stops,
+	});
+
+	const dep = new Date(input.departureISO);
+	dep.setSeconds(0, 0);
+
+	const arrivalMs = input.arrivalISO
+		? new Date(input.arrivalISO).getTime()
+		: dep.getTime() + distanceKm * 1.22 * 60000;
 
 	const ride: Ride = {
 		id: UID.next('ride'),
 		driverId: input.driverId,
-		routeName: `${originLoc.municipality} → ${destLoc.municipality}`,
-		origin: buildStop(originLoc, 0),
+		routeName: `${origin.name} → ${destination.name}`,
+		origin,
 		stops,
-		destination: {
-			localityId: destLoc.id,
-			name: destLoc.municipality,
-			time: hhmm(arrival),
-			km: distanceKm,
-		},
-		departure,
-		arrival,
+		destination: { ...destination, time: hhmmText(arrivalMs) },
+		departure: dep.toISOString(),
+		arrival: new Date(arrivalMs).toISOString(),
 		seatsTotal: input.seatsTotal,
 		seatsTaken: 0,
 		pricePerSeat: input.pricePerSeat,
@@ -189,14 +220,6 @@ function hhmmText(ms: number): string {
 	return `${String(t.getHours()).padStart(2, '0')}:${String(
 		t.getMinutes(),
 	).padStart(2, '0')}`;
-}
-
-function insertMidStop(
-	_fromId: string,
-	_toId: string,
-): ReturnType<typeof localityById> | null {
-	// paragens intermédias derivadas da trajetória (rota demo já as tem)
-	return null;
 }
 
 export function setVinculo(rideId: string, vinculo: string): void {
