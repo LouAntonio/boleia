@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { hhmm, fmtKz, durationBetween } from '../mock/helpers';
+import { rideMode } from '../mock/repos/rideRepo';
 import RouteStrip, { StripStop } from './RouteStrip';
 import StatusStamp from './StatusStamp';
 
@@ -11,10 +12,12 @@ export default function TripStripCard({
 	ride,
 	progress,
 	onPress,
+	reserved,
 }: {
 	ride: Ride;
 	progress?: number;
 	onPress?: () => void;
+	reserved?: boolean;
 }) {
 	const { themeColors } = useThemeColors();
 	const origin: StripStop = {
@@ -52,26 +55,61 @@ export default function TripStripCard({
 			<View className="p-4">
 				<View className="flex-row items-center justify-between mb-1">
 					<Text
-						className="font-display text-[15px]"
+						className="font-display text-[15px] flex-1 mr-2"
 						// eslint-disable-next-line react-native/no-inline-styles
 						style={{ color: themeColors.text }}
+						numberOfLines={1}
 					>
 						{ride.routeName}
 					</Text>
-					<StatusStamp status={ride.status} />
+					<View className="flex-row items-center">
+						<View
+							className="rounded-full px-2 py-0.5 border mr-2"
+							// eslint-disable-next-line react-native/no-inline-styles
+							style={{ borderColor: themeColors.border }}
+						>
+							<Text
+								className="font-mono text-[9px] uppercase tracking-[1px]"
+								// eslint-disable-next-line react-native/no-inline-styles
+								style={{ color: themeColors.laterite }}
+							>
+								{rideMode(ride) === 'interprovincial'
+									? 'Interprovincial'
+									: 'Intermunicipal'}
+							</Text>
+						</View>
+						<StatusStamp status={ride.status} />
+					</View>
 				</View>
-				<Text
-					className="font-sans text-[12px] mb-3"
-					// eslint-disable-next-line react-native/no-inline-styles
-					style={{ color: themeColors.secondary }}
-				>
-					Saída{' '}
-					{new Date(ride.departure).toLocaleDateString('pt-PT', {
-						weekday: 'short',
-						day: 'numeric',
-						month: 'short',
-					})}
-				</Text>
+				<View className="flex-row items-center justify-between mb-3">
+					<Text
+						className="font-sans text-[12px]"
+						// eslint-disable-next-line react-native/no-inline-styles
+						style={{ color: themeColors.secondary }}
+					>
+						Saída{' '}
+						{new Date(ride.departure).toLocaleDateString('pt-PT', {
+							weekday: 'short',
+							day: 'numeric',
+							month: 'short',
+						})}
+					</Text>
+					{reserved ? (
+						<View
+							className="rounded-full px-2 py-0.5"
+							// eslint-disable-next-line react-native/no-inline-styles
+							style={{ backgroundColor: themeColors.mato }}
+						>
+							<Text
+								className="font-mono text-[9px] uppercase tracking-[1px]"
+								// eslint-disable-next-line react-native/no-inline-styles
+								style={{ color: themeColors.background }}
+							>
+								Já tens reserva
+							</Text>
+						</View>
+					) : null}
+				</View>
 
 				<RouteStrip
 					origin={origin}

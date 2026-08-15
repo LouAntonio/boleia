@@ -13,6 +13,7 @@ export type BoleiaAuthStackParamList = {
 
 export type PassengerTabsParamList = {
 	PassengerHome: undefined;
+	PassengerExplore: undefined;
 	PassengerBookings: undefined;
 	PassengerProfile: undefined;
 };

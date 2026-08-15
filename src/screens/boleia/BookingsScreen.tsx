@@ -134,9 +134,9 @@ export default function BookingsScreen() {
 						</Text>
 						<View className="w-full mt-4">
 							<BoleiaButton
-								title="Procurar boleia"
+								title="Ver viagens ativas"
 								onPress={() =>
-									tabNavigation.navigate('PassengerHome')
+									tabNavigation.navigate('PassengerExplore')
 								}
 							/>
 						</View>
@@ -198,8 +198,8 @@ export default function BookingsScreen() {
 								className="font-sans text-[13px]"
 								style={{ color: themeColors.secondary }}
 							>
-								Nenhuma reserva próxima por aqui. Pesquisa uma
-								boleia na Home.
+								Nenhuma reserva próxima por aqui. Vê as viagens
+								ativas em Explorar.
 							</Text>
 						) : (
 							upcoming.map(({ booking, ride }, i) => {

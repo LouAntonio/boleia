@@ -41,7 +41,7 @@ export default function RideDetailScreen() {
 		),
 	);
 
-	const [pick, setPick] = useState(0);
+	const pick = 0; // recolha sempre na origem
 	const [drop, setDrop] = useState(ride ? ride.stops.length + 1 : 1);
 	const [seats, setSeats] = useState(1);
 	const [result, setResult] = useState<
@@ -171,37 +171,42 @@ export default function RideDetailScreen() {
 						className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5"
 						style={{ color: themeColors.laterite }}
 					>
-						Subir e descer
+						Sobes na origem
+					</Text>
+					<View
+						className="rounded-xl border px-3.5 py-3 flex-row items-center"
+						style={{
+							borderColor: themeColors.text,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<Text
+							className="font-sansMedium text-[12px]"
+							style={{ color: themeColors.text }}
+						>
+							↑ {stops[0].name}
+						</Text>
+					</View>
+
+					<Text
+						className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
+						style={{ color: themeColors.laterite }}
+					>
+						Onde desces
 					</Text>
 					<View className="flex-row flex-wrap">
-						{stops.map((s, i) => {
-							const active = i === pick || i === drop;
-							const done =
-								pick < drop && i >= pick && i <= drop
-									? 'between'
-									: '';
+						{stops.slice(1).map((s, i) => {
+							const index = i + 1;
+							const active = index === drop;
 							return (
 								<Pressable
-									key={i}
-									onPress={() => {
-										if (i === pick) {
-											setPick(Math.min(i, drop - 1));
-										} else if (i === drop) {
-											setDrop(Math.max(i, pick + 1));
-										} else if (i < pick) {
-											setPick(i);
-										} else {
-											setDrop(i);
-										}
-									}}
+									key={index}
+									onPress={() => setDrop(index)}
 									className="rounded-full px-3 py-1.5 border mr-2 mb-2"
 									style={{
-										borderColor:
-											done === 'between'
-												? themeColors.primary
-												: active
-													? themeColors.text
-													: themeColors.border,
+										borderColor: active
+											? themeColors.text
+											: themeColors.border,
 										backgroundColor: active
 											? themeColors.text
 											: themeColors.card,
@@ -215,11 +220,6 @@ export default function RideDetailScreen() {
 												: themeColors.secondary,
 										}}
 									>
-										{i === pick
-											? '↑ '
-											: i === drop
-												? '↓ '
-												: ''}
 										{s.name}
 									</Text>
 								</Pressable>
@@ -349,7 +349,7 @@ export default function RideDetailScreen() {
 							<BoleiaButton
 								title="Pedir boleia"
 								onPress={() => {
-									if (pick === drop) return;
+									if (drop <= 0) return;
 									setPending(true);
 									setTimeout(() => {
 										const res = requestBooking({

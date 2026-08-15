@@ -12,7 +12,7 @@ import Animated, {
 import { Booking, Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { hhmm, fmtKz } from '../mock/helpers';
-import { rideProgress } from '../mock/repos/rideRepo';
+import { rideProgress, rideMode } from '../mock/repos/rideRepo';
 import { statusMeta } from '../utils/status';
 import RouteRail from './RouteRail';
 import Perforation from './Perforation';
@@ -116,6 +116,14 @@ export default function BookingStub({
 		day: 'numeric',
 		month: 'short',
 	});
+	const modeLabel =
+		rideMode(ride) === 'interprovincial'
+			? 'Interprovincial'
+			: 'Intermunicipal';
+	const stopsLabel =
+		ride.stops.length === 0
+			? 'sem paragens'
+			: `${ride.stops.length} paragem${ride.stops.length === 1 ? '' : 'ens'}`;
 
 	return (
 		<Pressable
@@ -181,21 +189,27 @@ export default function BookingStub({
 				/>
 				<View className="flex-row items-center justify-between mt-2.5">
 					<Text
-						className="font-mono text-[11px] uppercase tracking-[2px]"
+						className="font-mono text-[10px] uppercase tracking-[1px] flex-1"
+						style={{ color: themeColors.secondary }}
+					>
+						{modeLabel} · {stopsLabel}
+					</Text>
+					<Text
+						className="font-mono text-[11px] uppercase tracking-[2px] ml-3"
 						style={{ color: themeColors.laterite }}
 					>
 						{code}
 					</Text>
-					{note ? (
-						<Text
-							numberOfLines={1}
-							className="font-mono text-[10px] flex-1 text-right ml-3"
-							style={{ color: themeColors.secondary }}
-						>
-							{note}
-						</Text>
-					) : null}
 				</View>
+				{note ? (
+					<Text
+						numberOfLines={1}
+						className="font-sans text-[11px] mt-1.5"
+						style={{ color: themeColors.secondary }}
+					>
+						{note}
+					</Text>
+				) : null}
 				{booking.reason ? (
 					<Text
 						className="font-sans text-[11px] mt-1"

@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { PassengerTabsParamList } from '../types/navigation';
 import HomeScreen from '../screens/boleia/HomeScreen';
+import ExploreScreen from '../screens/boleia/ExploreScreen';
 import BookingsScreen from '../screens/boleia/BookingsScreen';
 import ProfileScreen from '../screens/boleia/ProfileScreen';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -35,6 +36,20 @@ export default function PassengerTabs() {
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons
 							name="home-outline"
+							size={size}
+							color={color}
+						/>
+					),
+				}}
+			/>
+			<Tab.Screen
+				name="PassengerExplore"
+				component={ExploreScreen}
+				options={{
+					tabBarLabel: 'Explorar',
+					tabBarIcon: ({ color, size }) => (
+						<Ionicons
+							name="compass-outline"
 							size={size}
 							color={color}
 						/>

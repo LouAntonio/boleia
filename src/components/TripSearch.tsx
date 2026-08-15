@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../types/navigation';
 import LocalityPicker from './LocalityPicker';
 import DateRangePicker from './DateRangePicker';
-import TripStripCard from './TripStripCard';
+import TripListingCard from './TripListingCard';
 import BoleiaButton from './BoleiaButton';
 import { searchRides, RideMode } from '../mock/repos/rideRepo';
 import { Ride } from '../types/boleia';
@@ -301,7 +301,7 @@ export default function TripSearch() {
 					) : (
 						results.map((ride) => (
 							<View key={ride.id} className="mb-4">
-								<TripStripCard
+								<TripListingCard
 									ride={ride}
 									onPress={() =>
 										navigation.navigate('RideDetail', {
