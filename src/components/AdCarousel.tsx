@@ -1,19 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-	View,
-	Text,
-	Dimensions,
-	FlatList,
-	ImageBackground,
-	AccessibilityInfo,
-	NativeScrollEvent,
-	NativeSyntheticEvent,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, AccessibilityInfo } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useThemeColors } from '../hooks/useThemeColors';
 
-const { width: SCREEN_W } = Dimensions.get('window');
-const CARD_W = SCREEN_W * 0.78;
-const GAP = 10;
 const AUTO_MS = 5000;
 
 type Ad = {
@@ -23,7 +12,7 @@ type Ad = {
 	title: string;
 };
 
-// Placeholder de publicidade — trocar o require() por banners reais.
+// Cartaz fixo: a imagem muda in-place (crossfade), sem scroll horizontal.
 const ADS: Ad[] = [
 	{
 		id: 'ad1',
@@ -47,7 +36,6 @@ const ADS: Ad[] = [
 
 export default function AdCarousel() {
 	const { themeColors } = useThemeColors();
-	const listRef = useRef<FlatList<Ad>>(null);
 	const [index, setIndex] = useState(0);
 
 	useEffect(() => {
@@ -56,14 +44,7 @@ export default function AdCarousel() {
 		AccessibilityInfo.isReduceMotionEnabled().then((reduced) => {
 			if (reduced || cancelled) return;
 			timer = setInterval(() => {
-				setIndex((i) => {
-					const next = (i + 1) % ADS.length;
-					listRef.current?.scrollToOffset({
-						offset: next * (CARD_W + GAP),
-						animated: true,
-					});
-					return next;
-				});
+				setIndex((i) => (i + 1) % ADS.length);
 			}, AUTO_MS);
 		});
 		return () => {
@@ -72,10 +53,7 @@ export default function AdCarousel() {
 		};
 	}, []);
 
-	const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-		const i = Math.round(e.nativeEvent.contentOffset.x / (CARD_W + GAP));
-		setIndex(Math.max(0, Math.min(ADS.length - 1, i)));
-	};
+	const ad = ADS[index];
 
 	return (
 		<View className="mb-6">
@@ -102,61 +80,47 @@ export default function AdCarousel() {
 					))}
 				</View>
 			</View>
-			<FlatList
-				ref={listRef}
-				data={ADS}
-				horizontal
-				pagingEnabled={false}
-				snapToInterval={CARD_W + GAP}
-				decelerationRate="fast"
-				showsHorizontalScrollIndicator={false}
-				keyExtractor={(item) => item.id}
-				onMomentumScrollEnd={onMomentumEnd}
-				contentContainerStyle={{ paddingRight: SCREEN_W - CARD_W }}
-				renderItem={({ item }) => (
+
+			<View
+				className="rounded-2xl overflow-hidden border"
+				style={{
+					height: 170,
+					borderColor: themeColors.border,
+				}}
+			>
+				<Animated.Image
+					key={ad.id}
+					source={ad.image}
+					resizeMode="cover"
+					entering={FadeIn.duration(600)}
+					exiting={FadeOut.duration(600)}
+					className="absolute inset-0 w-full h-full"
+				/>
+				<View className="absolute inset-0 justify-end px-4 pb-4 pt-10">
 					<View
-						style={{ width: CARD_W, marginRight: GAP }}
-						className="rounded-2xl overflow-hidden border"
+						className="self-start rounded-full px-2 py-0.5 mb-1.5"
+						style={{ backgroundColor: themeColors.primary }}
 					>
-						<ImageBackground
-							source={item.image}
-							resizeMode="cover"
-							className="justify-end"
-							style={{ height: 170 }}
+						<Text
+							className="font-mono text-[9px] uppercase tracking-widest"
+							style={{ color: themeColors.text }}
 						>
-							<View className="px-4 pb-4 pt-10">
-								<View
-									className="self-start rounded-full px-2 py-0.5 mb-1.5"
-									style={{
-										backgroundColor: themeColors.primary,
-									}}
-								>
-									<Text
-										className="font-mono text-[9px] uppercase tracking-widest"
-										style={{ color: themeColors.text }}
-									>
-										{item.eyebrow}
-									</Text>
-								</View>
-								<Text
-									className="font-display text-[17px]"
-									style={{
-										color: themeColors.background,
-										textShadowColor: 'rgba(0,0,0,0.55)',
-										textShadowOffset: {
-											width: 0,
-											height: 1,
-										},
-										textShadowRadius: 6,
-									}}
-								>
-									{item.title}
-								</Text>
-							</View>
-						</ImageBackground>
+							{ad.eyebrow}
+						</Text>
 					</View>
-				)}
-			/>
+					<Text
+						className="font-display text-[17px]"
+						style={{
+							color: themeColors.background,
+							textShadowColor: 'rgba(0,0,0,0.55)',
+							textShadowOffset: { width: 0, height: 1 },
+							textShadowRadius: 6,
+						}}
+					>
+						{ad.title}
+					</Text>
+				</View>
+			</View>
 		</View>
 	);
 }

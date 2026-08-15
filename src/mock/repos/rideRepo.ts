@@ -35,24 +35,31 @@ export function ridesForDriver(driverId: string): Ride[] {
 }
 
 // Uma viagem "serve" a procura se o trajeto cobre origem→destino pedidos.
+// Casa por nome de município OU de província — a pesquisa interprovincial
+// pede só províncias, a intermunicipal só municípios.
 function covers(ride: Ride, query: { from?: string; to?: string }): boolean {
-	const names = [
+	const places = [
 		toAscii(ride.origin.name),
 		...ride.stops.map((s) => toAscii(s.name)),
 		toAscii(ride.destination.name),
+		toAscii(localityById(ride.origin.localityId).province),
+		...ride.stops.map((s) => toAscii(localityById(s.localityId).province)),
+		toAscii(localityById(ride.destination.localityId).province),
 	];
 	const has = (q?: string) =>
 		!q ||
-		names.some(
+		places.some(
 			(name) => toAscii(q).length > 1 && name.includes(toAscii(q)),
 		);
 	return has(query.from) && has(query.to);
 }
 
 export type SearchParams = {
-	from?: string; // município/localidade de partida
-	to?: string; // município/localidade de chegada
-	date?: string; // yyyy-mm-dd
+	from?: string; // município OU província de partida
+	to?: string; // município OU província de chegada
+	date?: string; // yyyy-mm-dd (exata)
+	dateFrom?: string; // yyyy-mm-dd (início do intervalo)
+	dateTo?: string; // yyyy-mm-dd (fim do intervalo)
 	mode?: RideMode;
 };
 
@@ -72,7 +79,14 @@ export function searchRides(params: SearchParams): Ride[] {
 		rides = rides.filter((r) => rideMode(r) === params.mode);
 	}
 
-	if (params.date) {
+	if (params.dateFrom || params.dateTo) {
+		rides = rides.filter((r) => {
+			const day = r.departure.slice(0, 10);
+			if (params.dateFrom && day < params.dateFrom) return false;
+			if (params.dateTo && day > params.dateTo) return false;
+			return true;
+		});
+	} else if (params.date) {
 		rides = rides.filter((r) => r.departure.slice(0, 10) === params.date);
 	}
 

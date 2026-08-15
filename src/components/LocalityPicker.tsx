@@ -24,6 +24,7 @@ export default function LocalityPicker({
 	variant = 'box',
 	label,
 	dotColor,
+	scope = 'municipality',
 }: {
 	value: string;
 	onChange: (id: string) => void;
@@ -32,29 +33,44 @@ export default function LocalityPicker({
 	variant?: 'row' | 'box';
 	label?: string;
 	dotColor?: string;
+	scope?: 'municipality' | 'province';
 }) {
 	const { themeColors } = useThemeColors();
 	const [visible, setVisible] = useState(false);
 	const [province, setProvince] = useState('');
 	const [query, setQuery] = useState('');
 
+	const isProvinceScope = scope === 'province';
+
 	const available = useMemo(
 		() =>
-			LOCALITIES.filter(
-				(l) => (!exclude || l.id !== exclude) && (!filter || filter(l)),
-			),
-		[exclude, filter],
+			isProvinceScope
+				? []
+				: LOCALITIES.filter(
+						(l) =>
+							(!exclude || l.id !== exclude) &&
+							(!filter || filter(l)),
+					),
+		[exclude, filter, isProvinceScope],
 	);
 
 	const provinces = useMemo(() => {
+		if (isProvinceScope) return PROVINCES.filter((p) => p !== exclude);
 		const present = new Set(available.map((l) => l.province));
 		return PROVINCES.filter((p) => present.has(p));
-	}, [available]);
+	}, [available, exclude, isProvinceScope]);
 
 	const selected = value ? LOCALITIES.find((l) => l.id === value) : undefined;
 
-	const options = useMemo(() => {
+	const provinceOptions = useMemo(() => {
 		const q = toAscii(query.trim());
+		if (!isProvinceScope) return [];
+		return provinces.filter((p) => !q || toAscii(p).includes(q));
+	}, [isProvinceScope, provinces, query]);
+
+	const localityOptions = useMemo(() => {
+		const q = toAscii(query.trim());
+		if (isProvinceScope) return [];
 		return available.filter((l) => {
 			if (province && l.province !== province) return false;
 			if (!q) return true;
@@ -63,7 +79,7 @@ export default function LocalityPicker({
 				toAscii(l.province).includes(q)
 			);
 		});
-	}, [available, province, query]);
+	}, [available, isProvinceScope, province, query]);
 
 	const open = () => {
 		// se o filtro restringe a uma só província, pré-seleciona
@@ -76,6 +92,13 @@ export default function LocalityPicker({
 		onChange(id);
 		setVisible(false);
 	};
+
+	const hasValue = isProvinceScope ? !!value : !!selected;
+	const triggerLabel = isProvinceScope
+		? value || 'Escolher província'
+		: selected
+			? `${selected.municipality} · ${selected.province}`
+			: 'Escolher local';
 
 	const trigger =
 		variant === 'row' ? (
@@ -97,19 +120,17 @@ export default function LocalityPicker({
 					</Text>
 					<Text
 						className={
-							selected
+							hasValue
 								? 'font-sansBold text-[15px] mt-0.5'
 								: 'font-sans text-[15px] mt-0.5'
 						}
 						style={{
-							color: selected
+							color: hasValue
 								? themeColors.text
 								: themeColors.border,
 						}}
 					>
-						{selected
-							? `${selected.municipality} · ${selected.province}`
-							: 'Escolher local'}
+						{triggerLabel}
 					</Text>
 				</View>
 				<Ionicons
@@ -123,13 +144,28 @@ export default function LocalityPicker({
 				onPress={open}
 				className="rounded-xl px-4 py-3 border"
 				style={{
-					borderColor: selected
+					borderColor: hasValue
 						? themeColors.laterite
 						: themeColors.border,
 					backgroundColor: themeColors.card,
 				}}
 			>
-				{selected ? (
+				{isProvinceScope ? (
+					<Text
+						className={
+							hasValue
+								? 'font-sansBold text-[15px]'
+								: 'font-sans text-[15px]'
+						}
+						style={{
+							color: hasValue
+								? themeColors.text
+								: themeColors.border,
+						}}
+					>
+						{triggerLabel}
+					</Text>
+				) : selected ? (
 					<Text
 						className="font-sansBold text-[15px]"
 						style={{ color: themeColors.text }}
@@ -189,7 +225,10 @@ export default function LocalityPicker({
 								className="font-display text-[18px]"
 								style={{ color: themeColors.text }}
 							>
-								{label ?? 'Escolhe o teu local'}
+								{label ??
+									(isProvinceScope
+										? 'Escolhe a província'
+										: 'Escolhe o teu local')}
 							</Text>
 							<Pressable
 								onPress={() => setVisible(false)}
@@ -221,7 +260,11 @@ export default function LocalityPicker({
 							<TextInput
 								className="flex-1 py-2.5 pl-2 font-sans text-[14px]"
 								style={{ color: themeColors.text }}
-								placeholder="Pesquisar município"
+								placeholder={
+									isProvinceScope
+										? 'Pesquisar província'
+										: 'Pesquisar município'
+								}
 								placeholderTextColor={themeColors.border}
 								value={query}
 								onChangeText={setQuery}
@@ -238,60 +281,124 @@ export default function LocalityPicker({
 							) : null}
 						</View>
 
-						<ScrollView
-							horizontal
-							showsHorizontalScrollIndicator={false}
-							className="mb-2"
-						>
-							{provinces.map((p) => {
-								const active = province === p;
-								return (
-									<Pressable
-										key={p}
-										onPress={() =>
-											setProvince(active ? '' : p)
-										}
-										className="rounded-full px-3 py-1.5 border mr-2"
-										style={{
-											borderColor: active
-												? themeColors.text
-												: themeColors.border,
-											backgroundColor: active
-												? themeColors.text
-												: themeColors.card,
-										}}
-									>
-										<Text
-											className="font-sansMedium text-[12px]"
+						{!isProvinceScope ? (
+							<ScrollView
+								horizontal
+								showsHorizontalScrollIndicator={false}
+								className="mb-2"
+							>
+								{provinces.map((p) => {
+									const active = province === p;
+									return (
+										<Pressable
+											key={p}
+											onPress={() =>
+												setProvince(active ? '' : p)
+											}
+											className="rounded-full px-3 py-1.5 border mr-2"
 											style={{
-												color: active
-													? themeColors.card
-													: themeColors.secondary,
+												borderColor: active
+													? themeColors.text
+													: themeColors.border,
+												backgroundColor: active
+													? themeColors.text
+													: themeColors.card,
 											}}
 										>
-											{p}
-										</Text>
-									</Pressable>
-								);
-							})}
-						</ScrollView>
+											<Text
+												className="font-sansMedium text-[12px]"
+												style={{
+													color: active
+														? themeColors.card
+														: themeColors.secondary,
+												}}
+											>
+												{p}
+											</Text>
+										</Pressable>
+									);
+								})}
+							</ScrollView>
+						) : null}
 
 						<ScrollView
 							className="flex-grow-0"
 							keyboardShouldPersistTaps="handled"
 							style={{ maxHeight: 380 }}
 						>
-							{options.length === 0 ? (
+							{isProvinceScope ? (
+								provinceOptions.length === 0 ? (
+									<View className="py-10 items-center">
+										<Text
+											className="font-sans text-[13px]"
+											style={{
+												color: themeColors.secondary,
+											}}
+										>
+											Sem províncias a bater certo.
+										</Text>
+									</View>
+								) : (
+									provinceOptions.map((p) => {
+										const active = value === p;
+										const count = LOCALITIES.filter(
+											(l) => l.province === p,
+										).length;
+										return (
+											<Pressable
+												key={p}
+												onPress={() => pick(p)}
+												className="flex-row items-center px-1 py-3 border-b"
+												style={{
+													borderColor:
+														themeColors.border,
+												}}
+											>
+												<View className="flex-1">
+													<Text
+														className="font-sansMedium text-[15px]"
+														style={{
+															color: themeColors.text,
+														}}
+													>
+														{p}
+													</Text>
+													<Text
+														className="font-sans text-[12px]"
+														style={{
+															color: themeColors.secondary,
+														}}
+													>
+														{count} município
+														{count > 1 ? 's' : ''}
+													</Text>
+												</View>
+												{active ? (
+													<Ionicons
+														name="checkmark-circle"
+														size={20}
+														color={
+															themeColors.primary
+														}
+													/>
+												) : null}
+											</Pressable>
+										);
+									})
+								)
+							) : localityOptions.length === 0 ? (
 								<View className="py-10 items-center">
 									<Text
 										className="font-sans text-[13px]"
-										style={{ color: themeColors.secondary }}
+										style={{
+											color: themeColors.secondary,
+										}}
 									>
 										Sem municípios a bater certo.
 									</Text>
 								</View>
 							) : (
-								options.map((l) => {
+								localityOptions.map((l) => {
 									const active = value === l.id;
 									return (
 										<Pressable

@@ -11,8 +11,24 @@ import AdCarousel from '../../components/AdCarousel';
 import TripSearch from '../../components/TripSearch';
 import SectionTitle from '../../components/SectionTitle';
 
-function BrandHeader({ role }: { role: 'passenger' | 'driver' }) {
+function BrandHeader({
+	role,
+	name,
+}: {
+	role: 'passenger' | 'driver';
+	name?: string;
+}) {
 	const { themeColors } = useThemeColors();
+	const hour = new Date().getHours();
+	const greeting =
+		hour < 12 ? 'Bom dia' : hour < 19 ? 'Boa tarde' : 'Boa noite';
+	const dateLabel = new Date()
+		.toLocaleDateString('pt-PT', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
+		})
+		.toUpperCase();
 	return (
 		<View className="mb-5">
 			<View className="flex-row items-baseline">
@@ -30,10 +46,22 @@ function BrandHeader({ role }: { role: 'passenger' | 'driver' }) {
 				</Text>
 			</View>
 			<Text
+				className="font-sansBold text-[16px]"
+				style={{ color: themeColors.text }}
+			>
+				{greeting}, {name ?? 'viajante'}.
+			</Text>
+			<Text
 				className="font-sans text-[13px] -mt-0.5"
 				style={{ color: themeColors.secondary }}
 			>
 				Viagens partilhadas entre províncias, a preço de boleia.
+			</Text>
+			<Text
+				className="font-mono text-[10px] uppercase tracking-[2px] mt-1"
+				style={{ color: themeColors.border }}
+			>
+				{dateLabel}
 			</Text>
 		</View>
 	);
@@ -60,7 +88,14 @@ export default function HomeScreen() {
 				contentContainerStyle={{ paddingBottom: 40 }}
 				keyboardShouldPersistTaps="handled"
 			>
-				<BrandHeader role={currentRole} />
+				<BrandHeader
+					role={currentRole}
+					name={
+						me
+							? `${me.firstName}${me.lastName ? ` ${me.lastName}` : ''}`
+							: undefined
+					}
+				/>
 
 				<AdCarousel />
 
