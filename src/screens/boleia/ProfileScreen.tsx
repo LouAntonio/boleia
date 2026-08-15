@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../store/appStore';
@@ -12,6 +12,7 @@ import { BoleiaMainStackParamList } from '../../types/navigation';
 import RoleSwitch from '../../components/RoleSwitch';
 import StatusStamp from '../../components/StatusStamp';
 import { Ionicons } from '@expo/vector-icons';
+import { navigationRef } from '../../lib/navigationRef';
 
 const THEMES: { mode: ThemeMode; label: string }[] = [
 	{ mode: 'light', label: 'Claro' },
@@ -124,7 +125,7 @@ export default function ProfileScreen() {
 						className="font-sansBold text-[15px] mb-2"
 						style={{ color: themeColors.text }}
 					>
-						Entrar como
+						Modo de uso
 					</Text>
 					<RoleSwitch value={currentRole} onChange={setRole} />
 					<Text
@@ -133,7 +134,7 @@ export default function ProfileScreen() {
 					>
 						Passageiro procura e reserva viagens; motorista publica
 						viagens e gere reservas. O mesmo perfil serve para
-						ambos.
+						ambos. A troca de modo faz-se aqui.
 					</Text>
 				</View>
 
@@ -262,6 +263,64 @@ export default function ProfileScreen() {
 							size={18}
 							color={themeColors.border}
 						/>
+					</Pressable>
+				</View>
+
+				{/* Sessão */}
+				<View className="mt-6">
+					<Text
+						className="font-sansBold text-[15px] mb-2"
+						style={{ color: themeColors.text }}
+					>
+						Sessão
+					</Text>
+					<Pressable
+						onPress={() => {
+							Alert.alert(
+								'Terminar sessão',
+								'Tens a certeza que queres sair? Voltar a entrar é rápido.',
+								[
+									{ text: 'Cancelar', style: 'cancel' },
+									{
+										text: 'Terminar sessão',
+										style: 'destructive',
+										onPress: () => {
+											useAppStore.getState().signOut();
+											navigationRef.reset({
+												index: 0,
+												routes: [
+													{
+														name: 'Auth',
+														params: {
+															screen: 'Login',
+														},
+													},
+												],
+											});
+										},
+									},
+								],
+							);
+						}}
+						className="flex-row items-center justify-between px-4 py-3.5 rounded-xl border"
+						style={{
+							borderColor: themeColors.error,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<View className="flex-row items-center">
+							<Ionicons
+								name="log-out-outline"
+								size={20}
+								color={themeColors.error}
+							/>
+							<Text
+								className="font-sansBold text-[14px] ml-3"
+								style={{ color: themeColors.error }}
+							>
+								Terminar sessão
+							</Text>
+						</View>
 					</Pressable>
 				</View>
 			</ScrollView>

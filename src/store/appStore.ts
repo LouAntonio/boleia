@@ -6,11 +6,12 @@ import { Role } from '../types/boleia';
 type AppState = {
 	currentRole: Role;
 	onboardingSeen: boolean;
-	profileReady: boolean; // perfil criado após OTP (Fase 1+)
+	authenticated: boolean; // sessão iniciada (tel + senha)
 	setRole: (role: Role) => void;
 	toggleRole: () => void;
 	completeOnboarding: () => void;
-	markProfileReady: () => void;
+	signIn: () => void;
+	signOut: () => void;
 };
 
 export const useAppStore = create<AppState>()(
@@ -18,7 +19,7 @@ export const useAppStore = create<AppState>()(
 		(set) => ({
 			currentRole: 'passenger',
 			onboardingSeen: false,
-			profileReady: false,
+			authenticated: false,
 			setRole: (role) => set({ currentRole: role }),
 			toggleRole: () =>
 				set((s) => ({
@@ -26,7 +27,9 @@ export const useAppStore = create<AppState>()(
 						s.currentRole === 'passenger' ? 'driver' : 'passenger',
 				})),
 			completeOnboarding: () => set({ onboardingSeen: true }),
-			markProfileReady: () => set({ profileReady: true }),
+			signIn: () => set({ authenticated: true }),
+			signOut: () =>
+				set({ authenticated: false, currentRole: 'passenger' }),
 		}),
 		{
 			name: 'boleia-app',

@@ -6,7 +6,7 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
 import { navigationRef } from '../../lib/navigationRef';
 import BoleiaButton from '../../components/BoleiaButton';
-import { findOrCreateByPhone, updateUser } from '../../mock/repos/authRepo';
+import { findByPhone, updateUser } from '../../mock/repos/authRepo';
 import { useAppStore } from '../../store/appStore';
 
 export default function ProfileSetupScreen() {
@@ -26,13 +26,14 @@ export default function ProfileSetupScreen() {
 		if (!canSave) return;
 		setPending(true);
 		setTimeout(() => {
-			const user = findOrCreateByPhone(phone);
+			const user = findByPhone(phone);
+			if (!user) return;
 			updateUser(user.id, {
 				firstName: firstName.trim(),
 				lastName: lastName.trim(),
 				bio: bio.trim(),
 			});
-			useAppStore.getState().markProfileReady();
+			useAppStore.getState().signIn();
 			navigationRef.reset({
 				index: 0,
 				routes: [{ name: 'App', params: { screen: 'Main' } }],

@@ -100,7 +100,7 @@ export default function OnboardingScreen() {
 
 	const finish = () => {
 		useAppStore.getState().completeOnboarding();
-		navigation.replace('Auth', { screen: 'PhoneEntry' });
+		navigation.replace('Auth', { screen: 'Login' });
 	};
 
 	const handleNext = () => {

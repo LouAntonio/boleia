@@ -2,19 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
-import { navigationRef } from '../../lib/navigationRef';
 import BoleiaButton from '../../components/BoleiaButton';
-import {
-	verifyOtp,
-	requestOtp,
-	findOrCreateByPhone,
-} from '../../mock/repos/authRepo';
-import { useAppStore } from '../../store/appStore';
+import { verifyOtp, requestOtp } from '../../mock/repos/authRepo';
 
 export default function OtpVerifyScreen() {
 	const route = useRoute<RouteProp<BoleiaAuthStackParamList, 'OtpVerify'>>();
+	const navigation =
+		useNavigation<
+			NativeStackNavigationProp<BoleiaAuthStackParamList, 'OtpVerify'>
+		>();
 	const phone = route.params.phone;
 
 	const { themeColors } = useThemeColors();
@@ -23,26 +22,15 @@ export default function OtpVerifyScreen() {
 	const [pending, setPending] = useState(false);
 	const [resent, setResent] = useState(false);
 
-	const enter = () => {
+	const continueRecovery = () => {
 		if (!verifyOtp(phone, code)) {
 			setError('Código errado ou expirado. Tenta de novo.');
 			return;
 		}
 		setPending(true);
 		setTimeout(() => {
-			const user = findOrCreateByPhone(phone);
-			if (!user.firstName) {
-				navigationRef.navigate('Auth', {
-					screen: 'ProfileSetup',
-					params: { phone },
-				});
-			} else {
-				useAppStore.getState().markProfileReady();
-				navigationRef.reset({
-					index: 0,
-					routes: [{ name: 'App', params: { screen: 'Main' } }],
-				});
-			}
+			setPending(false);
+			navigation.navigate('ResetPassword', { phone });
 		}, 400);
 	};
 
@@ -57,6 +45,14 @@ export default function OtpVerifyScreen() {
 			className="flex-1 px-6 pt-14"
 			style={{ backgroundColor: themeColors.background }}
 		>
+			<Pressable onPress={() => navigation.goBack()} className="mb-4">
+				<Text
+					className="font-sansBold text-[13px]"
+					style={{ color: themeColors.laterite }}
+				>
+					← Voltar
+				</Text>
+			</Pressable>
 			<Text
 				className="font-mono text-[11px] uppercase tracking-[3px]"
 				style={{ color: themeColors.laterite }}
@@ -77,7 +73,7 @@ export default function OtpVerifyScreen() {
 				<Text className="font-mono" style={{ color: themeColors.text }}>
 					+244 {phone}
 				</Text>
-				.
+				, só para definir a senha nova.
 			</Text>
 
 			<View
@@ -121,8 +117,8 @@ export default function OtpVerifyScreen() {
 
 			<View className="mt-6">
 				<BoleiaButton
-					title="Entrar"
-					onPress={enter}
+					title="Continuar"
+					onPress={continueRecovery}
 					loading={pending}
 					disabled={code.length < 6}
 				/>

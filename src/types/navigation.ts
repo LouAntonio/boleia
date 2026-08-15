@@ -3,14 +3,16 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 // ---------- Árvore Boleia (substitui a anterior nas fases seguintes) ----------
 
 export type BoleiaAuthStackParamList = {
-	PhoneEntry: undefined;
+	Login: undefined;
+	Register: undefined;
+	ForgotPassword: undefined;
 	OtpVerify: { phone: string };
+	ResetPassword: { phone: string };
 	ProfileSetup: { phone: string };
 };
 
 export type PassengerTabsParamList = {
 	PassengerHome: undefined;
-	PassengerSearch: undefined;
 	PassengerBookings: undefined;
 	PassengerProfile: undefined;
 };

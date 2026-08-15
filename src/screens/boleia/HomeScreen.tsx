@@ -7,14 +7,14 @@ import { useDbStore } from '../../mock/db';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
-import RoleSwitch from '../../components/RoleSwitch';
-import TripStripCard from '../../components/TripStripCard';
+import AdCarousel from '../../components/AdCarousel';
+import TripSearch from '../../components/TripSearch';
 import SectionTitle from '../../components/SectionTitle';
 
 function BrandHeader({ role }: { role: 'passenger' | 'driver' }) {
 	const { themeColors } = useThemeColors();
 	return (
-		<View className="mb-4">
+		<View className="mb-5">
 			<View className="flex-row items-baseline">
 				<Text
 					className="font-display text-[28px]"
@@ -46,10 +46,6 @@ export default function HomeScreen() {
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
 	const currentRole = useAppStore((s) => s.currentRole);
-	const setRole = useAppStore((s) => s.setRole);
-	const featured = useDbStore((s) =>
-		s.db.rides.find((r) => r.id === 'ride_paulo_amanha'),
-	);
 	const me = useDbStore((s) => s.db.users.find((u) => u.id === 'u_me_001'));
 	const kycOk = me?.kyc?.status === 'verificado';
 	const vehicleOk = me?.vehicle?.status === 'verificado';
@@ -62,43 +58,16 @@ export default function HomeScreen() {
 			<ScrollView
 				className="flex-1 px-5"
 				contentContainerStyle={{ paddingBottom: 40 }}
+				keyboardShouldPersistTaps="handled"
 			>
 				<BrandHeader role={currentRole} />
 
-				<RoleSwitch value={currentRole} onChange={setRole} />
+				<AdCarousel />
 
 				{currentRole === 'passenger' ? (
-					<View className="mt-6">
-						<SectionTitle tone="laterite">
-							Na estrada amanhã
-						</SectionTitle>
-						{featured ? (
-							<TripStripCard ride={featured} />
-						) : (
-							<Text
-								className="font-sans text-[13px]"
-								style={{ color: themeColors.secondary }}
-							>
-								Sem viagens disponíveis agora.
-							</Text>
-						)}
-						<Text
-							className="font-sans text-[13px] mt-4 leading-5"
-							style={{ color: themeColors.secondary }}
-						>
-							Usa a aba{' '}
-							<Text
-								className="font-sansBold"
-								style={{ color: themeColors.text }}
-							>
-								Pesquisar
-							</Text>{' '}
-							para pedir uma boleia e esperar por um motorista na
-							tua rota.
-						</Text>
-					</View>
+					<TripSearch />
 				) : (
-					<View className="mt-6">
+					<View>
 						<SectionTitle tone="laterite">
 							Painel de motorista
 						</SectionTitle>

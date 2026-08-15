@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { MAJOR_LOCALITIES } from '../mock/locale';
+import { Locality } from '../types/boleia';
 
 // Escolha de localidade por chips — usado no motorista (publicar) e
 // no passageiro (pesquisa).
@@ -9,14 +10,16 @@ export default function LocalityPicker({
 	value,
 	onChange,
 	exclude,
+	filter,
 }: {
 	value: string;
 	onChange: (id: string) => void;
 	exclude?: string;
+	filter?: (l: Locality) => boolean;
 }) {
 	const { themeColors } = useThemeColors();
 	const options = MAJOR_LOCALITIES.filter(
-		(l) => !exclude || l.id !== exclude,
+		(l) => (!exclude || l.id !== exclude) && (!filter || filter(l)),
 	);
 
 	const selected = MAJOR_LOCALITIES.find((l) => l.id === value);

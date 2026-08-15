@@ -31,7 +31,7 @@ Run order: `npm ci` → `typecheck` → `lint` → `format:check` → `doctor` (
 - **Entry point**: `index.ts` → `App.tsx` → `RootNavigator` (`src/navigation/RootNavigator.tsx`)
 - **Routing**: React Navigation native-stack, three-level hierarchy:
     - `RootNavigator` → `SplashScreen` → `OnboardingScreen` → `BoleiaAuthNavigator` → `BoleiaMainNavigator`
-    - `BoleiaAuthNavigator`: `PhoneEntry` → `OtpVerify` → `ProfileSetup`
+    - `BoleiaAuthNavigator`: `Login` → `Register`/`ForgotPassword` → `OtpVerify` (só recuperação de senha) → `ResetPassword` → `ProfileSetup`
     - `BoleiaMainNavigator`: tabs (`PassengerTabs` / `DriverTabs`) + stack `Kyc`, `Vehicle`, `PublishTrip`, `RideDetail`, `PublicProfile`, `ActiveRide`, `Review`, `SosCenter`, `Notifications`
 - **Styling**: NativeWind (Tailwind CSS for RN). Import `'./global.css'` in `App.tsx`. Metro config wired via `withNativeWind()`.
 - **Custom theme colors** (`src/store/colors.ts` + tailwind.config.js): `primary` (#F2A900), `secondary`, `laterite` (#B4531F), `mato`, `error`, `border`, `card`, `background`, `text`
@@ -54,5 +54,8 @@ Run order: `npm ci` → `typecheck` → `lint` → `format:check` → `doctor` (
 - **Expo Updates** configured with OTA URL and `appVersion` runtime policy. EAS project ID in `app.json` but no `eas.json` committed yet.
 - **No test framework** is configured. If adding tests, use Jest + React Native Testing Library (the `@react-native` ESLint config assumes this convention).
 - **DB mock persistida** em AsyncStorage (`boleia-db`, versão `DB_VERSION`). Mudanças de schema em `seed.ts` exigem incrementar `DB_VERSION` ou reset para re-semear.
-- **Demo OTP**: código fixo `773214` (ver `PhoneEntryScreen`/`OtpVerifyScreen`).
+- **Demo login**: tel `923456789` / senha `123456` (todos os utilizadores do seed). `mockHash` (djb2) em `authRepo` guarda as senhas como hash mock.
+- **Demo OTP**: código fixo `773214` (ver `ForgotPasswordScreen`/`OtpVerifyScreen`), usado só na recuperação de senha.
+- **Troca de papel** (passageiro ↔ motorista) só no ecrã de Perfil ("Modo de uso").
+- **Homepage**: carrossel `AdCarousel` (publicidade, imagens placeholder) + pesquisa `TripSearch` (intermunicipal/interprovincial, origem/destino, dia) com resultados inline.
 - **No `.env` files** committed. Use `.env` + `.env.local` (gitignored) for secrets.

@@ -11,6 +11,7 @@ import {
 	OtpChallenge,
 } from '../types/boleia';
 import { nowISO } from './helpers';
+import { mockHash } from './repos/authRepo';
 import { ROUTE_LUANDA_BENGUELA, ROUTE_BENGUELA_LUANDA } from './locale';
 
 const d = (offsetMin: number) => nowISO(offsetMin);
@@ -23,6 +24,7 @@ export function seedDatabase(): Database {
 			firstName: 'Nelson',
 			lastName: 'Cardoso',
 			phone: '923456789',
+			password: mockHash('123456'),
 			avatar: null,
 			bio: 'Viajo para o interior aos fins de semana.',
 			rating: 4.8,
@@ -38,6 +40,7 @@ export function seedDatabase(): Database {
 			firstName: 'Filipe',
 			lastName: 'Sebastião',
 			phone: '926111222',
+			password: mockHash('123456'),
 			avatar: null,
 			bio: 'Comerciante em Porto Amboim.',
 			rating: 4.6,
@@ -53,6 +56,7 @@ export function seedDatabase(): Database {
 			firstName: 'Paulo',
 			lastName: 'Vaz',
 			phone: '922555001',
+			password: mockHash('123456'),
 			avatar: null,
 			bio: 'Operador interprovincial — rota Luanda/Benguela há 6 anos.',
 			rating: 4.9,
@@ -91,6 +95,7 @@ export function seedDatabase(): Database {
 			firstName: 'Joana',
 			lastName: 'Sita',
 			phone: '924555002',
+			password: mockHash('123456'),
 			avatar: null,
 			bio: 'Correspondências a tempo e horas. Benguela–Sumbe.',
 			rating: 4.7,
@@ -129,6 +134,7 @@ export function seedDatabase(): Database {
 			firstName: 'Bruno',
 			lastName: 'Chipenda',
 			phone: '925555003',
+			password: mockHash('123456'),
 			avatar: null,
 			bio: 'Pacato e pontual. Luanda→Lobito às quintas.',
 			rating: 5.0,
@@ -217,6 +223,14 @@ export function seedDatabase(): Database {
 	depois.setDate(depois.getDate() + 2);
 	depois.setHours(6, 30, 0, 0);
 
+	const amanha0730 = new Date();
+	amanha0730.setDate(amanha0730.getDate() + 1);
+	amanha0730.setHours(7, 30, 0, 0);
+
+	const amanha0815 = new Date();
+	amanha0815.setDate(amanha0815.getDate() + 1);
+	amanha0815.setHours(8, 15, 0, 0);
+
 	const rides: Ride[] = [
 		mkRide(
 			'ride_paulo_amanha',
@@ -291,6 +305,73 @@ export function seedDatabase(): Database {
 			'bgu_lad',
 			true,
 		),
+		// Viagens intermunicipais (dentro de Luanda) — demo da pesquisa local
+		{
+			id: 'ride_local_1',
+			driverId: 'u_drv_bruno',
+			routeName: 'Talatona → Cacuaco',
+			origin: {
+				localityId: 'lad_talatona',
+				name: 'Talatona',
+				time: '07:30',
+				km: 0,
+			},
+			stops: [
+				{
+					localityId: 'lad_maianga',
+					name: 'Maianga',
+					time: '08:05',
+					km: 14,
+				},
+			],
+			destination: {
+				localityId: 'lad_cacuaco',
+				name: 'Cacuaco',
+				time: '08:40',
+				km: 28,
+			},
+			departure: amanha0730.toISOString(),
+			arrival: new Date(amanha0730.getTime() + 70 * 60000).toISOString(),
+			seatsTotal: 5,
+			seatsTaken: 2,
+			pricePerSeat: 2500,
+			status: 'programada',
+			vinculos: [],
+			createdAt: nowISO(-60),
+		},
+		{
+			id: 'ride_local_2',
+			driverId: 'u_drv_joana',
+			routeName: 'Maianga → Viana',
+			origin: {
+				localityId: 'lad_maianga',
+				name: 'Maianga',
+				time: '08:15',
+				km: 0,
+			},
+			stops: [
+				{
+					localityId: 'lad_cazenga',
+					name: 'Cazenga',
+					time: '08:30',
+					km: 6,
+				},
+			],
+			destination: {
+				localityId: 'lad_viana',
+				name: 'Viana',
+				time: '09:00',
+				km: 18,
+			},
+			departure: amanha0815.toISOString(),
+			arrival: new Date(amanha0815.getTime() + 45 * 60000).toISOString(),
+			seatsTotal: 5,
+			seatsTaken: 1,
+			pricePerSeat: 2000,
+			status: 'programada',
+			vinculos: [],
+			createdAt: nowISO(-60),
+		},
 	];
 
 	// ---- Reservas

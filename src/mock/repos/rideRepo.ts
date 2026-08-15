@@ -13,6 +13,17 @@ export type RideInput = {
 	pricePerSeat: number;
 };
 
+export type RideMode = 'intermunicipal' | 'interprovincial';
+
+// Origem e destino na mesma província = intermunicipal.
+export function rideMode(ride: Ride): RideMode {
+	const origin = localityById(ride.origin.localityId);
+	const destination = localityById(ride.destination.localityId);
+	return origin.province === destination.province
+		? 'intermunicipal'
+		: 'interprovincial';
+}
+
 export function rideById(id: string): Ride | undefined {
 	return useDbStore.getState().db.rides.find((r) => r.id === id);
 }
@@ -42,6 +53,7 @@ export type SearchParams = {
 	from?: string; // município/localidade de partida
 	to?: string; // município/localidade de chegada
 	date?: string; // yyyy-mm-dd
+	mode?: RideMode;
 };
 
 export function searchRides(params: SearchParams): Ride[] {
@@ -55,6 +67,10 @@ export function searchRides(params: SearchParams): Ride[] {
 
 	// discriminação útil: coberta, não cheia, ordenada pela proximidade
 	rides = rides.filter((r) => covers(r, params));
+
+	if (params.mode) {
+		rides = rides.filter((r) => rideMode(r) === params.mode);
+	}
 
 	if (params.date) {
 		rides = rides.filter((r) => r.departure.slice(0, 10) === params.date);

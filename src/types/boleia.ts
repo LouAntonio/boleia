@@ -101,6 +101,7 @@ export type BoleiaUser = {
 	firstName: string;
 	lastName: string;
 	phone: string; // 9XX XXX XXX
+	password: string; // hash mock (não usar em produção)
 	avatar: string | null;
 	bio: string;
 	rating: number | null;

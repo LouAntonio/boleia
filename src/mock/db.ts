@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Database } from '../types/boleia';
 import { seedDatabase } from './seed';
 
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
