@@ -131,11 +131,11 @@ export default function KycScreen() {
 
 	return (
 		<SafeAreaView
-			className="flex-1"
+			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<ScrollView
-				className="flex-1 px-5"
+				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
 				<View className="flex-row items-center pt-1 pb-4">
@@ -287,12 +287,15 @@ export default function KycScreen() {
 							title="Rosto"
 							subtitle="3 Selfies"
 						>
-							<View className="flex-row gap-2">
+							<View className="flex-row w-full max-w-[300px] self-center">
 								{selfies.map((uri, i) => (
 									<PhotoSlot
 										key={`selfie-${i}`}
 										uri={uri}
 										label={`Selfie ${i + 1}`}
+										className={`flex-1 ${
+											i < 2 ? 'mr-2' : ''
+										}`}
 										onPick={() =>
 											pickOne((u) =>
 												setSelfies((prev) =>
@@ -320,16 +323,18 @@ export default function KycScreen() {
 							title="Bilhete de Identidade"
 							subtitle="Frente e Verso"
 						>
-							<View className="flex-row gap-2">
+							<View className="flex-row w-full max-w-[220px] self-center">
 								<PhotoSlot
 									uri={biFront}
 									label="Frente"
+									className="flex-1 mr-2"
 									onPick={() => pickOne(setBiFront)}
 									onRemove={() => setBiFront(null)}
 								/>
 								<PhotoSlot
 									uri={biBack}
 									label="Verso"
+									className="flex-1"
 									onPick={() => pickOne(setBiBack)}
 									onRemove={() => setBiBack(null)}
 								/>
@@ -345,6 +350,7 @@ export default function KycScreen() {
 							<PhotoSlot
 								uri={licensePhoto}
 								label="Carta"
+								className="self-center w-full max-w-[320px]"
 								onPick={() => pickOne(setLicensePhoto)}
 								onRemove={() => setLicensePhoto(null)}
 								wide

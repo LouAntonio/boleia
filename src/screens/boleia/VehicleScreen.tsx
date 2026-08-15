@@ -88,6 +88,7 @@ function Field({
 	autoCapitalize = 'words',
 	keyboardType = 'default',
 	mono = false,
+	className = '',
 }: {
 	label: string;
 	value: string;
@@ -96,11 +97,12 @@ function Field({
 	autoCapitalize?: 'none' | 'words' | 'characters';
 	keyboardType?: KeyboardTypeOptions;
 	mono?: boolean;
+	className?: string;
 }) {
 	const { themeColors } = useThemeColors();
 
 	return (
-		<View className="flex-1">
+		<View className={`flex-1 ${className}`}>
 			<Text
 				className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
 				style={{ color: themeColors.secondary }}
@@ -170,6 +172,7 @@ export default function VehicleScreen() {
 
 	const removeAt = (i: number) =>
 		setPhotos((prev) => prev.filter((_, j) => j !== i));
+	const extraPhotos = photos.slice(3, MAX_PHOTOS);
 
 	const submit = () => {
 		if (!canSubmit) return;
@@ -187,11 +190,11 @@ export default function VehicleScreen() {
 
 	return (
 		<SafeAreaView
-			className="flex-1"
+			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<ScrollView
-				className="flex-1 px-5"
+				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
 				<View className="flex-row items-center pt-1 pb-4">
@@ -337,12 +340,13 @@ export default function VehicleScreen() {
 							title="Dados da viatura"
 							subtitle="Características"
 						>
-							<View className="flex-row gap-2 mb-3">
+							<View className="flex-row mb-3">
 								<Field
 									label="Marca"
 									value={make}
 									setter={setMake}
 									placeholder="ex.: Toyota"
+									className="mr-3"
 								/>
 								<Field
 									label="Modelo"
@@ -351,12 +355,13 @@ export default function VehicleScreen() {
 									placeholder="ex.: Hiace"
 								/>
 							</View>
-							<View className="flex-row gap-2 mb-3">
+							<View className="flex-row mb-3">
 								<Field
 									label="Cor"
 									value={color}
 									setter={setColor}
 									placeholder="ex.: Branca"
+									className="mr-3"
 								/>
 								<Field
 									label={`Lotação (${seatCount})`}
@@ -397,12 +402,15 @@ export default function VehicleScreen() {
 								/>
 							</View>
 
-							<View className="flex-row gap-2 mb-2">
+							<View className="flex-row w-full max-w-[300px] self-center mb-2">
 								{[0, 1, 2].map((i) => (
 									<PhotoSlot
 										key={i}
 										uri={photos[i] ?? null}
 										label={`Foto ${i + 1}`}
+										className={`flex-1 ${
+											i < 2 ? 'mr-2' : ''
+										}`}
 										onPick={() =>
 											pickOne((u) =>
 												setPhotos((prev) =>
@@ -423,29 +431,30 @@ export default function VehicleScreen() {
 								))}
 							</View>
 
-							{photos.length > 3 ? (
-								<View className="flex-row gap-2">
-									{photos
-										.slice(3, MAX_PHOTOS)
-										.map((uri, i) => (
-											<PhotoSlot
-												key={i + 3}
-												uri={uri}
-												label={`Foto ${i + 4}`}
-												onPick={() =>
-													pickOne((u) =>
-														setPhotos((prev) =>
-															prev.map((p, j) =>
-																j === i + 3
-																	? u
-																	: p,
-															),
+							{extraPhotos.length > 0 ? (
+								<View className="flex-row w-full max-w-[300px] self-center">
+									{extraPhotos.map((uri, i) => (
+										<PhotoSlot
+											key={i + 3}
+											uri={uri}
+											label={`Foto ${i + 4}`}
+											className={`flex-1 ${
+												i < extraPhotos.length - 1
+													? 'mr-2'
+													: ''
+											}`}
+											onPick={() =>
+												pickOne((u) =>
+													setPhotos((prev) =>
+														prev.map((p, j) =>
+															j === i + 3 ? u : p,
 														),
-													)
-												}
-												onRemove={() => removeAt(i + 3)}
-											/>
-										))}
+													),
+												)
+											}
+											onRemove={() => removeAt(i + 3)}
+										/>
+									))}
 								</View>
 							) : null}
 
@@ -460,7 +469,7 @@ export default function VehicleScreen() {
 											),
 										)
 									}
-									className="rounded-2xl border items-center justify-center py-3.5 mt-2 flex-row"
+									className="rounded-2xl border items-center justify-center py-3.5 mt-2 flex-row w-full max-w-[300px] self-center"
 									style={({ pressed }) => ({
 										borderColor: themeColors.border,
 										borderStyle: 'dashed',
@@ -482,7 +491,7 @@ export default function VehicleScreen() {
 								</Pressable>
 							) : (
 								<Text
-									className="font-sans text-[11px] mt-2 text-center"
+									className="font-sans text-[11px] mt-2 text-center w-full max-w-[300px] self-center"
 									style={{ color: themeColors.secondary }}
 								>
 									Máximo de {MAX_PHOTOS} fotos atingido.

@@ -315,11 +315,11 @@ export default function ProfileScreen() {
 
 	return (
 		<SafeAreaView
-			className="flex-1"
+			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<ScrollView
-				className="flex-1 px-5"
+				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
 				<View className="mt-2">

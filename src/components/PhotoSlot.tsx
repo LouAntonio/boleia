@@ -5,23 +5,27 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Slot de foto do dossiê (KYC / viatura) — borda tracejada enquanto vazio,
 // imagem + badge de remover quando preenchido. Rótulo mono em `secondary` (a11y).
+// Quadrado via aspectRatio; a grelha no ecrã limita a largura (max-w) para não
+// crescer em ecrãs largos. `className` substitui o padrão `flex-1`.
 export default function PhotoSlot({
 	uri,
 	label,
 	onPick,
 	onRemove,
 	wide = false,
+	className = '',
 }: {
 	uri: string | null;
 	label: string;
 	onPick: () => void;
 	onRemove?: () => void;
 	wide?: boolean;
+	className?: string;
 }) {
 	const { themeColors } = useThemeColors();
 
 	return (
-		<View className="flex-1">
+		<View className={className || 'flex-1'}>
 			<Pressable
 				onPress={onPick}
 				className="w-full rounded-2xl border items-center justify-center overflow-hidden"
