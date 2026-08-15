@@ -3,6 +3,7 @@ import {
 	BoleiaUser,
 	Booking,
 	Ride,
+	RouteStop,
 	Review,
 	InAppNotification,
 	WalletTransaction,
@@ -12,9 +13,31 @@ import {
 } from '../types/boleia';
 import { nowISO } from './helpers';
 import { mockHash } from './repos/authRepo';
-import { ROUTE_LUANDA_BENGUELA, ROUTE_BENGUELA_LUANDA } from './locale';
+import {
+	ROUTE_LUANDA_BENGUELA,
+	ROUTE_BENGUELA_LUANDA,
+	ROUTE_HUAMBO_LUBANGO,
+	ROUTE_LUANDA_MALANJE,
+} from './locale';
 
 const d = (offsetMin: number) => nowISO(offsetMin);
+
+type RideTemplate = 'lad_bgu' | 'bgu_lad' | 'hbo_hla' | 'lad_mal';
+
+const TEMPLATES: Record<RideTemplate, (departureISO: string) => RouteStop[]> = {
+	lad_bgu: ROUTE_LUANDA_BENGUELA,
+	bgu_lad: ROUTE_BENGUELA_LUANDA,
+	hbo_hla: ROUTE_HUAMBO_LUBANGO,
+	lad_mal: ROUTE_LUANDA_MALANJE,
+};
+
+// duração total estimada (min) com todas as paragens
+const TRAVEL_MIN: Record<RideTemplate, number> = {
+	lad_bgu: 440,
+	bgu_lad: 440,
+	hbo_hla: 330,
+	lad_mal: 390,
+};
 
 export function seedDatabase(): Database {
 	// ---- Utilizadores
@@ -180,18 +203,17 @@ export function seedDatabase(): Database {
 		taken: number,
 		price: number,
 		status: Ride['status'],
-		template: 'lad_bgu' | 'bgu_lad',
+		template: RideTemplate,
 		stopsIncludeAll: boolean,
 		vinculos: string[] = [],
 	): Ride => {
-		const stops =
-			template === 'lad_bgu'
-				? ROUTE_LUANDA_BENGUELA(departure)
-				: ROUTE_BENGUELA_LUANDA(departure);
+		const stops = TEMPLATES[template](departure);
 		const origin = stops[0];
 		const destination = stops[stops.length - 1];
-		// estimativa de chegada: 480km (~60km/h com paragens)
-		const travelMin = stopsIncludeAll ? 440 : 395;
+		// estimativa de chegada: duração da rota (± 45min sem paragens)
+		const travelMin = stopsIncludeAll
+			? TRAVEL_MIN[template]
+			: TRAVEL_MIN[template] - 45;
 		const arrival = new Date(
 			Date.parse(departure) + travelMin * 60000,
 		).toISOString();
@@ -303,6 +325,30 @@ export function seedDatabase(): Database {
 			18000,
 			'concluida',
 			'bgu_lad',
+			true,
+		),
+		mkRide(
+			'ride_maria_lubango',
+			'u_drv_bruno',
+			'Huambo → Lubango',
+			amanha0730.toISOString(),
+			6,
+			2,
+			12000,
+			'programada',
+			'hbo_hla',
+			true,
+		),
+		mkRide(
+			'ride_pedro_malanje',
+			'u_drv_paulo',
+			'Luanda → Malanje',
+			amanha0815.toISOString(),
+			12,
+			3,
+			16000,
+			'programada',
+			'lad_mal',
 			true,
 		),
 		// Viagens intermunicipais (dentro de Luanda) — demo da pesquisa local

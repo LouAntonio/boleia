@@ -25,9 +25,6 @@ export type Locality = {
 	province: string;
 	municipality: string;
 	name: string;
-	lat: number;
-	lng: number;
-	isMajor: boolean; // cidade/paragem principal
 };
 
 export type RouteStop = {

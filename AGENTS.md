@@ -36,7 +36,7 @@ Run order: `npm ci` → `typecheck` → `lint` → `format:check` → `doctor` (
 - **Styling**: NativeWind (Tailwind CSS for RN). Import `'./global.css'` in `App.tsx`. Metro config wired via `withNativeWind()`.
 - **Custom theme colors** (`src/store/colors.ts` + tailwind.config.js): `primary` (#F2A900), `secondary`, `laterite` (#B4531F), `mato`, `error`, `border`, `card`, `background`, `text`
 - **State management**: Zustand for local state. Server state is **mock** — `src/mock/db.ts` (persist em AsyncStorage) + `src/mock/repos/*` (repositórios síncronos). React Query exists but the demo não usa API real.
-- **Mock layer**: `src/mock/` — `db.ts` (zustand persist), `seed.ts` (dataset Angola), `locale.ts` (municípios/rotas), `helpers.ts`, `repos/` (`authRepo`, `driverRepo`, `rideRepo`, `bookingRepo`, `reviewRepo`, `liveRepo`)
+- **Mock layer**: `src/mock/` — `db.ts` (zustand persist), `seed.ts` (dataset Angola), `locale.ts` (21 províncias, ~306 municípios reais — sem coordenadas por município; `PROVINCE_COORDS` por província para estimar distâncias), `helpers.ts`, `repos/` (`authRepo`, `driverRepo`, `rideRepo`, `bookingRepo`, `reviewRepo`, `liveRepo`)
 - **Simulação "ao vivo"**: `liveRepo.startRide` põe a viagem `em_curso`; `advanceLive` avança `vinculos` por intervalo (7s no `BoleiaMainNavigator`) e `finalizeRide` conclui as reservas e credita o motorista (90% do valor).
 - **Pagamentos**: `carteira` (desconto/refund), `dinheiro` (ao motorista). **`multicaixa`/MCX é placeholder ("Em breve")** — bloqueado na UI de `RideDetailScreen`, não chega ao repo.
 - **Source tree**: `src/{components,hooks,lib,mock,navigation,screens,store,types,utils}` (não existe `src/api/` — o cliente usa o mock)

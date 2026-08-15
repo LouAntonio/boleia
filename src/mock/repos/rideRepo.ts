@@ -2,7 +2,7 @@
 import { useDbStore } from '../db';
 import { UID, nowISO, hhmm, toAscii } from '../helpers';
 import { Ride, RouteStop } from '../../types/boleia';
-import { localityById } from '../locale';
+import { localityById, PROVINCE_COORDS } from '../locale';
 
 export type RideInput = {
 	driverId: string;
@@ -115,9 +115,16 @@ export function createRide(input: RideInput): Ride {
 		input.originLocalityId,
 		input.destinationLocalityId,
 	);
-	const distanceKm = Math.round(
-		Math.abs(destLoc.lng - originLoc.lng) * 95 +
-			Math.abs(destLoc.lat - originLoc.lat) * 111,
+	// distância estimada entre províncias (coordenadas representativas)
+	const originCoords = PROVINCE_COORDS[originLoc.province];
+	const destCoords = PROVINCE_COORDS[destLoc.province];
+	const distanceKm = Math.max(
+		25,
+		Math.round(
+			Math.abs((destCoords?.lng ?? 0) - (originCoords?.lng ?? 0)) * 95 +
+				Math.abs((destCoords?.lat ?? 0) - (originCoords?.lat ?? 0)) *
+					111,
+		),
 	);
 
 	const departure = dep.toISOString();

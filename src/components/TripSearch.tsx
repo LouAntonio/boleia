@@ -12,8 +12,6 @@ import { searchRides, nextDays, RideMode } from '../mock/repos/rideRepo';
 import { Ride } from '../types/boleia';
 import { localityById } from '../mock/locale';
 
-type OpenField = 'from' | 'to' | null;
-
 export default function TripSearch() {
 	const navigation =
 		useNavigation<
@@ -25,7 +23,6 @@ export default function TripSearch() {
 	const [from, setFrom] = useState('');
 	const [to, setTo] = useState('');
 	const [date, setDate] = useState('');
-	const [open, setOpen] = useState<OpenField>(null);
 	const [results, setResults] = useState<Ride[] | null>(null);
 	const days = nextDays(4);
 
@@ -61,13 +58,11 @@ export default function TripSearch() {
 
 	const selectFrom = (id: string) => {
 		setFrom(id);
-		setOpen(null);
 		if (to && !validPair(mode, id, to)) setTo('');
 	};
 
 	const selectTo = (id: string) => {
 		setTo(id);
-		setOpen(null);
 		if (from && !validPair(mode, from, id)) setFrom('');
 	};
 
@@ -82,69 +77,19 @@ export default function TripSearch() {
 		);
 	};
 
-	const fieldRow = (kind: 'from' | 'to', label: string, value: string) => {
-		const selected = value ? localityById(value) : null;
-		const isOpen = open === kind;
-		return (
-			<View>
-				<Pressable
-					onPress={() => setOpen(isOpen ? null : kind)}
-					className="flex-row items-center py-3"
-				>
-					<View className="w-6 items-center">
-						<View
-							className="w-3 h-3 rounded-full"
-							style={{
-								backgroundColor:
-									kind === 'from'
-										? themeColors.primary
-										: themeColors.laterite,
-							}}
-						/>
-					</View>
-					<View className="flex-1 ml-3">
-						<Text
-							className="font-mono text-[10px] uppercase tracking-[2px]"
-							style={{ color: themeColors.laterite }}
-						>
-							{label}
-						</Text>
-						<Text
-							className={
-								selected
-									? 'font-sansBold text-[15px] mt-0.5'
-									: 'font-sans text-[15px] mt-0.5'
-							}
-							style={{
-								color: selected
-									? themeColors.text
-									: themeColors.border,
-							}}
-						>
-							{selected
-								? `${selected.municipality} · ${selected.province}`
-								: 'Escolher local'}
-						</Text>
-					</View>
-					<Ionicons
-						name={isOpen ? 'chevron-up' : 'chevron-down'}
-						size={16}
-						color={themeColors.border}
-					/>
-				</Pressable>
-				{isOpen ? (
-					<View className="mt-1">
-						<LocalityPicker
-							value={value}
-							onChange={kind === 'from' ? selectFrom : selectTo}
-							exclude={kind === 'from' ? to : from}
-							filter={kind === 'from' ? originFilter : destFilter}
-						/>
-					</View>
-				) : null}
-			</View>
-		);
-	};
+	const fieldRow = (kind: 'from' | 'to', label: string, value: string) => (
+		<LocalityPicker
+			variant="row"
+			label={label}
+			dotColor={
+				kind === 'from' ? themeColors.primary : themeColors.laterite
+			}
+			value={value}
+			onChange={kind === 'from' ? selectFrom : selectTo}
+			exclude={kind === 'from' ? to : from}
+			filter={kind === 'from' ? originFilter : destFilter}
+		/>
+	);
 
 	return (
 		<View>
