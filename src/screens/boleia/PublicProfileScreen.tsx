@@ -12,6 +12,44 @@ import { useDbStore } from '../../mock/db';
 import { initials } from '../../mock/helpers';
 import { reviewsFor } from '../../mock/repos/reviewRepo';
 
+function Stat({
+	value,
+	label,
+	first,
+}: {
+	value: string;
+	label: string;
+	first?: boolean;
+}) {
+	const { themeColors } = useThemeColors();
+	return (
+		<View
+			className="flex-1 items-center"
+			style={
+				first
+					? undefined
+					: {
+							borderLeftWidth: 1,
+							borderLeftColor: themeColors.border,
+						}
+			}
+		>
+			<Text
+				className="font-mono text-[16px]"
+				style={{ color: themeColors.laterite }}
+			>
+				{value}
+			</Text>
+			<Text
+				className="font-mono text-[9px] uppercase tracking-[2px] mt-1"
+				style={{ color: themeColors.secondary }}
+			>
+				{label}
+			</Text>
+		</View>
+	);
+}
+
 export default function PublicProfileScreen() {
 	const navigation =
 		useNavigation<
@@ -40,6 +78,11 @@ export default function PublicProfileScreen() {
 	}
 
 	const veh = user.vehicle;
+	const rating = user.rating ? user.rating.toFixed(1) : 'novo';
+	const since = new Date(user.createdAt)
+		.toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' })
+		.replace('.', '')
+		.toUpperCase();
 
 	return (
 		<SafeAreaView
@@ -61,78 +104,103 @@ export default function PublicProfileScreen() {
 						color={themeColors.text}
 					/>
 				</Pressable>
-				<Text
-					className="font-display text-[20px]"
-					style={{ color: themeColors.text }}
-				>
-					Perfil
-				</Text>
+				<View className="flex-1">
+					<Text
+						className="font-mono text-[10px] uppercase tracking-[3px]"
+						style={{ color: themeColors.laterite }}
+					>
+						Perfil público
+					</Text>
+					<Text
+						className="font-display text-[20px] -mt-0.5"
+						style={{ color: themeColors.text }}
+					>
+						{user.firstName} {user.lastName}
+					</Text>
+				</View>
 			</View>
 
 			<ScrollView
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 48 }}
 			>
-				<View className="items-center pt-4">
-					<View
-						className="w-20 h-20 rounded-full items-center justify-center"
-						style={{ backgroundColor: themeColors.primary }}
-					>
+				{/* Ficha de apresentação */}
+				<View
+					className="p-5 rounded-3xl border"
+					style={{
+						borderColor: themeColors.border,
+						backgroundColor: themeColors.card,
+					}}
+				>
+					<View className="items-center">
+						<View
+							className="w-20 h-20 rounded-full items-center justify-center"
+							style={{
+								backgroundColor: themeColors.primary,
+								borderWidth: 2,
+								borderColor: themeColors.laterite,
+							}}
+						>
+							<Text
+								className="font-display text-[26px]"
+								style={{ color: themeColors.text }}
+							>
+								{initials(user.firstName, user.lastName)}
+							</Text>
+						</View>
 						<Text
-							className="font-display text-[26px]"
+							className="font-sansBold text-[20px] mt-3"
 							style={{ color: themeColors.text }}
 						>
-							{initials(user.firstName, user.lastName)}
+							{user.firstName} {user.lastName}
 						</Text>
-					</View>
-					<Text
-						className="font-sansBold text-[20px] mt-3"
-						style={{ color: themeColors.text }}
-					>
-						{user.firstName} {user.lastName}
-					</Text>
-					<View className="flex-row items-center mt-1">
-						<Text
-							className="font-mono text-[15px] mr-1"
-							style={{ color: themeColors.laterite }}
-						>
-							★
-						</Text>
-						<Text
-							className="font-sansMedium text-[14px]"
-							style={{ color: themeColors.secondary }}
-						>
-							{user.rating ? user.rating.toFixed(1) : 'novo'}
-							{user.ratingsCount > 0
-								? ` · ${user.ratingsCount} avaliaçõe${user.ratingsCount > 1 ? 's' : ''}`
-								: ''}
-						</Text>
-					</View>
-					<View className="flex-row mt-2">
-						<StatusStamp
-							status={user.kyc?.status ?? 'nao_submetido'}
-						/>
-						<View className="ml-2">
-							<StatusStamp
-								status={user.vehicle?.status ?? 'nao_submetido'}
-								label={
-									user.vehicle
-										? 'Viatura registada'
-										: 'Sem viatura'
-								}
-							/>
+						<View className="flex-row items-center mt-1">
+							<Text
+								className="font-mono text-[15px] mr-1"
+								style={{ color: themeColors.laterite }}
+							>
+								★
+							</Text>
+							<Text
+								className="font-sansMedium text-[14px]"
+								style={{ color: themeColors.secondary }}
+							>
+								{rating}
+								{user.ratingsCount > 0
+									? ` · ${user.ratingsCount} avaliaçõe${user.ratingsCount > 1 ? 's' : ''}`
+									: ''}
+							</Text>
 						</View>
+					</View>
+
+					<View
+						className="border-t my-4"
+						style={{ borderColor: themeColors.border }}
+					/>
+
+					<View className="flex-row">
+						<Stat first value={rating} label="Avaliação" />
+						<Stat
+							value={String(user.ratingsCount)}
+							label="Viagens"
+						/>
+						<Stat value={since} label="Desde" />
 					</View>
 				</View>
 
-				{user.bio ? (
-					<Text
-						className="font-sans text-[13px] leading-5 text-center mt-4 px-4"
-						style={{ color: themeColors.secondary }}
-					>
-						{user.bio}
-					</Text>
-				) : null}
+				<View className="flex-row mt-4 justify-center">
+					<StatusStamp status={user.kyc?.status ?? 'nao_submetido'} />
+					<View className="ml-2">
+						<StatusStamp
+							status={user.vehicle?.status ?? 'nao_submetido'}
+							label={
+								user.vehicle
+									? 'Viatura registada'
+									: 'Sem viatura'
+							}
+						/>
+					</View>
+				</View>
 
 				{veh ? (
 					<View className="mt-6">
@@ -144,24 +212,39 @@ export default function PublicProfileScreen() {
 								backgroundColor: themeColors.card,
 							}}
 						>
-							<Text
-								className="font-sansBold text-[16px]"
-								style={{ color: themeColors.text }}
-							>
-								{veh.make} {veh.model}
-							</Text>
-							<Text
-								className="font-mono text-[12px] mt-0.5"
-								style={{ color: themeColors.secondary }}
-							>
-								{veh.color} · {veh.plate}
-							</Text>
-							<Text
-								className="font-sans text-[12px] mt-1"
-								style={{ color: themeColors.secondary }}
-							>
-								{veh.seats} lugares de lotação
-							</Text>
+							<View className="flex-row items-start justify-between">
+								<View className="flex-1 mr-3">
+									<Text
+										className="font-sansBold text-[16px]"
+										style={{ color: themeColors.text }}
+									>
+										{veh.make} {veh.model}
+									</Text>
+									<Text
+										className="font-mono text-[12px] mt-0.5"
+										style={{ color: themeColors.secondary }}
+									>
+										{veh.color} · {veh.plate}
+									</Text>
+									<Text
+										className="font-sans text-[12px] mt-1"
+										style={{ color: themeColors.secondary }}
+									>
+										{veh.seats} lugares de lotação
+									</Text>
+								</View>
+								<View
+									className="rounded-full border px-2.5 py-1"
+									style={{ borderColor: themeColors.mato }}
+								>
+									<Text
+										className="font-mono text-[9px] uppercase tracking-[1.5px]"
+										style={{ color: themeColors.mato }}
+									>
+										Registada
+									</Text>
+								</View>
+							</View>
 						</View>
 					</View>
 				) : null}
@@ -179,32 +262,55 @@ export default function PublicProfileScreen() {
 						reviews.map((r) => (
 							<View
 								key={r.id}
-								className="p-3.5 rounded-2xl border mb-2"
+								className="rounded-2xl border mb-2 overflow-hidden"
 								style={{
 									borderColor: themeColors.border,
 									backgroundColor: themeColors.card,
 								}}
 							>
-								<View className="flex-row items-center">
-									<Text
-										className="font-mono text-[14px] mr-1"
-										style={{ color: themeColors.laterite }}
-									>
-										★ {r.rating}
-									</Text>
-									<Text
-										className="font-mono text-[11px]"
-										style={{ color: themeColors.secondary }}
-									>
-										{r.createdAt.slice(0, 10)}
-									</Text>
+								<View className="flex-row">
+									<View
+										className="w-[4px]"
+										style={{
+											backgroundColor:
+												themeColors.laterite,
+										}}
+									/>
+									<View className="flex-1 p-3.5">
+										<View className="flex-row items-center">
+											<Text
+												className="font-mono text-[14px] mr-2"
+												style={{
+													color: themeColors.laterite,
+												}}
+											>
+												★ {r.rating}
+											</Text>
+											<Text
+												className="font-mono text-[11px]"
+												style={{
+													color: themeColors.secondary,
+												}}
+											>
+												{new Date(
+													r.createdAt,
+												).toLocaleDateString('pt-PT', {
+													day: '2-digit',
+													month: 'short',
+													year: 'numeric',
+												})}
+											</Text>
+										</View>
+										<Text
+											className="font-sans text-[13px] mt-1"
+											style={{
+												color: themeColors.secondary,
+											}}
+										>
+											{r.comment}
+										</Text>
+									</View>
 								</View>
-								<Text
-									className="font-sans text-[13px] mt-1"
-									style={{ color: themeColors.secondary }}
-								>
-									{r.comment}
-								</Text>
 							</View>
 						))
 					)}

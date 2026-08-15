@@ -32,12 +32,15 @@ function mulberry32(a: number) {
 
 // QRStamp — pseudo-QR determinístico a partir do id (mock, não scannable).
 // O "bilhete" ganha o glifo moderno do QR sem depender de uma biblioteca.
+// `muted` desbota o glifo para o "canhoto" do histórico.
 export default function QRStamp({
 	seed,
 	size = 56,
+	muted = false,
 }: {
 	seed: string;
 	size?: number;
+	muted?: boolean;
 }) {
 	const { themeColors } = useThemeColors();
 	const cell = size / SIZE;
@@ -60,7 +63,12 @@ export default function QRStamp({
 		<View
 			style={[
 				styles.box,
-				{ width: size, height: size, borderColor: themeColors.border },
+				{
+					width: size,
+					height: size,
+					borderColor: themeColors.border,
+					opacity: muted ? 0.35 : 1,
+				},
 			]}
 		>
 			{cells.map((filled, i) =>

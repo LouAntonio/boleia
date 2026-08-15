@@ -4,11 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useDbStore } from '../../mock/db';
-import { initials } from '../../mock/helpers';
 import BookingStub from '../../components/BookingStub';
 import HistoryReceipt from '../../components/HistoryReceipt';
 import BoleiaButton from '../../components/BoleiaButton';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -32,7 +30,6 @@ export default function BookingsScreen() {
 
 	const rides = useDbStore((s) => s.db.rides);
 	const bookings = useDbStore((s) => s.db.bookings);
-	const users = useDbStore((s) => s.db.users);
 	const all = useMemo(
 		() =>
 			bookings
@@ -206,25 +203,6 @@ export default function BookingsScreen() {
 							</Text>
 						) : (
 							upcoming.map(({ booking, ride }, i) => {
-								const driver = users.find(
-									(u) => u.id === ride.driverId,
-								);
-								const othersUsers = bookings
-									.filter(
-										(b) =>
-											b.rideId === ride.id &&
-											b.passengerId !== 'u_me_001' &&
-											(b.status === 'confirmada' ||
-												b.status === 'em_viagem'),
-									)
-									.map((b) =>
-										users.find(
-											(u) => u.id === b.passengerId,
-										),
-									)
-									.filter(
-										(u): u is NonNullable<typeof u> => !!u,
-									);
 								return (
 									<Animated.View
 										key={booking.id}
@@ -277,176 +255,6 @@ export default function BookingsScreen() {
 												) : undefined
 											}
 										/>
-
-										<View
-											className="mt-2 rounded-2xl border overflow-hidden"
-											style={{
-												borderColor: themeColors.border,
-												backgroundColor:
-													themeColors.card,
-											}}
-										>
-											<Pressable
-												onPress={() =>
-													navigation.navigate(
-														'PublicProfile',
-														{
-															userId: ride.driverId,
-														},
-													)
-												}
-												className="flex-row items-center px-4 py-3"
-												style={({ pressed }) => ({
-													opacity: pressed ? 0.7 : 1,
-												})}
-											>
-												<View
-													className="w-10 h-10 rounded-full items-center justify-center"
-													style={{
-														backgroundColor:
-															themeColors.primary,
-													}}
-												>
-													<Text
-														className="font-display text-[14px]"
-														style={{
-															color: themeColors.text,
-														}}
-													>
-														{driver
-															? initials(
-																	driver.firstName,
-																	driver.lastName,
-																)
-															: '?'}
-													</Text>
-												</View>
-												<View className="flex-1 ml-3">
-													<Text
-														className="font-sansBold text-[14px]"
-														style={{
-															color: themeColors.text,
-														}}
-													>
-														{driver
-															? `${driver.firstName} ${driver.lastName}`
-															: '—'}
-													</Text>
-													<Text
-														className="font-mono text-[11px] mt-0.5"
-														style={{
-															color: themeColors.laterite,
-														}}
-													>
-														★{' '}
-														{driver?.rating?.toFixed(
-															1,
-														) ?? 'novo'}{' '}
-														·{' '}
-														{driver?.vehicle
-															? `${driver.vehicle.make} ${driver.vehicle.model}`
-															: 'viatura'}
-													</Text>
-												</View>
-												<Ionicons
-													name="chevron-forward"
-													size={16}
-													color={themeColors.border}
-												/>
-											</Pressable>
-
-											<View
-												className="border-t px-4 py-3"
-												style={{
-													borderTopColor:
-														themeColors.border,
-												}}
-											>
-												<Text
-													className="font-mono text-[9px] uppercase tracking-[2px]"
-													style={{
-														color: themeColors.secondary,
-													}}
-												>
-													A bordo contigo ·{' '}
-													{othersUsers.length}
-												</Text>
-												{othersUsers.length === 0 ? (
-													<Text
-														className="font-sans text-[12px] mt-1"
-														style={{
-															color: themeColors.secondary,
-														}}
-													>
-														Só tu a bordo por agora.
-													</Text>
-												) : (
-													<View className="flex-row flex-wrap mt-1.5">
-														{othersUsers.map(
-															(u) => (
-																<Pressable
-																	key={u.id}
-																	onPress={() =>
-																		navigation.navigate(
-																			'PublicProfile',
-																			{
-																				userId: u.id,
-																			},
-																		)
-																	}
-																	className="flex-row items-center rounded-full border py-1 pl-1 pr-3 mr-2 mb-2"
-																	style={({
-																		pressed,
-																	}) => ({
-																		borderColor:
-																			themeColors.border,
-																		backgroundColor:
-																			themeColors.card,
-																		opacity:
-																			pressed
-																				? 0.7
-																				: 1,
-																	})}
-																>
-																	<View
-																		className="w-7 h-7 rounded-full items-center justify-center"
-																		style={{
-																			backgroundColor:
-																				themeColors.border,
-																		}}
-																	>
-																		<Text
-																			className="font-sansBold text-[10px]"
-																			style={{
-																				color: themeColors.text,
-																			}}
-																		>
-																			{initials(
-																				u.firstName,
-																				u.lastName,
-																			)}
-																		</Text>
-																	</View>
-																	<Text
-																		className="font-sansMedium text-[12px] ml-2"
-																		style={{
-																			color: themeColors.text,
-																		}}
-																	>
-																		{
-																			u.firstName
-																		}{' '}
-																		{
-																			u.lastName
-																		}
-																	</Text>
-																</Pressable>
-															),
-														)}
-													</View>
-												)}
-											</View>
-										</View>
 									</Animated.View>
 								);
 							})

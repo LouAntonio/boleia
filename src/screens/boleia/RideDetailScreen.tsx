@@ -12,8 +12,9 @@ import SectionTitle from '../../components/SectionTitle';
 import { rideProgress } from '../../mock/repos/rideRepo';
 import { requestBooking } from '../../mock/repos/bookingRepo';
 import BookingStub from '../../components/BookingStub';
+import RidePeople from '../../components/RidePeople';
 import { useDbStore } from '../../mock/db';
-import { fmtKz, initials } from '../../mock/helpers';
+import { fmtKz } from '../../mock/helpers';
 
 export default function RideDetailScreen() {
 	const navigation =
@@ -29,6 +30,8 @@ export default function RideDetailScreen() {
 	const driver = useDbStore((s) =>
 		s.db.users.find((u) => u.id === ride?.driverId),
 	);
+	const bookings = useDbStore((s) => s.db.bookings);
+	const users = useDbStore((s) => s.db.users);
 	const myBooking = useDbStore((s) =>
 		s.db.bookings.find(
 			(b) =>
@@ -62,6 +65,15 @@ export default function RideDetailScreen() {
 	const available = ride.seatsTotal - ride.seatsTaken;
 	const total = seats * ride.pricePerSeat;
 	const stops = [ride.origin, ...ride.stops, ride.destination];
+	const onBoard = bookings
+		.filter(
+			(b) =>
+				b.rideId === ride.id &&
+				b.passengerId !== 'u_me_001' &&
+				(b.status === 'confirmada' || b.status === 'em_viagem'),
+		)
+		.map((b) => users.find((u) => u.id === b.passengerId))
+		.filter((u): u is NonNullable<typeof u> => !!u);
 
 	if (myBooking) {
 		return (
@@ -117,6 +129,14 @@ export default function RideDetailScreen() {
 							) : undefined
 						}
 					/>
+					<RidePeople
+						ride={ride}
+						driver={driver}
+						passengers={onBoard}
+						onPressUser={(userId) =>
+							navigation.navigate('PublicProfile', { userId })
+						}
+					/>
 				</ScrollView>
 			</SafeAreaView>
 		);
@@ -134,57 +154,14 @@ export default function RideDetailScreen() {
 			<ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
 				<TripStripCard ride={ride} progress={rideProgress(ride)} />
 
-				{/* Motorista */}
-				<Pressable
-					onPress={() =>
-						navigation.navigate('PublicProfile', {
-							userId: ride.driverId,
-						})
+				<RidePeople
+					ride={ride}
+					driver={driver}
+					passengers={onBoard}
+					onPressUser={(userId) =>
+						navigation.navigate('PublicProfile', { userId })
 					}
-					className="mt-4 p-3 rounded-2xl border flex-row items-center"
-					style={{
-						borderColor: themeColors.border,
-						backgroundColor: themeColors.card,
-					}}
-				>
-					<View
-						className="w-11 h-11 rounded-full items-center justify-center"
-						style={{ backgroundColor: themeColors.primary }}
-					>
-						<Text
-							className="font-display text-[15px]"
-							style={{ color: themeColors.text }}
-						>
-							{driver
-								? initials(driver.firstName, driver.lastName)
-								: '?'}
-						</Text>
-					</View>
-					<View className="flex-1 ml-3">
-						<Text
-							className="font-sansBold text-[14px]"
-							style={{ color: themeColors.text }}
-						>
-							{driver
-								? `${driver.firstName} ${driver.lastName}`
-								: '—'}
-						</Text>
-						<Text
-							className="font-mono text-[12px]"
-							style={{ color: themeColors.laterite }}
-						>
-							★ {driver?.rating?.toFixed(1) ?? 'novo'} ·{' '}
-							{driver?.vehicle
-								? `${driver.vehicle.make} ${driver.vehicle.model}`
-								: 'viatura'}
-						</Text>
-					</View>
-					<Ionicons
-						name="chevron-forward"
-						size={18}
-						color={themeColors.border}
-					/>
-				</Pressable>
+				/>
 
 				{/* Reserva */}
 				<View className="mt-6">

@@ -1,32 +1,26 @@
-import React, { useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React from 'react';
+import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Booking, Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { hhmm, fmtKz } from '../mock/helpers';
-import RouteStrip, { StripStop } from './RouteStrip';
+import { statusMeta } from '../utils/status';
+import RouteRail from './RouteRail';
 import Perforation from './Perforation';
+import QRStamp from './QRStamp';
 import BoleiaButton from './BoleiaButton';
 
-function outcomeOf(status: string, themeColors: Record<string, string>) {
-	if (status === 'concluida') {
-		return {
-			icon: 'checkmark-circle' as const,
-			color: themeColors.mato,
-			tint: `${themeColors.mato.replace('#', '')}1F`,
-		};
-	}
-	return {
-		icon: 'close-circle' as const,
-		color: themeColors.error,
-		tint: `${themeColors.error.replace('#', '')}1F`,
-	};
-}
+const OUTCOME_ICON: Record<
+	string,
+	'checkmark-circle' | 'close-circle' | 'time-outline'
+> = {
+	concluida: 'checkmark-circle',
+	expirada: 'time-outline',
+};
 
-// Recibo do histórico — linha compacta com resultado (check/x) que expande
-// ao toque para mostrar a rota completa e o talão. Esbatido, ao contrário
-// do bilhete vivo das próximas.
+// Recibo do histórico — bilhete espelho do das Próximas, mas "arquivado":
+// banda cinza, rail neutro e QR esbatido, com carimbo USADO / SEM EFEITO
+// sobre o talão. A viagem já passou.
 export default function HistoryReceipt({
 	booking,
 	ride,
@@ -37,136 +31,147 @@ export default function HistoryReceipt({
 	onReview?: () => void;
 }) {
 	const { themeColors } = useThemeColors();
-	const [expanded, setExpanded] = useState(false);
-	const outcome = outcomeOf(booking.status, themeColors);
+	const meta = statusMeta(booking.status);
+	const icon = OUTCOME_ICON[booking.status] ?? 'close-circle';
+	const stampText = booking.status === 'concluida' ? 'USADO' : 'SEM EFEITO';
 	const code = `BL-${booking.id.replace(/^bk_/, '').toUpperCase()}`;
 	const dateLabel = new Date(ride.departure).toLocaleDateString('pt-PT', {
+		weekday: 'short',
 		day: 'numeric',
 		month: 'short',
-		year: 'numeric',
 	});
-
-	const origin: StripStop = {
-		place: ride.origin.name,
-		time: hhmm(ride.departure),
-		km: `${ride.origin.km} km`,
-		kind: 'origin',
-	};
-	const stops: StripStop[] = ride.stops.map((s) => ({
-		place: s.name,
-		time: s.time,
-		km: `${s.km} km`,
-		kind: 'stop',
-	}));
-	const destination: StripStop = {
-		place: ride.destination.name,
-		time: hhmm(ride.arrival),
-		km: `${ride.destination.km} km`,
-		kind: 'destination',
-	};
 
 	return (
 		<View
-			className="rounded-2xl border overflow-hidden"
+			className="rounded-3xl border overflow-hidden"
 			style={{
 				borderColor: themeColors.border,
 				backgroundColor: themeColors.card,
 			}}
 		>
-			<Pressable
-				onPress={() => setExpanded((e) => !e)}
-				className="flex-row items-center px-4 py-3"
-				style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+			<View
+				className="px-4 pt-3 pb-2.5"
+				style={{ backgroundColor: themeColors.border }}
 			>
-				<View
-					className="w-9 h-9 rounded-full items-center justify-center"
-					style={{ backgroundColor: `#${outcome.tint}` }}
-				>
-					<Ionicons
-						name={outcome.icon}
-						size={18}
-						color={outcome.color}
-					/>
-				</View>
-				<View className="flex-1 ml-3">
+				<View className="flex-row items-center justify-between">
+					<View className="flex-row items-center">
+						<Ionicons
+							name={icon}
+							size={14}
+							color={themeColors.secondary}
+						/>
+						<Text
+							className="font-mono text-[10px] uppercase tracking-[2px] ml-1.5"
+							style={{ color: themeColors.secondary }}
+						>
+							{meta.label}
+						</Text>
+					</View>
 					<Text
-						numberOfLines={1}
-						className="font-sansBold text-[14px]"
-						style={{ color: themeColors.text }}
+						className="font-mono text-[10px] uppercase tracking-[2px]"
+						style={{
+							color: themeColors.secondary,
+							opacity: 0.85,
+						}}
 					>
-						{ride.origin.name} → {ride.destination.name}
-					</Text>
-					<Text
-						className="font-mono text-[10px] uppercase tracking-wider mt-0.5"
-						style={{ color: themeColors.secondary }}
-					>
-						{dateLabel}
+						{dateLabel} · {hhmm(ride.departure)}
 					</Text>
 				</View>
 				<Text
-					className="font-mono text-[12px]"
+					numberOfLines={1}
+					className="font-display text-[21px] leading-7 mt-1"
 					style={{ color: themeColors.secondary }}
 				>
-					{fmtKz(booking.amount)}
+					{ride.origin.name} → {ride.destination.name}
 				</Text>
-				<Ionicons
-					name={expanded ? 'chevron-up' : 'chevron-down'}
-					size={15}
-					color={themeColors.border}
-					style={{ marginLeft: 8 }}
-				/>
-			</Pressable>
+			</View>
 
-			{expanded && (
-				<Animated.View
-					entering={FadeInDown.duration(180)}
-					className="px-4 pb-4 border-t"
-					style={{ borderTopColor: themeColors.border }}
-				>
-					<View className="pt-3">
-						<RouteStrip
-							origin={origin}
-							stops={stops}
-							destination={destination}
-							rowHeight={40}
-						/>
-					</View>
-					<Perforation tight />
-					<View className="flex-row items-center justify-between">
+			<View className="px-4 py-3">
+				<RouteRail
+					origin={{
+						place: ride.origin.name,
+						time: hhmm(ride.departure),
+					}}
+					destination={{
+						place: ride.destination.name,
+						time: hhmm(ride.arrival),
+					}}
+					railColor={themeColors.border}
+				/>
+				<View className="flex-row items-center justify-between mt-2.5">
+					<Text
+						className="font-mono text-[11px] uppercase tracking-[2px]"
+						style={{ color: themeColors.laterite }}
+					>
+						{code}
+					</Text>
+				</View>
+				{booking.reason ? (
+					<Text
+						className="font-sans text-[11px] mt-1"
+						style={{ color: themeColors.error }}
+					>
+						{booking.reason}
+					</Text>
+				) : null}
+			</View>
+
+			<Perforation tight />
+
+			<View className="px-4 pb-4" style={{ position: 'relative' }}>
+				<View className="flex-row items-center">
+					<QRStamp seed={booking.id} size={50} muted />
+					<View className="flex-1 ml-3">
 						<Text
-							className="font-mono text-[11px] uppercase tracking-[2px]"
-							style={{ color: themeColors.laterite }}
+							className="font-display text-[20px]"
+							style={{ color: themeColors.text }}
 						>
-							{code}
+							{fmtKz(booking.amount)}
 						</Text>
 						<Text
-							className="font-mono text-[11px]"
+							className="font-mono text-[10px] uppercase tracking-wider mt-0.5"
 							style={{ color: themeColors.secondary }}
 						>
 							{booking.seats} lugar
 							{booking.seats > 1 ? 'es' : ''}
 						</Text>
 					</View>
-					{booking.reason ? (
+				</View>
+
+				<View
+					pointerEvents="none"
+					style={{
+						position: 'absolute',
+						top: 4,
+						alignSelf: 'center',
+						transform: [{ rotate: '-12deg' }],
+						opacity: 0.45,
+					}}
+				>
+					<View
+						className="rounded-lg border-2 px-3 py-1"
+						style={{ borderColor: themeColors.secondary }}
+					>
 						<Text
-							className="font-sans text-[11px] mt-1"
-							style={{ color: themeColors.error }}
+							className="font-mono text-[13px] uppercase tracking-[3px]"
+							style={{ color: themeColors.secondary }}
 						>
-							{booking.reason}
+							{stampText}
 						</Text>
-					) : null}
-					{booking.status === 'concluida' && onReview ? (
-						<View className="mt-3">
-							<BoleiaButton
-								small
-								title="Avaliar motorista"
-								variant="outline"
-								onPress={onReview}
-							/>
-						</View>
-					) : null}
-				</Animated.View>
-			)}
+					</View>
+				</View>
+
+				{booking.status === 'concluida' && onReview ? (
+					<View className="mt-3">
+						<BoleiaButton
+							small
+							title="Avaliar motorista"
+							variant="outline"
+							onPress={onReview}
+						/>
+					</View>
+				) : null}
+			</View>
 		</View>
 	);
 }

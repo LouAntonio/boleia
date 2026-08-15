@@ -11,6 +11,8 @@ import { useDbStore } from '../../mock/db';
 import { initials } from '../../mock/helpers';
 import { writeReview, submittedReview } from '../../mock/repos/reviewRepo';
 
+const MAX_COMMENT = 240;
+
 export default function ReviewScreen() {
 	const navigation =
 		useNavigation<
@@ -91,7 +93,11 @@ export default function ReviewScreen() {
 				<View className="items-center pt-6">
 					<View
 						className="w-16 h-16 rounded-full items-center justify-center"
-						style={{ backgroundColor: themeColors.primary }}
+						style={{
+							backgroundColor: themeColors.primary,
+							borderWidth: 2,
+							borderColor: themeColors.laterite,
+						}}
 					>
 						<Text
 							className="font-display text-[20px]"
@@ -120,7 +126,7 @@ export default function ReviewScreen() {
 
 				{already || done ? (
 					<View
-						className="mt-10 items-center p-5 rounded-2xl border"
+						className="mt-10 items-center p-5 rounded-3xl border"
 						style={{
 							borderColor: themeColors.mato,
 							backgroundColor: themeColors.card,
@@ -152,54 +158,106 @@ export default function ReviewScreen() {
 						</Text>
 					</View>
 				) : (
-					<View className="mt-8 items-center">
-						<View className="flex-row">
-							{[1, 2, 3, 4, 5].map((n) => (
-								<Pressable
-									key={n}
-									onPress={() =>
-										setRating(n as 1 | 2 | 3 | 4 | 5)
-									}
-									className="px-2"
-								>
-									<Ionicons
-										name="star"
-										size={34}
-										color={
-											n <= rating
-												? themeColors.primary
-												: themeColors.border
-										}
-									/>
-								</Pressable>
-							))}
-						</View>
-						<Text
-							className="font-sansMedium text-[13px] mt-2"
-							style={{ color: themeColors.secondary }}
-						>
-							{rating} de 5
-						</Text>
-
+					<View className="mt-8">
 						<View
-							className="w-full rounded-xl border px-3.5 mt-6"
+							className="p-5 rounded-3xl border"
 							style={{
 								borderColor: themeColors.border,
 								backgroundColor: themeColors.card,
 							}}
 						>
-							<TextInput
-								value={comment}
-								onChangeText={setComment}
-								multiline
-								placeholder="Como foi a viagem? (opcional)"
-								placeholderTextColor={themeColors.border}
-								className="py-3 font-sans text-[14px]"
-								style={{
-									color: themeColors.text,
-									minHeight: 88,
-								}}
+							<Text
+								className="font-mono text-[10px] uppercase tracking-[3px]"
+								style={{ color: themeColors.laterite }}
+							>
+								A tua nota
+							</Text>
+							<View className="flex-row justify-center pt-3">
+								{[1, 2, 3, 4, 5].map((n) => (
+									<Pressable
+										key={n}
+										onPress={() =>
+											setRating(n as 1 | 2 | 3 | 4 | 5)
+										}
+										className="px-1.5"
+										style={({ pressed }) => ({
+											opacity: pressed ? 0.6 : 1,
+											transform: [
+												{
+													scale: pressed ? 0.9 : 1,
+												},
+											],
+										})}
+									>
+										<Ionicons
+											name={
+												n <= rating
+													? 'star'
+													: 'star-outline'
+											}
+											size={36}
+											color={
+												n <= rating
+													? themeColors.primary
+													: themeColors.border
+											}
+										/>
+									</Pressable>
+								))}
+							</View>
+							<Text
+								className="font-mono text-[11px] text-center mt-2"
+								style={{ color: themeColors.secondary }}
+							>
+								{rating} de 5{' '}
+								{rating === 1
+									? '· correu mal'
+									: rating === 5
+										? '· viagem perfeita'
+										: ''}
+							</Text>
+
+							<View
+								className="border-t mt-5"
+								style={{ borderColor: themeColors.border }}
 							/>
+
+							<View className="flex-row items-center justify-between mt-5">
+								<Text
+									className="font-mono text-[10px] uppercase tracking-[3px]"
+									style={{ color: themeColors.secondary }}
+								>
+									Comentário · opcional
+								</Text>
+								<Text
+									className="font-mono text-[10px]"
+									style={{ color: themeColors.border }}
+								>
+									{comment.length}/{MAX_COMMENT}
+								</Text>
+							</View>
+							<View
+								className="rounded-xl border px-3.5 mt-2.5"
+								style={{
+									borderColor: themeColors.border,
+									backgroundColor: themeColors.background,
+								}}
+							>
+								<TextInput
+									value={comment}
+									onChangeText={(t) =>
+										setComment(t.slice(0, MAX_COMMENT))
+									}
+									multiline
+									placeholder="O que te marcou na viagem?"
+									placeholderTextColor={themeColors.border}
+									className="py-3 font-sans text-[14px]"
+									style={{
+										color: themeColors.text,
+										minHeight: 96,
+									}}
+								/>
+							</View>
 						</View>
 
 						<View className="w-full mt-6">
