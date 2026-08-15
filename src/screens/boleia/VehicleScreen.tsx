@@ -7,6 +7,8 @@ import {
 	Pressable,
 	ActivityIndicator,
 	KeyboardTypeOptions,
+	useWindowDimensions,
+	LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,6 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import BoleiaButton from '../../components/BoleiaButton';
 import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
+import PhotoLightbox from '../../components/PhotoLightbox';
 import { useDbStore } from '../../mock/db';
 import { submitVehicle } from '../../mock/repos/driverRepo';
 
@@ -150,6 +153,21 @@ export default function VehicleScreen() {
 	const [seats, setSeats] = useState(String(me?.vehicle?.seats ?? 4));
 	const [photos, setPhotos] = useState<string[]>(me?.vehicle?.photos ?? []);
 	const [submitting, setSubmitting] = useState(false);
+	const [viewing, setViewing] = useState<{
+		uri: string;
+		label: string;
+	} | null>(null);
+
+	// Largura real do ecrã para dimensionar os slots de foto de forma explícita
+	// (sem aspectRatio nem largura percentual em filhos de flex-row).
+	const { width: winW } = useWindowDimensions();
+	const [viewW, setViewW] = useState<number | null>(null);
+	const layoutW = viewW ?? winW;
+	const slot = Math.min(
+		140,
+		Math.max(84, Math.floor((layoutW - 72 - 16) / 3)),
+	);
+	const slotsWidth = slot * 3 + 16;
 
 	const vehicle = me?.vehicle;
 	const status = vehicle?.status ?? 'nao_submetido';
@@ -192,6 +210,9 @@ export default function VehicleScreen() {
 		<SafeAreaView
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
+			onLayout={(e: LayoutChangeEvent) =>
+				setViewW(e.nativeEvent.layout.width)
+			}
 		>
 			<ScrollView
 				className="flex-1"
@@ -402,15 +423,27 @@ export default function VehicleScreen() {
 								/>
 							</View>
 
-							<View className="flex-row w-full max-w-[300px] self-center mb-2">
+							<View
+								style={{
+									flexDirection: 'row',
+									alignSelf: 'center',
+									alignItems: 'flex-start',
+									marginBottom: 8,
+								}}
+							>
 								{[0, 1, 2].map((i) => (
 									<PhotoSlot
 										key={i}
 										uri={photos[i] ?? null}
 										label={`Foto ${i + 1}`}
-										className={`flex-1 ${
-											i < 2 ? 'mr-2' : ''
-										}`}
+										size={slot}
+										className={i < 2 ? 'mr-2' : ''}
+										onView={() =>
+											setViewing({
+												uri: photos[i] ?? '',
+												label: `Foto ${i + 1}`,
+											})
+										}
 										onPick={() =>
 											pickOne((u) =>
 												setPhotos((prev) =>
@@ -432,17 +465,31 @@ export default function VehicleScreen() {
 							</View>
 
 							{extraPhotos.length > 0 ? (
-								<View className="flex-row w-full max-w-[300px] self-center">
+								<View
+									style={{
+										flexDirection: 'row',
+										alignSelf: 'center',
+										alignItems: 'flex-start',
+										marginBottom: 8,
+									}}
+								>
 									{extraPhotos.map((uri, i) => (
 										<PhotoSlot
 											key={i + 3}
 											uri={uri}
 											label={`Foto ${i + 4}`}
-											className={`flex-1 ${
+											size={slot}
+											className={
 												i < extraPhotos.length - 1
 													? 'mr-2'
 													: ''
-											}`}
+											}
+											onView={() =>
+												setViewing({
+													uri,
+													label: `Foto ${i + 4}`,
+												})
+											}
 											onPick={() =>
 												pickOne((u) =>
 													setPhotos((prev) =>
@@ -469,8 +516,13 @@ export default function VehicleScreen() {
 											),
 										)
 									}
-									className="rounded-2xl border items-center justify-center py-3.5 mt-2 flex-row w-full max-w-[300px] self-center"
+									className="rounded-2xl border py-3.5 mt-2"
 									style={({ pressed }) => ({
+										width: slotsWidth,
+										alignSelf: 'center',
+										flexDirection: 'row',
+										alignItems: 'center',
+										justifyContent: 'center',
 										borderColor: themeColors.border,
 										borderStyle: 'dashed',
 										backgroundColor: themeColors.card,
@@ -491,8 +543,11 @@ export default function VehicleScreen() {
 								</Pressable>
 							) : (
 								<Text
-									className="font-sans text-[11px] mt-2 text-center w-full max-w-[300px] self-center"
-									style={{ color: themeColors.secondary }}
+									className="font-sans text-[11px] mt-2 text-center self-center"
+									style={{
+										color: themeColors.secondary,
+										width: slotsWidth,
+									}}
 								>
 									Máximo de {MAX_PHOTOS} fotos atingido.
 								</Text>
@@ -509,6 +564,11 @@ export default function VehicleScreen() {
 					</View>
 				)}
 			</ScrollView>
+			<PhotoLightbox
+				uri={viewing?.uri ?? null}
+				label={viewing?.label}
+				onClose={() => setViewing(null)}
+			/>
 		</SafeAreaView>
 	);
 }

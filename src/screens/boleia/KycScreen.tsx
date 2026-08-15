@@ -5,6 +5,8 @@ import {
 	ScrollView,
 	Pressable,
 	ActivityIndicator,
+	useWindowDimensions,
+	LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import BoleiaButton from '../../components/BoleiaButton';
 import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
+import PhotoLightbox from '../../components/PhotoLightbox';
 import { useDbStore } from '../../mock/db';
 import { submitKyc } from '../../mock/repos/driverRepo';
 
@@ -98,6 +101,20 @@ export default function KycScreen() {
 		me?.kyc?.licensePhotoUri ?? null,
 	);
 	const [submitting, setSubmitting] = useState(false);
+	const [viewing, setViewing] = useState<{
+		uri: string;
+		label: string;
+	} | null>(null);
+
+	// Largura real do ecrã para dimensionar os slots de foto de forma explícita
+	// (sem aspectRatio nem largura percentual em filhos de flex-row).
+	const { width: winW } = useWindowDimensions();
+	const [viewW, setViewW] = useState<number | null>(null);
+	const layoutW = viewW ?? winW;
+	const slot = Math.min(
+		140,
+		Math.max(84, Math.floor((layoutW - 72 - 16) / 3)),
+	);
 
 	const kyc = me?.kyc;
 	const status = kyc?.status ?? 'nao_submetido';
@@ -133,6 +150,9 @@ export default function KycScreen() {
 		<SafeAreaView
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
+			onLayout={(e: LayoutChangeEvent) =>
+				setViewW(e.nativeEvent.layout.width)
+			}
 		>
 			<ScrollView
 				className="flex-1"
@@ -287,15 +307,26 @@ export default function KycScreen() {
 							title="Rosto"
 							subtitle="3 Selfies"
 						>
-							<View className="flex-row w-full max-w-[300px] self-center">
+							<View
+								style={{
+									flexDirection: 'row',
+									alignSelf: 'center',
+									alignItems: 'flex-start',
+								}}
+							>
 								{selfies.map((uri, i) => (
 									<PhotoSlot
 										key={`selfie-${i}`}
 										uri={uri}
 										label={`Selfie ${i + 1}`}
-										className={`flex-1 ${
-											i < 2 ? 'mr-2' : ''
-										}`}
+										size={slot}
+										className={i < 2 ? 'mr-2' : ''}
+										onView={() =>
+											setViewing({
+												uri,
+												label: `Selfie ${i + 1}`,
+											})
+										}
 										onPick={() =>
 											pickOne((u) =>
 												setSelfies((prev) =>
@@ -323,18 +354,37 @@ export default function KycScreen() {
 							title="Bilhete de Identidade"
 							subtitle="Frente e Verso"
 						>
-							<View className="flex-row w-full max-w-[220px] self-center">
+							<View
+								style={{
+									flexDirection: 'row',
+									alignSelf: 'center',
+									alignItems: 'flex-start',
+								}}
+							>
 								<PhotoSlot
 									uri={biFront}
 									label="Frente"
-									className="flex-1 mr-2"
+									size={slot}
+									className="mr-2"
+									onView={() =>
+										setViewing({
+											uri: biFront ?? '',
+											label: 'BI · Frente',
+										})
+									}
 									onPick={() => pickOne(setBiFront)}
 									onRemove={() => setBiFront(null)}
 								/>
 								<PhotoSlot
 									uri={biBack}
 									label="Verso"
-									className="flex-1"
+									size={slot}
+									onView={() =>
+										setViewing({
+											uri: biBack ?? '',
+											label: 'BI · Verso',
+										})
+									}
 									onPick={() => pickOne(setBiBack)}
 									onRemove={() => setBiBack(null)}
 								/>
@@ -347,14 +397,21 @@ export default function KycScreen() {
 							title="Carta de condução"
 							subtitle="Documento"
 						>
-							<PhotoSlot
-								uri={licensePhoto}
-								label="Carta"
-								className="self-center w-full max-w-[320px]"
-								onPick={() => pickOne(setLicensePhoto)}
-								onRemove={() => setLicensePhoto(null)}
-								wide
-							/>
+							<View style={{ alignSelf: 'center' }}>
+								<PhotoSlot
+									uri={licensePhoto}
+									label="Carta"
+									size={slot}
+									onView={() =>
+										setViewing({
+											uri: licensePhoto ?? '',
+											label: 'Carta de condução',
+										})
+									}
+									onPick={() => pickOne(setLicensePhoto)}
+									onRemove={() => setLicensePhoto(null)}
+								/>
+							</View>
 						</SectionCard>
 
 						<Text
@@ -374,6 +431,11 @@ export default function KycScreen() {
 					</View>
 				)}
 			</ScrollView>
+			<PhotoLightbox
+				uri={viewing?.uri ?? null}
+				label={viewing?.label}
+				onClose={() => setViewing(null)}
+			/>
 		</SafeAreaView>
 	);
 }

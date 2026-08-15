@@ -5,43 +5,54 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Slot de foto do dossiê (KYC / viatura) — borda tracejada enquanto vazio,
 // imagem + badge de remover quando preenchido. Rótulo mono em `secondary` (a11y).
-// Quadrado via aspectRatio; a grelha no ecrã limita a largura (max-w) para não
-// crescer em ecrãs largos. `className` substitui o padrão `flex-1`.
+// Dimensão explícita (`size`) em vez de aspectRatio + largura percentual:
+// garante quadrados compactos e determinísticos em qualquer plataforma.
+// Toque: card preenchido → `onView` (visualizador); vazio → `onPick` (galeria).
 export default function PhotoSlot({
 	uri,
 	label,
 	onPick,
 	onRemove,
-	wide = false,
+	onView,
+	size,
 	className = '',
 }: {
 	uri: string | null;
 	label: string;
 	onPick: () => void;
 	onRemove?: () => void;
-	wide?: boolean;
+	onView?: () => void;
+	size: number;
 	className?: string;
 }) {
 	const { themeColors } = useThemeColors();
 
 	return (
-		<View className={className || 'flex-1'}>
+		<View className={className} style={{ width: size }}>
 			<Pressable
-				onPress={onPick}
-				className="w-full rounded-2xl border items-center justify-center overflow-hidden"
+				onPress={uri ? (onView ?? onPick) : onPick}
+				className="rounded-2xl border items-center justify-center"
 				style={({ pressed }) => ({
+					width: size,
+					height: size,
+					overflow: 'hidden',
 					borderColor: themeColors.border,
 					borderStyle: uri ? 'solid' : 'dashed',
 					backgroundColor: themeColors.card,
-					aspectRatio: wide ? 16 / 9 : 1,
 					opacity: pressed ? 0.8 : 1,
 				})}
 			>
 				{uri ? (
 					<Image
 						source={{ uri }}
-						className="w-full h-full"
 						resizeMode="cover"
+						style={{
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							width: size,
+							height: size,
+						}}
 					/>
 				) : (
 					<View className="items-center justify-center">
