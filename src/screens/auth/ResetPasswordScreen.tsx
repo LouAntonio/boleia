@@ -8,7 +8,7 @@ import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
 import Perforation from '../../components/Perforation';
-import { setPassword } from '../../mock/repos/authRepo';
+import { resetPassword, apiErrorMessage } from '../../lib/api';
 
 export default function ResetPasswordScreen() {
 	const route =
@@ -23,27 +23,35 @@ export default function ResetPasswordScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 
-	const passwordOk = password.length >= 5;
+	const passwordOk = password.length >= 8;
 	const canSubmit = passwordOk && confirm.length > 0 && password === confirm;
 
-	const submit = () => {
+	const submit = async () => {
 		if (!canSubmit) return;
 		setPending(true);
-		// latência simulada
-		setTimeout(() => {
-			setPassword(route.params.phone, password);
-			setPending(false);
+		setError(null);
+		try {
+			await resetPassword(route.params.token, password);
 			Alert.alert('Senha alterada', 'Entra com a tua nova senha.', [
 				{ text: 'OK', onPress: () => navigation.popToTop() },
 			]);
-		}, 400);
+		} catch (e) {
+			setError(
+				apiErrorMessage(
+					e,
+					'Não foi possível alterar a senha. Tenta de novo.',
+				),
+			);
+		} finally {
+			setPending(false);
+		}
 	};
 
 	return (
 		<AuthShell
 			eyebrow="Recuperação de senha"
 			title="Senha nova"
-			subtitle="Escolhe uma senha com pelo menos 5 caracteres. Vais usá-la para entrar a partir de agora."
+			subtitle="Escolhe uma senha com pelo menos 8 caracteres. Vais usá-la para entrar a partir de agora."
 			back={() => navigation.goBack()}
 		>
 			<Input
@@ -54,7 +62,7 @@ export default function ResetPasswordScreen() {
 					setError(null);
 				}}
 				isPassword
-				placeholder="Mínimo de 6 caracteres"
+				placeholder="Mínimo de 8 caracteres"
 				leftIcon="lock-closed-outline"
 				autoCapitalize="none"
 			/>

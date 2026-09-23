@@ -5,3 +5,8 @@ export function maskPhone(phone: string): string {
 	if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
 	return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
 }
+
+// Número local sem espaços: 923 456 789 -> 923456789
+export function normalizePhone(raw: string): string {
+	return raw.replace(/\s+/g, '');
+}

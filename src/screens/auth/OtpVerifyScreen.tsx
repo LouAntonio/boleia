@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,7 +7,7 @@ import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Perforation from '../../components/Perforation';
-import { verifyOtp, requestOtp } from '../../mock/repos/authRepo';
+import { sendOtp, verifyOtpCode, apiErrorMessage } from '../../lib/api';
 
 export default function OtpVerifyScreen() {
 	const route = useRoute<RouteProp<BoleiaAuthStackParamList, 'OtpVerify'>>();
@@ -15,7 +15,7 @@ export default function OtpVerifyScreen() {
 		useNavigation<
 			NativeStackNavigationProp<BoleiaAuthStackParamList, 'OtpVerify'>
 		>();
-	const phone = route.params.phone;
+	const { phone, purpose } = route.params;
 
 	const { themeColors } = useThemeColors();
 	const [code, setCode] = useState('');
@@ -23,22 +23,49 @@ export default function OtpVerifyScreen() {
 	const [pending, setPending] = useState(false);
 	const [resent, setResent] = useState(false);
 
-	const continueRecovery = () => {
-		if (!verifyOtp(phone, code)) {
-			setError('Código errado ou expirado. Tenta de novo.');
-			return;
-		}
+	const confirmCode = async () => {
+		if (code.length < 6) return;
 		setPending(true);
-		setTimeout(() => {
+		setError(null);
+		try {
+			const res = await verifyOtpCode(phone, purpose, code);
+			if (purpose === 'reset') {
+				if (!res.token) {
+					throw new Error('missing-token');
+				}
+				navigation.navigate('ResetPassword', {
+					phone,
+					token: res.token,
+				});
+				return;
+			}
+			Alert.alert(
+				'Conta verificada',
+				'Já podes entrar com o teu número e senha.',
+				[{ text: 'OK', onPress: () => navigation.popToTop() }],
+			);
+		} catch (e) {
+			setError(
+				apiErrorMessage(e, 'Código errado ou expirado. Tenta de novo.'),
+			);
+		} finally {
 			setPending(false);
-			navigation.navigate('ResetPassword', { phone });
-		}, 400);
+		}
 	};
 
-	const resend = () => {
-		requestOtp(phone);
+	const resend = async () => {
 		setError(null);
-		setResent(true);
+		try {
+			await sendOtp(phone, purpose);
+			setResent(true);
+		} catch (e) {
+			setError(
+				apiErrorMessage(
+					e,
+					'Não foi possível reenviar o código. Tenta de novo.',
+				),
+			);
+		}
 	};
 
 	return (
@@ -47,14 +74,16 @@ export default function OtpVerifyScreen() {
 			title="Insere o código"
 			subtitle={
 				<>
-					Enviámos um SMS de 6 dígitos para{' '}
+					Enviámos um código de 6 dígitos por WhatsApp para{' '}
 					<Text
 						className="font-mono"
 						style={{ color: themeColors.text }}
 					>
 						+244 {phone}
 					</Text>
-					, só para definir a senha nova.
+					{purpose === 'signup'
+						? ', só para confirmar o teu número.'
+						: ', só para definires a senha nova.'}
 				</>
 			}
 			back={() => navigation.goBack()}
@@ -71,7 +100,7 @@ export default function OtpVerifyScreen() {
 							className="font-sansBold text-[13px] uppercase tracking-wider"
 							style={{ color: themeColors.laterite }}
 						>
-							{resent ? 'Reenviado ✓' : 'Reenviar SMS'}
+							{resent ? 'Reenviado ✓' : 'Reenviar código'}
 						</Text>
 					</Pressable>
 				</View>
@@ -111,7 +140,7 @@ export default function OtpVerifyScreen() {
 			<View className="mt-1">
 				<BoleiaButton
 					title="Continuar"
-					onPress={continueRecovery}
+					onPress={confirmCode}
 					loading={pending}
 					disabled={code.length < 6}
 					strong

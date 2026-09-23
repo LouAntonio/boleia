@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
@@ -7,7 +7,7 @@ import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
 import Perforation from '../../components/Perforation';
-import { findByPhone, updateUser } from '../../mock/repos/authRepo';
+import { updateProfile, apiErrorMessage } from '../../lib/api';
 import { useAppStore } from '../../store/appStore';
 import { navigationRef } from '../../lib/navigationRef';
 
@@ -15,7 +15,7 @@ export default function ProfileSetupScreen() {
 	const route =
 		useRoute<RouteProp<BoleiaAuthStackParamList, 'ProfileSetup'>>();
 	const navigation = useNavigation();
-	const phone = route.params.phone;
+	const { userId } = route.params;
 	const { themeColors } = useThemeColors();
 
 	const [firstName, setFirstName] = useState('');
@@ -25,23 +25,31 @@ export default function ProfileSetupScreen() {
 
 	const canSave = firstName.trim().length > 0 && lastName.trim().length > 0;
 
-	const save = () => {
+	const save = async () => {
 		if (!canSave) return;
 		setPending(true);
-		setTimeout(() => {
-			const user = findByPhone(phone);
-			if (!user) return;
-			updateUser(user.id, {
-				firstName: firstName.trim(),
-				lastName: lastName.trim(),
-				bio: bio.trim(),
+		try {
+			await updateProfile({
+				name: firstName.trim(),
+				surname: lastName.trim(),
+				bio: bio.trim() || undefined,
 			});
-			useAppStore.getState().signIn(user.id);
+			useAppStore.getState().signIn(userId);
 			navigationRef.reset({
 				index: 0,
 				routes: [{ name: 'App', params: { screen: 'Main' } }],
 			});
-		}, 500);
+		} catch (e) {
+			Alert.alert(
+				'Erro',
+				apiErrorMessage(
+					e,
+					'Não foi possível guardar o perfil. Tenta de novo.',
+				),
+			);
+		} finally {
+			setPending(false);
+		}
 	};
 
 	return (

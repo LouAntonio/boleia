@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import axios from 'axios';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -8,10 +9,10 @@ import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
 import Perforation from '../../components/Perforation';
-import { login, normalizePhone } from '../../mock/repos/authRepo';
+import { signIn, apiErrorMessage } from '../../lib/api';
 import { useAppStore } from '../../store/appStore';
 import { navigationRef } from '../../lib/navigationRef';
-import { maskPhone } from '../../utils/phone';
+import { maskPhone, normalizePhone } from '../../utils/phone';
 
 export default function LoginScreen() {
 	const navigation =
@@ -24,40 +25,51 @@ export default function LoginScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 
-	const canSubmit = normalizePhone(phone).length >= 9 && password.length >= 5;
+	const canSubmit = normalizePhone(phone).length >= 9 && password.length >= 8;
 
-	const submit = () => {
+	const submit = async () => {
 		if (!canSubmit) return;
+		const normalized = normalizePhone(phone);
 		setPending(true);
-		// latência simulada
-		setTimeout(() => {
-			const res = login(phone, password);
-			setPending(false);
-			if (!res.ok) {
-				setError(
-					res.error === 'inexistente'
-						? 'Nenhuma conta com este número. Cria uma conta.'
-						: 'Senha errada. Tenta de novo.',
-				);
+		setError(null);
+		try {
+			const { user } = await signIn(normalized, password);
+			if (!user.name) {
+				navigation.navigate('ProfileSetup', { userId: user.id });
 				return;
 			}
-			if (!res.user.firstName) {
-				navigation.navigate('ProfileSetup', { phone: res.user.phone });
-			} else {
-				useAppStore.getState().signIn(res.user.id);
-				navigationRef.reset({
-					index: 0,
-					routes: [{ name: 'App', params: { screen: 'Main' } }],
+			useAppStore.getState().signIn(user.id);
+			navigationRef.reset({
+				index: 0,
+				routes: [{ name: 'App', params: { screen: 'Main' } }],
+			});
+		} catch (e) {
+			if (axios.isAxiosError(e) && e.response?.status === 403) {
+				setError(
+					'O teu número ainda não foi verificado. Confirma o código que enviamos por WhatsApp.',
+				);
+				navigation.navigate('OtpVerify', {
+					phone: normalized,
+					purpose: 'signup',
 				});
+				return;
 			}
-		}, 400);
+			setError(
+				apiErrorMessage(
+					e,
+					'Número de telefone ou senha inválidos. Tenta de novo.',
+				),
+			);
+		} finally {
+			setPending(false);
+		}
 	};
 
 	return (
 		<AuthShell
 			eyebrow="Boleia"
 			title="Entra com o teu número"
-			subtitle="Tel e senha. Se te esqueceres da senha, recuperas com um código por SMS."
+			subtitle="Tel e senha. Se te esqueceres da senha, recuperas com um código por WhatsApp."
 			footer={
 				<View>
 					<Pressable

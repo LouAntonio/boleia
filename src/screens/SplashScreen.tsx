@@ -12,6 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { BoleiaRootStackParamList } from '../types/navigation';
 import { useAppStore } from '../store/appStore';
+import { fetchSession } from '../lib/api';
 
 const NODE = 14;
 const R = NODE / 2;
@@ -103,9 +104,19 @@ export default function SplashScreen({
 			]).start();
 		}
 
-		const timer = setTimeout(() => {
+		const timer = setTimeout(async () => {
 			const { authenticated, onboardingSeen } = useAppStore.getState();
-			if (authenticated) {
+			let authed = authenticated;
+			if (authed) {
+				// Confirma se o token guardado ainda corresponde a uma sessão
+				// válida no servidor (sessões revogadas -> logout).
+				const session = await fetchSession();
+				authed = Boolean(session);
+				if (!authed) {
+					useAppStore.getState().signOut();
+				}
+			}
+			if (authed) {
 				navigation.replace('App', { screen: 'Main' });
 			} else if (onboardingSeen) {
 				navigation.replace('Auth', { screen: 'Login' });

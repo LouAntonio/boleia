@@ -13,10 +13,7 @@ export type BookingStatus =
 	| 'expirada';
 
 export type KycStatus =
-	| 'nao_submetido'
-	| 'pendente'
-	| 'verificado'
-	| 'recusado';
+	'nao_submetido' | 'pendente' | 'verificado' | 'recusado';
 
 export type Role = 'passenger' | 'driver';
 

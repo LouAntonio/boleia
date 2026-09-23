@@ -2,13 +2,15 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 
 // ---------- Árvore Boleia (substitui a anterior nas fases seguintes) ----------
 
+export type OtpPurpose = 'signup' | 'reset';
+
 export type BoleiaAuthStackParamList = {
 	Login: undefined;
 	Register: undefined;
 	ForgotPassword: undefined;
-	OtpVerify: { phone: string };
-	ResetPassword: { phone: string };
-	ProfileSetup: { phone: string };
+	OtpVerify: { phone: string; purpose: OtpPurpose };
+	ResetPassword: { phone: string; token: string };
+	ProfileSetup: { userId: string };
 };
 
 export type PassengerTabsParamList = {

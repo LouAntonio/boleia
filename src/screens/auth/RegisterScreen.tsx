@@ -9,10 +9,8 @@ import BoleiaButton from '../../components/BoleiaButton';
 import ConsentRow from '../../components/ConsentRow';
 import Input from '../../components/Input';
 import Perforation from '../../components/Perforation';
-import { registerUser, normalizePhone } from '../../mock/repos/authRepo';
-import { useAppStore } from '../../store/appStore';
-import { navigationRef } from '../../lib/navigationRef';
-import { maskPhone } from '../../utils/phone';
+import { signUp, apiErrorMessage } from '../../lib/api';
+import { maskPhone, normalizePhone } from '../../utils/phone';
 
 export default function RegisterScreen() {
 	const navigation =
@@ -22,6 +20,7 @@ export default function RegisterScreen() {
 	const { themeColors } = useThemeColors();
 	const [firstName, setFirstName] = useState('');
 	const [lastName, setLastName] = useState('');
+	const [email, setEmail] = useState('');
 	const [phone, setPhone] = useState('');
 	const [password, setPassword] = useState('');
 	const [confirm, setConfirm] = useState('');
@@ -31,7 +30,7 @@ export default function RegisterScreen() {
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 
-	const passwordOk = password.length >= 5;
+	const passwordOk = password.length >= 8;
 	const canSubmit =
 		firstName.trim().length > 0 &&
 		lastName.trim().length > 0 &&
@@ -42,25 +41,37 @@ export default function RegisterScreen() {
 		terms &&
 		privacy;
 
-	const submit = () => {
+	const submit = async () => {
 		if (!canSubmit) return;
+		const normalized = normalizePhone(phone);
 		setPending(true);
-		// latência simulada
-		setTimeout(() => {
-			const res = registerUser(phone, password, { firstName, lastName });
-			setPending(false);
-			if (!res.ok) {
-				setError(
-					'Já existe uma conta com este número. Entra com a tua senha.',
-				);
-				return;
-			}
-			useAppStore.getState().signIn(res.user.id);
-			navigationRef.reset({
-				index: 0,
-				routes: [{ name: 'App', params: { screen: 'Main' } }],
+		setError(null);
+		try {
+			await signUp({
+				phone: normalized,
+				password,
+				name: firstName.trim(),
+				surname: lastName.trim(),
+				email: email.trim() || undefined,
+				termsAccepted: terms && privacy,
+				marketingAccepted: news,
 			});
-		}, 400);
+			// O registo não abre sessão: primeiro confirma-se o telefone
+			// com o código enviado por WhatsApp.
+			navigation.navigate('OtpVerify', {
+				phone: normalized,
+				purpose: 'signup',
+			});
+		} catch (e) {
+			setError(
+				apiErrorMessage(
+					e,
+					'Não foi possível criar a conta. Tenta de novo.',
+				),
+			);
+		} finally {
+			setPending(false);
+		}
 	};
 
 	return (
@@ -129,6 +140,18 @@ export default function RegisterScreen() {
 				maxLength={11}
 			/>
 			<Input
+				label="Email (opcional)"
+				value={email}
+				onChangeText={(t) => {
+					setEmail(t);
+					setError(null);
+				}}
+				keyboardType="email-address"
+				placeholder="O teu email (opcional)"
+				leftIcon="mail-outline"
+				autoCapitalize="none"
+			/>
+			<Input
 				label="Senha"
 				value={password}
 				onChangeText={(t) => {
@@ -136,7 +159,7 @@ export default function RegisterScreen() {
 					setError(null);
 				}}
 				isPassword
-				placeholder="Mínimo de 5 caracteres"
+				placeholder="Mínimo de 8 caracteres"
 				leftIcon="lock-closed-outline"
 				autoCapitalize="none"
 			/>
@@ -185,7 +208,7 @@ export default function RegisterScreen() {
 				onChange={() => setPrivacy(!privacy)}
 			/>
 			<ConsentRow
-				label="Quero receber novidades por SMS"
+				label="Quero receber novidades por WhatsApp"
 				checked={news}
 				onChange={() => setNews(!news)}
 				optional

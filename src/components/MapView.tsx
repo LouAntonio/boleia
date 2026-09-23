@@ -59,7 +59,7 @@ export default function MapViewWrapper({
 			)}
 			<MapView
 				onMapReady={() => setIsMapLoaded(true)}
-				style={StyleSheet.absoluteFillObject}
+				style={StyleSheet.absoluteFill}
 				initialRegion={initialRegion}
 				onPress={handlePress}
 				mapType="standard"

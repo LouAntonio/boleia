@@ -17,6 +17,7 @@ import Perforation from '../../components/Perforation';
 import QRStamp from '../../components/QRStamp';
 import { Ionicons } from '@expo/vector-icons';
 import { navigationRef } from '../../lib/navigationRef';
+import { clearAuthToken } from '../../lib/api';
 
 // Tinta de leitura sobre as bandas tingidas — mesmos fixos do BookingStub.
 // As bandas ativas usam os tons claros nos DOIS temas: texto CELU passa AA.
@@ -726,6 +727,9 @@ export default function ProfileScreen() {
 												useAppStore
 													.getState()
 													.signOut();
+												clearAuthToken().catch(
+													() => {},
+												);
 												navigationRef.reset({
 													index: 0,
 													routes: [

@@ -8,12 +8,8 @@ import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
 import Perforation from '../../components/Perforation';
-import {
-	requestOtp,
-	findByPhone,
-	normalizePhone,
-} from '../../mock/repos/authRepo';
-import { maskPhone } from '../../utils/phone';
+import { sendOtp, apiErrorMessage } from '../../lib/api';
+import { maskPhone, normalizePhone } from '../../utils/phone';
 
 export default function ForgotPasswordScreen() {
 	const navigation =
@@ -30,29 +26,34 @@ export default function ForgotPasswordScreen() {
 
 	const canSubmit = normalizePhone(phone).length >= 9;
 
-	const submit = () => {
+	const submit = async () => {
 		if (!canSubmit) return;
 		const normalized = normalizePhone(phone);
-		if (!findByPhone(normalized)) {
-			setError(
-				'Nenhuma conta com este número. Verifica e tenta de novo.',
-			);
-			return;
-		}
 		setPending(true);
-		// latência simulada
-		setTimeout(() => {
-			requestOtp(phone);
+		setError(null);
+		try {
+			await sendOtp(normalized, 'reset');
+			navigation.navigate('OtpVerify', {
+				phone: normalized,
+				purpose: 'reset',
+			});
+		} catch (e) {
+			setError(
+				apiErrorMessage(
+					e,
+					'Não foi possível enviar o código. Tenta de novo.',
+				),
+			);
+		} finally {
 			setPending(false);
-			navigation.navigate('OtpVerify', { phone: normalized });
-		}, 400);
+		}
 	};
 
 	return (
 		<AuthShell
 			eyebrow="Recuperação de senha"
 			title="Esqueceu-se da senha?"
-			subtitle="Diz-nos o teu número. Vais receber um código por SMS para criares uma senha nova."
+			subtitle="Diz-nos o teu número. Vais receber um código por WhatsApp para criares uma senha nova."
 			back={() => navigation.goBack()}
 		>
 			<Input
