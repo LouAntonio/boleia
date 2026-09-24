@@ -1,116 +1,222 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { BoleiaMainStackParamList } from '../../types/navigation';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import {
+	BoleiaMainStackParamList,
+	PassengerTabsParamList,
+} from '../../types/navigation';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
+import { rideMode, RideMode } from '../../mock/repos/rideRepo';
 import TripListingCard from '../../components/TripListingCard';
+import ScreenHeader from '../../components/ScreenHeader';
+import EmptyState from '../../components/EmptyState';
+import Eyebrow from '../../components/Eyebrow';
 
 // Montra de todas as viagens ativas ainda não iniciadas — sem depender da
-// pesquisa. Cada cartão leva ao detalhe onde se pede boleia.
+// pesquisa. Filtros e ordenação são client-side; cada cartão leva ao detalhe.
+type ModeFilter = 'all' | RideMode;
+type Sort = 'soon' | 'cheap';
+
+function dayLabel(iso: string): string {
+	const d = new Date(iso);
+	const now = new Date();
+	const startOf = (x: Date) =>
+		new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+	const diff = Math.round((startOf(d) - startOf(now)) / 86400000);
+	if (diff <= 0) return 'Hoje';
+	if (diff === 1) return 'Amanhã';
+	const label = d.toLocaleDateString('pt-PT', {
+		weekday: 'short',
+		day: 'numeric',
+		month: 'short',
+	});
+	return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export default function ExploreScreen() {
 	const { themeColors } = useThemeColors();
 	const navigation =
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
+	const tabNavigation =
+		useNavigation<BottomTabNavigationProp<PassengerTabsParamList>>();
 	const rides = useDbStore((s) => s.db.rides);
 	const bookings = useDbStore((s) => s.db.bookings);
 	const sessionUserId = useSessionUserId();
+	const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
+	const [sort, setSort] = useState<Sort>('soon');
 
-	const reservedIds = new Set(
-		bookings
-			.filter(
-				(b) =>
-					b.passengerId === sessionUserId && b.status !== 'cancelada',
-			)
-			.map((b) => b.rideId),
+	const reservedIds = useMemo(
+		() =>
+			new Set(
+				bookings
+					.filter(
+						(b) =>
+							b.passengerId === sessionUserId &&
+							b.status !== 'cancelada',
+					)
+					.map((b) => b.rideId),
+			),
+		[bookings, sessionUserId],
 	);
-	const upcoming = rides
-		.filter(
-			(r) =>
-				r.status === 'programada' &&
-				r.seatsTaken < r.seatsTotal &&
-				Date.parse(r.departure) > Date.now(),
-		)
-		.sort((a, b) => Date.parse(a.departure) - Date.parse(b.departure))
-		.map((ride) => ({
-			ride,
-			reserved: reservedIds.has(ride.id),
-		}));
+
+	const upcoming = useMemo(
+		() =>
+			rides
+				.filter(
+					(r) =>
+						r.status === 'programada' &&
+						r.seatsTaken < r.seatsTotal &&
+						Date.parse(r.departure) > Date.now() &&
+						(modeFilter === 'all' || rideMode(r) === modeFilter),
+				)
+				.sort((a, b) =>
+					sort === 'cheap'
+						? a.pricePerSeat - b.pricePerSeat
+						: Date.parse(a.departure) - Date.parse(b.departure),
+				)
+				.map((ride) => ({
+					ride,
+					reserved: reservedIds.has(ride.id),
+				})),
+		[rides, reservedIds, modeFilter, sort],
+	);
+
+	const groups = useMemo(() => {
+		const map = new Map<string, typeof upcoming>();
+		for (const x of upcoming) {
+			const label = dayLabel(x.ride.departure);
+			const list = map.get(label) ?? [];
+			list.push(x);
+			map.set(label, list);
+		}
+		return [...map.entries()];
+	}, [upcoming]);
+
+	const chip = (label: string, active: boolean, onPress: () => void) => (
+		<Pressable
+			key={label}
+			onPress={onPress}
+			className="rounded-full px-3 py-1.5 mr-2"
+			style={{
+				backgroundColor: active
+					? themeColors.text
+					: themeColors.background,
+			}}
+		>
+			<Text
+				className="font-sansMedium text-[12px]"
+				style={{
+					color: active ? themeColors.card : themeColors.secondary,
+				}}
+			>
+				{label}
+			</Text>
+		</Pressable>
+	);
 
 	return (
 		<SafeAreaView
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
-			<View className="mt-2">
+			<ScreenHeader
+				eyebrow="Explorar · viagens ativas"
+				title="Viagens a bater certo"
+				meta={
+					upcoming.length > 0
+						? `${upcoming.length} embarque${upcoming.length === 1 ? '' : 's'} a seguir`
+						: null
+				}
+			/>
+
+			<View className="flex-row mt-4 mb-2">
+				{chip('Todas', modeFilter === 'all', () =>
+					setModeFilter('all'),
+				)}
+				{chip('Interprovincial', modeFilter === 'interprovincial', () =>
+					setModeFilter('interprovincial'),
+				)}
+				{chip('Intermunicipal', modeFilter === 'intermunicipal', () =>
+					setModeFilter('intermunicipal'),
+				)}
+			</View>
+			<View className="flex-row items-center mb-1">
 				<Text
-					className="font-mono text-[10px] uppercase tracking-[3px]"
-					style={{ color: themeColors.laterite }}
+					className="font-mono text-[10px] uppercase tracking-[2px] mr-2"
+					style={{ color: themeColors.secondary }}
 				>
-					Explorar · viagens ativas
+					Ordenar
 				</Text>
-				<Text
-					className="font-display text-[22px]"
-					style={{ color: themeColors.text }}
-				>
-					Viagens a bater certo
-				</Text>
-				{upcoming.length > 0 ? (
-					<Text
-						className="font-mono text-[11px] mt-0.5"
-						style={{ color: themeColors.secondary }}
-					>
-						{upcoming.length} embarque
-						{upcoming.length === 1 ? '' : 's'} a seguir
-					</Text>
-				) : null}
+				{(
+					[
+						{ key: 'soon', label: 'Mais cedo' },
+						{ key: 'cheap', label: 'Mais barato' },
+					] as const
+				).map((opt) => (
+					<Pressable key={opt.key} onPress={() => setSort(opt.key)}>
+						<Text
+							className="font-sansBold text-[12px] mr-3"
+							style={{
+								color:
+									sort === opt.key
+										? themeColors.laterite
+										: themeColors.secondary,
+							}}
+						>
+							{opt.label}
+						</Text>
+					</Pressable>
+				))}
 			</View>
 
 			{upcoming.length === 0 ? (
 				<View className="flex-1 justify-center pb-10">
-					<View
-						className="items-center p-5 rounded-2xl border"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<Text
-							className="font-display text-[18px]"
-							style={{ color: themeColors.text }}
-						>
-							Sem viagens ativas por agora
-						</Text>
-						<Text
-							className="font-sans text-[13px] text-center mt-1 leading-5"
-							style={{ color: themeColors.secondary }}
-						>
-							Quando alguém publicar uma viagem, aparece aqui. Usa
-							a pesquisa na Home para afinar a tua rota.
-						</Text>
-					</View>
+					<EmptyState
+						icon="compass-outline"
+						title="Sem viagens ativas por agora"
+						copy="Quando alguém publicar uma viagem, aparece aqui. Usa a pesquisa na Home para afinar a tua rota."
+						actionTitle="Pesquisar na Home"
+						onAction={() => tabNavigation.navigate('PassengerHome')}
+					/>
 				</View>
 			) : (
 				<ScrollView
 					className="flex-1"
 					contentContainerStyle={{ paddingBottom: 40 }}
 				>
-					{upcoming.map(({ ride, reserved }) => (
-						<View key={ride.id} className="mb-4">
-							<TripListingCard
-								ride={ride}
-								reserved={reserved}
-								onPress={() =>
-									navigation.navigate('RideDetail', {
-										rideId: ride.id,
-									})
-								}
-							/>
+					{groups.map(([day, items]) => (
+						<View key={day}>
+							<View className="flex-row items-center mt-4 mb-3">
+								<View className="flex-1">
+									<Eyebrow>{day}</Eyebrow>
+								</View>
+								<Text
+									className="font-mono text-[10px] ml-3"
+									style={{ color: themeColors.secondary }}
+								>
+									{items.length}
+								</Text>
+							</View>
+							{items.map(({ ride, reserved }) => (
+								<View key={ride.id} className="mb-4">
+									<TripListingCard
+										ride={ride}
+										reserved={reserved}
+										onPress={() =>
+											navigation.navigate('RideDetail', {
+												rideId: ride.id,
+											})
+										}
+									/>
+								</View>
+							))}
 						</View>
 					))}
 				</ScrollView>

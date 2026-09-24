@@ -8,6 +8,9 @@ import { useDbStore } from '../../mock/db';
 import BookingStub from '../../components/BookingStub';
 import HistoryReceipt from '../../components/HistoryReceipt';
 import BoleiaButton from '../../components/BoleiaButton';
+import ScreenHeader from '../../components/ScreenHeader';
+import EmptyState from '../../components/EmptyState';
+import Eyebrow from '../../components/Eyebrow';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -15,6 +18,9 @@ import {
 	BoleiaMainStackParamList,
 	PassengerTabsParamList,
 } from '../../types/navigation';
+
+// Tinta fixa da banda confirmada — igual ao BookingStub nos dois temas.
+const ASFALTO = '#17141B';
 
 const UPCOMING = ['pedido', 'confirmada', 'em_viagem'];
 const HISTORY = ['concluida', 'recusada', 'cancelada', 'expirada'];
@@ -87,62 +93,27 @@ export default function BookingsScreen() {
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
-			<View className="mt-2">
-				<Text
-					className="font-mono text-[10px] uppercase tracking-[3px]"
-					style={{ color: themeColors.laterite }}
-				>
-					Reservas · bilhetes
-				</Text>
-				<Text
-					className="font-display text-[22px]"
-					style={{ color: themeColors.text }}
-				>
-					As tuas reservas
-				</Text>
-				{all.length > 0 ? (
-					<Text
-						className="font-mono text-[11px] mt-0.5"
-						style={{ color: themeColors.secondary }}
-					>
-						{upcoming.length} próxima
-						{upcoming.length === 1 ? '' : 's'} · {history.length} no
-						histórico
-					</Text>
-				) : null}
-			</View>
+			<ScreenHeader
+				eyebrow="Reservas · bilhetes"
+				title="As tuas reservas"
+				meta={
+					all.length > 0
+						? `${upcoming.length} próxima${upcoming.length === 1 ? '' : 's'} · ${history.length} no histórico`
+						: null
+				}
+			/>
 
 			{all.length === 0 ? (
 				<View className="flex-1 justify-center pb-10">
-					<View
-						className="items-center p-5 rounded-2xl border"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<Text
-							className="font-display text-[18px]"
-							style={{ color: themeColors.text }}
-						>
-							Ainda não tens reservas
-						</Text>
-						<Text
-							className="font-sans text-[13px] text-center mt-1 leading-5"
-							style={{ color: themeColors.secondary }}
-						>
-							Pesquisa uma viagem e pede uma boleia. O bilhete
-							aparece aqui.
-						</Text>
-						<View className="w-full mt-4">
-							<BoleiaButton
-								title="Ver viagens ativas"
-								onPress={() =>
-									tabNavigation.navigate('PassengerExplore')
-								}
-							/>
-						</View>
-					</View>
+					<EmptyState
+						icon="ticket-outline"
+						title="Ainda não tens reservas"
+						copy="Pesquisa uma viagem e pede uma boleia. O bilhete aparece aqui."
+						actionTitle="Ver viagens ativas"
+						onAction={() =>
+							tabNavigation.navigate('PassengerExplore')
+						}
+					/>
 				</View>
 			) : (
 				<ScrollView
@@ -150,11 +121,8 @@ export default function BookingsScreen() {
 					contentContainerStyle={{ paddingBottom: 40 }}
 				>
 					<View
-						className="flex-row rounded-full p-1 border mt-3 mb-4"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
+						className="flex-row rounded-2xl p-1 mt-4 mb-4"
+						style={{ backgroundColor: themeColors.card }}
 					>
 						{(
 							[
@@ -171,23 +139,23 @@ export default function BookingsScreen() {
 								<Pressable
 									key={opt.key}
 									onPress={() => setTab(opt.key)}
-									className="flex-1 rounded-full py-2 items-center"
+									className="flex-1 rounded-xl py-2.5 items-center"
 									style={{
 										backgroundColor: active
-											? themeColors.text
+											? themeColors.primary
 											: 'transparent',
 									}}
 								>
 									<Text
-										className="font-sansMedium text-[12px]"
+										className="font-sansBold text-[12px]"
 										style={{
 											color: active
-												? themeColors.card
+												? ASFALTO
 												: themeColors.secondary,
 										}}
 									>
 										{opt.label}
-										{count > 0 ? ` (${count})` : ''}
+										{count > 0 ? ` · ${count}` : ''}
 									</Text>
 								</Pressable>
 							);
@@ -196,13 +164,11 @@ export default function BookingsScreen() {
 
 					{tab === 'upcoming' ? (
 						upcoming.length === 0 ? (
-							<Text
-								className="font-sans text-[13px]"
-								style={{ color: themeColors.secondary }}
-							>
-								Nenhuma reserva próxima por aqui. Vê as viagens
-								ativas em Explorar.
-							</Text>
+							<EmptyState
+								icon="ticket-outline"
+								title="Nenhuma reserva próxima"
+								copy="Vê as viagens ativas em Explorar e pede a tua boleia."
+							/>
 						) : (
 							upcoming.map(({ booking, ride }, i) => {
 								return (
@@ -262,28 +228,18 @@ export default function BookingsScreen() {
 							})
 						)
 					) : history.length === 0 ? (
-						<Text
-							className="font-sans text-[13px]"
-							style={{ color: themeColors.secondary }}
-						>
-							Nenhuma viagem concluída ainda.
-						</Text>
+						<EmptyState
+							icon="receipt-outline"
+							title="Nenhuma viagem concluída"
+							copy="O teu histórico de boleias aparece aqui."
+						/>
 					) : (
 						groups.map(([month, items]) => (
 							<View key={month} className="mb-5">
-								<View className="flex-row items-center mb-2">
-									<Text
-										className="font-mono text-[10px] uppercase tracking-[3px]"
-										style={{ color: themeColors.laterite }}
-									>
-										{month}
-									</Text>
-									<View
-										className="flex-1 border-t ml-3"
-										style={{
-											borderColor: themeColors.border,
-										}}
-									/>
+								<View className="flex-row items-center mb-3">
+									<View className="flex-1">
+										<Eyebrow>{month}</Eyebrow>
+									</View>
 									<Text
 										className="font-mono text-[10px] ml-3"
 										style={{ color: themeColors.secondary }}

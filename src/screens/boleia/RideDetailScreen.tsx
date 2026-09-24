@@ -9,15 +9,21 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
-import TripStripCard from '../../components/TripStripCard';
 import BoleiaButton from '../../components/BoleiaButton';
+import TicketCard from '../../components/TicketCard';
+import StickyCta from '../../components/StickyCta';
 import SectionTitle from '../../components/SectionTitle';
-import { rideProgress } from '../../mock/repos/rideRepo';
+import RouteStrip, { StripStop } from '../../components/RouteStrip';
+import StatusStamp from '../../components/StatusStamp';
+import { rideMode, rideProgress } from '../../mock/repos/rideRepo';
 import { requestBooking } from '../../mock/repos/bookingRepo';
 import BookingStub from '../../components/BookingStub';
 import RidePeople from '../../components/RidePeople';
 import { useDbStore } from '../../mock/db';
-import { fmtKz } from '../../mock/helpers';
+import { fmtKz, hhmm, durationBetween, initials } from '../../mock/helpers';
+
+// Tinta fixa do avatar — igual às bandas dos bilhetes nos dois temas.
+const ASFALTO = '#17141B';
 
 export default function RideDetailScreen() {
 	const navigation =
@@ -93,6 +99,62 @@ export default function RideDetailScreen() {
 		.map((b) => users.find((u) => u.id === b.passengerId))
 		.filter((u): u is NonNullable<typeof u> => !!u);
 
+	const stripOrigin: StripStop = {
+		place: ride.origin.name,
+		time: hhmm(ride.departure),
+		km: `${ride.origin.km} km`,
+		kind: 'origin',
+	};
+	const stripStops: StripStop[] = ride.stops.map((s) => ({
+		place: s.name,
+		time: s.time,
+		km: `${s.km} km`,
+		kind: 'stop',
+	}));
+	const stripDestination: StripStop = {
+		place: ride.destination.name,
+		time: hhmm(ride.arrival),
+		km: `${ride.destination.km} km`,
+		kind: 'destination',
+	};
+	const seatsLeft = available;
+	const dateLabel = new Date(ride.departure).toLocaleDateString('pt-PT', {
+		day: 'numeric',
+		month: 'short',
+	});
+
+	// Mesma lógica do botão inline anterior — agora na barra fixa.
+	const submitRequest = () => {
+		if (drop <= 0) return;
+		if (passengerBlocked) {
+			navigation.navigate('Kyc');
+			return;
+		}
+		setPending(true);
+		setTimeout(() => {
+			const res = requestBooking({
+				rideId: ride.id,
+				passengerId: sessionUserId,
+				seats,
+				paymentMethod: 'multicaixa',
+				pickStopIndex: pick,
+				dropStopIndex: drop,
+			});
+			setPending(false);
+			setResult(
+				res.ok
+					? res
+					: {
+							ok: false,
+							error:
+								res.error === 'cheia'
+									? 'Já não há lugares suficientes nesta viagem.'
+									: 'Pedido inválido.',
+						},
+			);
+		}, 400);
+	};
+
 	if (myBooking) {
 		return (
 			<SafeAreaView
@@ -162,15 +224,148 @@ export default function RideDetailScreen() {
 
 	return (
 		<SafeAreaView
-			className="flex-1 px-5"
+			className="flex-1"
 			style={{ backgroundColor: themeColors.background }}
 		>
-			<Header
-				title="Detalhe da viagem"
-				onBack={() => navigation.goBack()}
-			/>
-			<ScrollView contentContainerStyle={{ paddingBottom: 48 }}>
-				<TripStripCard ride={ride} progress={rideProgress(ride)} />
+			<View className="px-5">
+				<Header
+					title="Detalhe da viagem"
+					onBack={() => navigation.goBack()}
+				/>
+			</View>
+			<ScrollView
+				className="flex-1 px-5"
+				contentContainerStyle={{ paddingBottom: 48 }}
+			>
+				<TicketCard accent="laterite" padded={false}>
+					<View className="p-4">
+						<View className="flex-row items-center justify-between mb-1">
+							<View
+								className="rounded-full px-2 py-0.5 border"
+								style={{ borderColor: themeColors.border }}
+							>
+								<Text
+									className="font-mono text-[9px] uppercase tracking-[1px]"
+									style={{ color: themeColors.laterite }}
+								>
+									{rideMode(ride) === 'interprovincial'
+										? 'Interprovincial'
+										: 'Intermunicipal'}
+								</Text>
+							</View>
+							<View className="flex-row items-center">
+								<Text
+									className="font-mono text-[10px] uppercase tracking-[1px] mr-2"
+									style={{ color: themeColors.secondary }}
+								>
+									{dateLabel} · {hhmm(ride.departure)}
+								</Text>
+								<StatusStamp status={ride.status} />
+							</View>
+						</View>
+						<Text
+							className="font-display text-[21px] leading-7"
+							style={{ color: themeColors.text }}
+							numberOfLines={1}
+						>
+							{ride.origin.name} → {ride.destination.name}
+						</Text>
+						<View className="mt-3">
+							<RouteStrip
+								origin={stripOrigin}
+								stops={stripStops}
+								destination={stripDestination}
+								progress={rideProgress(ride)}
+							/>
+						</View>
+						<View
+							className="mt-4 pt-3 border-t flex-row items-center justify-between"
+							style={{ borderColor: themeColors.border }}
+						>
+							<Text
+								className="font-mono text-[14px]"
+								style={{ color: themeColors.text }}
+							>
+								{fmtKz(ride.pricePerSeat)}
+								<Text
+									className="font-sans text-[11px]"
+									style={{ color: themeColors.secondary }}
+								>
+									{' '}
+									/lugar
+								</Text>
+							</Text>
+							<Text
+								className="font-mono text-[12px]"
+								style={{ color: themeColors.secondary }}
+							>
+								{durationBetween(ride.departure, ride.arrival)}{' '}
+								·{' '}
+								{seatsLeft > 0
+									? `${seatsLeft} livre${seatsLeft === 1 ? '' : 's'}`
+									: 'Lotada'}
+							</Text>
+						</View>
+					</View>
+				</TicketCard>
+
+				{driver ? (
+					<View className="mt-4">
+						<TicketCard>
+							<View className="flex-row items-center">
+								<View
+									className="w-11 h-11 rounded-full items-center justify-center"
+									style={{
+										backgroundColor: themeColors.primary,
+										borderWidth: 2,
+										borderColor: themeColors.laterite,
+									}}
+								>
+									<Text
+										className="font-display text-[14px]"
+										style={{ color: ASFALTO }}
+									>
+										{initials(
+											driver.firstName,
+											driver.lastName,
+										)}
+									</Text>
+								</View>
+								<View className="flex-1 ml-3">
+									<Text
+										className="font-sansBold text-[14px]"
+										style={{ color: themeColors.text }}
+										numberOfLines={1}
+									>
+										{driver.firstName} {driver.lastName}
+									</Text>
+									<Text
+										className="font-mono text-[11px] mt-0.5"
+										style={{
+											color: themeColors.secondary,
+										}}
+									>
+										★{' '}
+										{driver.rating
+											? driver.rating.toFixed(1)
+											: 'novo'}{' '}
+										· motorista verificado
+									</Text>
+								</View>
+								<BoleiaButton
+									title="Ver perfil"
+									variant="ghost"
+									small
+									onPress={() =>
+										navigation.navigate('PublicProfile', {
+											userId: driver.id,
+										})
+									}
+								/>
+							</View>
+						</TicketCard>
+					</View>
+				) : null}
 
 				<RidePeople
 					ride={ride}
@@ -183,190 +378,184 @@ export default function RideDetailScreen() {
 
 				{/* Reserva */}
 				<View className="mt-6">
-					<SectionTitle>Pedir boleia</SectionTitle>
+					<TicketCard accent="laterite">
+						<SectionTitle>Pedir boleia</SectionTitle>
 
-					<Text
-						className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5"
-						style={{ color: themeColors.laterite }}
-					>
-						Sobes na origem
-					</Text>
-					<View
-						className="rounded-xl border px-3.5 py-3 flex-row items-center"
-						style={{
-							borderColor: themeColors.text,
-							backgroundColor: themeColors.card,
-						}}
-					>
 						<Text
-							className="font-sansMedium text-[12px]"
-							style={{ color: themeColors.text }}
+							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5"
+							style={{ color: themeColors.laterite }}
 						>
-							↑ {stops[0].name}
+							Sobes na origem
 						</Text>
-					</View>
+						<View
+							className="rounded-xl px-3.5 py-3 flex-row items-center"
+							style={{ backgroundColor: themeColors.background }}
+						>
+							<Text
+								className="font-sansMedium text-[12px]"
+								style={{ color: themeColors.text }}
+							>
+								↑ {stops[0].name}
+							</Text>
+						</View>
 
-					<Text
-						className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
-						style={{ color: themeColors.laterite }}
-					>
-						Onde desces
-					</Text>
-					<View className="flex-row flex-wrap">
-						{stops.slice(1).map((s, i) => {
-							const index = i + 1;
-							const active = index === drop;
-							return (
-								<Pressable
-									key={index}
-									onPress={() => setDrop(index)}
-									className="rounded-full px-3 py-1.5 border mr-2 mb-2"
-									style={{
-										borderColor: active
-											? themeColors.text
-											: themeColors.border,
-										backgroundColor: active
-											? themeColors.text
-											: themeColors.card,
-									}}
-								>
-									<Text
-										className="font-sansMedium text-[12px]"
+						<Text
+							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
+							style={{ color: themeColors.laterite }}
+						>
+							Onde desces
+						</Text>
+						<View className="flex-row flex-wrap">
+							{stops.slice(1).map((s, i) => {
+								const index = i + 1;
+								const active = index === drop;
+								return (
+									<Pressable
+										key={index}
+										onPress={() => setDrop(index)}
+										className="rounded-full px-3 py-1.5 mr-2 mb-2"
 										style={{
-											color: active
-												? themeColors.card
-												: themeColors.secondary,
+											backgroundColor: active
+												? themeColors.text
+												: themeColors.background,
 										}}
 									>
-										{s.name}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
+										<Text
+											className="font-sansMedium text-[12px]"
+											style={{
+												color: active
+													? themeColors.card
+													: themeColors.secondary,
+											}}
+										>
+											{s.name}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
 
-					<Text
-						className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
-						style={{ color: themeColors.laterite }}
-					>
-						Lugares ({available} livre{available === 1 ? '' : 's'})
-					</Text>
-					<View className="flex-row items-center">
-						{seats > 1 && (
+						<Text
+							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
+							style={{ color: themeColors.laterite }}
+						>
+							Lugares ({available} livre
+							{available === 1 ? '' : 's'})
+						</Text>
+						<View className="flex-row items-center">
+							{seats > 1 && (
+								<Stepper
+									label="−"
+									onPress={() =>
+										setSeats((v) => Math.max(1, v - 1))
+									}
+								/>
+							)}
+							<Text
+								className="font-mono text-[26px] mx-6"
+								style={{ color: themeColors.text }}
+							>
+								{seats}
+							</Text>
 							<Stepper
-								label="−"
+								label="+"
 								onPress={() =>
-									setSeats((v) => Math.max(1, v - 1))
+									setSeats((v) => Math.min(available, v + 1))
 								}
 							/>
-						)}
-						<Text
-							className="font-mono text-[26px] mx-6"
-							style={{ color: themeColors.text }}
-						>
-							{seats}
-						</Text>
-						<Stepper
-							label="+"
-							onPress={() =>
-								setSeats((v) => Math.min(available, v + 1))
-							}
-						/>
-						<View className="flex-1 items-end">
-							<Text
-								className="font-mono text-[18px]"
-								style={{ color: themeColors.text }}
-							>
-								{fmtKz(total)}
-							</Text>
+							<View className="flex-1 items-end">
+								<Text
+									className="font-mono text-[18px]"
+									style={{ color: themeColors.text }}
+								>
+									{fmtKz(total)}
+								</Text>
+							</View>
 						</View>
-					</View>
 
-					<Text
-						className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
-						style={{ color: themeColors.laterite }}
-					>
-						Como pagas
-					</Text>
-					<View
-						className="flex-row items-center justify-between px-3.5 py-3 rounded-xl border"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<View className="flex-row items-center">
+						<Text
+							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
+							style={{ color: themeColors.laterite }}
+						>
+							Como pagas
+						</Text>
+						<View
+							className="flex-row items-center justify-between px-3.5 py-3 rounded-xl"
+							style={{ backgroundColor: themeColors.background }}
+						>
+							<View className="flex-row items-center">
+								<Ionicons
+									name="card"
+									size={18}
+									color={themeColors.text}
+								/>
+								<Text
+									className="font-sansMedium text-[14px] ml-2"
+									style={{ color: themeColors.text }}
+								>
+									Multicaixa Express
+								</Text>
+							</View>
 							<Ionicons
-								name="card"
-								size={18}
+								name="radio-button-on"
+								size={20}
 								color={themeColors.text}
 							/>
-							<Text
-								className="font-sansMedium text-[14px] ml-2"
-								style={{ color: themeColors.text }}
-							>
-								Multicaixa Express
-							</Text>
 						</View>
-						<Ionicons
-							name="radio-button-on"
-							size={20}
-							color={themeColors.text}
-						/>
-					</View>
-					<Text
-						className="font-sans text-[12px] mt-1.5"
-						style={{ color: themeColors.secondary }}
-					>
-						Pagas por Multicaixa Express quando confirmares o
-						pedido.
-					</Text>
+						<Text
+							className="font-sans text-[12px] mt-1.5"
+							style={{ color: themeColors.secondary }}
+						>
+							Pagas por Multicaixa Express quando confirmares o
+							pedido.
+						</Text>
 
-					{result ? (
-						result.ok ? (
-							<View
-								className="mt-4 p-4 rounded-2xl border flex-row items-center"
-								style={{
-									borderColor: themeColors.mato,
-									backgroundColor: themeColors.card,
-								}}
-							>
-								<Ionicons
-									name="checkmark-circle"
-									size={28}
-									color={themeColors.mato}
-								/>
-								<View className="flex-1 ml-3">
-									<Text
-										className="font-sansBold text-[15px]"
-										style={{ color: themeColors.mato }}
-									>
-										Pedido enviado
-									</Text>
-									<Text
-										className="font-sans text-[13px] mt-0.5"
-										style={{ color: themeColors.secondary }}
-									>
-										O motorista confirma em ~6s (demo).
-										Segue o estado em Reservas.
-									</Text>
-								</View>
-							</View>
-						) : (
-							<Text
-								className="font-sans text-[13px] mt-4"
-								style={{ color: themeColors.error }}
-							>
-								{result.error}
-							</Text>
-						)
-					) : null}
-
-					{!result && (
-						<View className="mt-5">
-							{passengerBlocked ? (
+						{result ? (
+							result.ok ? (
 								<View
-									className="rounded-2xl border p-4 mb-3"
+									className="mt-4 p-4 rounded-2xl border flex-row items-center"
+									style={{
+										borderColor: themeColors.mato,
+										backgroundColor: themeColors.card,
+									}}
+								>
+									<Ionicons
+										name="checkmark-circle"
+										size={28}
+										color={themeColors.mato}
+									/>
+									<View className="flex-1 ml-3">
+										<Text
+											className="font-sansBold text-[15px]"
+											style={{ color: themeColors.mato }}
+										>
+											Pedido enviado
+										</Text>
+										<Text
+											className="font-sans text-[13px] mt-0.5"
+											style={{
+												color: themeColors.secondary,
+											}}
+										>
+											O motorista confirma em ~6s (demo).
+											Segue o estado em Reservas.
+										</Text>
+									</View>
+								</View>
+							) : (
+								<Text
+									className="font-sans text-[13px] mt-4"
+									style={{ color: themeColors.error }}
+								>
+									{result.error}
+								</Text>
+							)
+						) : null}
+
+						{!result && passengerBlocked ? (
+							<View className="mt-5">
+								<View
+									className="rounded-2xl border p-4"
 									style={{
 										borderColor: themeColors.laterite,
 										backgroundColor: themeColors.card,
@@ -396,46 +585,53 @@ export default function RideDetailScreen() {
 										/>
 									</View>
 								</View>
-							) : null}
-							<BoleiaButton
-								title="Pedir boleia"
-								onPress={() => {
-									if (drop <= 0) return;
-									if (passengerBlocked) {
-										navigation.navigate('Kyc');
-										return;
-									}
-									setPending(true);
-									setTimeout(() => {
-										const res = requestBooking({
-											rideId: ride.id,
-											passengerId: sessionUserId,
-											seats,
-											paymentMethod: 'multicaixa',
-											pickStopIndex: pick,
-											dropStopIndex: drop,
-										});
-										setPending(false);
-										setResult(
-											res.ok
-												? res
-												: {
-														ok: false,
-														error:
-															res.error ===
-															'cheia'
-																? 'Já não há lugares suficientes nesta viagem.'
-																: 'Pedido inválido.',
-													},
-										);
-									}, 400);
-								}}
-								loading={pending}
-							/>
-						</View>
-					)}
+							</View>
+						) : null}
+					</TicketCard>
 				</View>
 			</ScrollView>
+			{!result ? (
+				<StickyCta>
+					<View className="flex-row items-center">
+						<View className="flex-1 mr-3">
+							<Text
+								className="font-mono text-[9px] uppercase tracking-[2px]"
+								style={{
+									color: themeColors.card,
+									opacity: 0.7,
+								}}
+							>
+								Total
+							</Text>
+							<Text
+								className="font-mono text-[18px] mt-0.5"
+								style={{ color: themeColors.card }}
+							>
+								{fmtKz(total)}
+							</Text>
+							<Text
+								className="font-mono text-[10px] mt-0.5"
+								style={{
+									color: themeColors.card,
+									opacity: 0.7,
+								}}
+								numberOfLines={1}
+							>
+								{seats} lugar{seats === 1 ? '' : 'es'} ·{' '}
+								{stops[drop]?.name ?? ''}
+							</Text>
+						</View>
+						<View className="flex-1">
+							<BoleiaButton
+								title="Pedir boleia"
+								small
+								loading={pending}
+								onPress={submitRequest}
+							/>
+						</View>
+					</View>
+				</StickyCta>
+			) : null}
 		</SafeAreaView>
 	);
 }
@@ -446,10 +642,14 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 		<View className="flex-row items-center pt-2 pb-3">
 			<Pressable
 				onPress={onBack}
-				className="w-9 h-9 rounded-full items-center justify-center border mr-3"
+				className="w-9 h-9 rounded-full items-center justify-center mr-3"
 				style={{
-					borderColor: themeColors.border,
 					backgroundColor: themeColors.card,
+					shadowColor: '#000',
+					shadowOpacity: 0.1,
+					shadowOffset: { width: 0, height: 2 },
+					shadowRadius: 6,
+					elevation: 2,
 				}}
 			>
 				<Ionicons
@@ -481,11 +681,8 @@ function Stepper({ label, onPress }: { label: string; onPress: () => void }) {
 	return (
 		<Pressable
 			onPress={onPress}
-			className="w-10 h-10 rounded-full items-center justify-center border"
-			style={{
-				borderColor: themeColors.border,
-				backgroundColor: themeColors.card,
-			}}
+			className="w-10 h-10 rounded-full items-center justify-center"
+			style={{ backgroundColor: themeColors.background }}
 		>
 			<Text
 				className="font-display text-[18px]"

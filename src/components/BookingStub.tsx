@@ -15,7 +15,6 @@ import { hhmm, fmtKz } from '../mock/helpers';
 import { rideProgress, rideMode } from '../mock/repos/rideRepo';
 import { statusMeta } from '../utils/status';
 import RouteRail from './RouteRail';
-import Perforation from './Perforation';
 import QRStamp from './QRStamp';
 
 const CELU = '#F7F3E7';
@@ -92,8 +91,8 @@ function bandOf(status: string, themeColors: Record<string, string>) {
 	}
 }
 
-// Bilhete vivo — banda tingida por estado, rail horizontal com progresso,
-// talão destacável com QR decorativo. A assinatura da carteira de reservas.
+// Bilhete vivo Boleia viva — banda sólida de estado com rota em display,
+// rail de progresso e talão com QR + total. Sem perfuração, sem contorno.
 export default function BookingStub({
 	booking,
 	ride,
@@ -128,21 +127,25 @@ export default function BookingStub({
 	return (
 		<Pressable
 			onPress={onPress}
-			className="rounded-3xl border overflow-hidden"
+			className="rounded-3xl overflow-hidden"
 			style={({ pressed }) => ({
-				borderColor: themeColors.border,
 				backgroundColor: themeColors.card,
-				opacity: pressed ? 0.92 : 1,
+				opacity: pressed ? 0.94 : 1,
 				transform: [{ scale: pressed ? 0.99 : 1 }],
+				shadowColor: '#000',
+				shadowOpacity: 0.08,
+				shadowOffset: { width: 0, height: 4 },
+				shadowRadius: 12,
+				elevation: 3,
 			})}
 		>
 			<View
-				className="px-4 pt-3 pb-2.5"
+				className="px-5 pt-4 pb-3.5"
 				style={{ backgroundColor: band.bg }}
 			>
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center">
-						<Ionicons name={band.icon} size={14} color={band.fg} />
+						<Ionicons name={band.icon} size={15} color={band.fg} />
 						<Text
 							className="font-mono text-[10px] uppercase tracking-[2px] ml-1.5"
 							style={{ color: band.fg }}
@@ -166,14 +169,14 @@ export default function BookingStub({
 				</View>
 				<Text
 					numberOfLines={1}
-					className="font-display text-[21px] leading-7 mt-1"
+					className="font-display text-[23px] leading-8 mt-1.5"
 					style={{ color: band.fg }}
 				>
 					{ride.origin.name} → {ride.destination.name}
 				</Text>
 			</View>
 
-			<View className="px-4 py-3">
+			<View className="px-5 py-4">
 				<RouteRail
 					origin={{
 						place: ride.origin.name,
@@ -187,9 +190,9 @@ export default function BookingStub({
 					live={live}
 					railColor={live ? themeColors.mato : themeColors.primary}
 				/>
-				<View className="flex-row items-center justify-between mt-2.5">
+				<View className="flex-row items-center justify-between mt-3">
 					<Text
-						className="font-mono text-[10px] uppercase tracking-[1px] flex-1"
+						className="font-sans text-[12px] flex-1"
 						style={{ color: themeColors.secondary }}
 					>
 						{modeLabel} · {stopsLabel}
@@ -204,7 +207,7 @@ export default function BookingStub({
 				{note ? (
 					<Text
 						numberOfLines={1}
-						className="font-sans text-[11px] mt-1.5"
+						className="font-sans text-[12px] mt-1.5"
 						style={{ color: themeColors.secondary }}
 					>
 						{note}
@@ -212,7 +215,7 @@ export default function BookingStub({
 				) : null}
 				{booking.reason ? (
 					<Text
-						className="font-sans text-[11px] mt-1"
+						className="font-sans text-[12px] mt-1"
 						style={{ color: themeColors.error }}
 					>
 						{booking.reason}
@@ -220,14 +223,18 @@ export default function BookingStub({
 				) : null}
 			</View>
 
-			<Perforation tight />
-
-			<View className="px-4 pb-4">
+			<View
+				className="px-5 py-4 border-t"
+				style={{
+					borderColor: themeColors.border,
+					backgroundColor: themeColors.background,
+				}}
+			>
 				<View className="flex-row items-center">
-					<QRStamp seed={booking.id} size={50} />
+					<QRStamp seed={booking.id} size={52} />
 					<View className="flex-1 ml-3">
 						<Text
-							className="font-display text-[20px]"
+							className="font-display text-[22px]"
 							style={{ color: themeColors.text }}
 						>
 							{fmtKz(booking.amount)}
@@ -241,7 +248,7 @@ export default function BookingStub({
 						</Text>
 					</View>
 				</View>
-				{footer ? <View className="mt-3">{footer}</View> : null}
+				{footer ? <View className="mt-4">{footer}</View> : null}
 			</View>
 		</Pressable>
 	);

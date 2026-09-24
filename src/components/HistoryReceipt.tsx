@@ -7,7 +7,6 @@ import { hhmm, fmtKz } from '../mock/helpers';
 import { rideMode } from '../mock/repos/rideRepo';
 import { statusMeta } from '../utils/status';
 import RouteRail from './RouteRail';
-import Perforation from './Perforation';
 import QRStamp from './QRStamp';
 import BoleiaButton from './BoleiaButton';
 
@@ -19,9 +18,8 @@ const OUTCOME_ICON: Record<
 	expirada: 'time-outline',
 };
 
-// Recibo do histórico — bilhete espelho do das Próximas, mas "arquivado":
-// banda cinza, rail neutro e QR esbatido, com carimbo USADO / SEM EFEITO
-// sobre o talão. A viagem já passou.
+// Recibo do histórico Boleia viva — bilhete "arquivado" e afundado
+// (superfície de fundo, sem contorno), com carimbo sobre o talão.
 export default function HistoryReceipt({
 	booking,
 	ride,
@@ -52,16 +50,10 @@ export default function HistoryReceipt({
 
 	return (
 		<View
-			className="rounded-3xl border overflow-hidden"
-			style={{
-				borderColor: themeColors.border,
-				backgroundColor: themeColors.card,
-			}}
+			className="rounded-3xl overflow-hidden"
+			style={{ backgroundColor: themeColors.background }}
 		>
-			<View
-				className="px-4 pt-3 pb-2.5"
-				style={{ backgroundColor: themeColors.border }}
-			>
+			<View className="px-5 py-4">
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center">
 						<Ionicons
@@ -88,28 +80,27 @@ export default function HistoryReceipt({
 				</View>
 				<Text
 					numberOfLines={1}
-					className="font-display text-[21px] leading-7 mt-1"
-					style={{ color: themeColors.secondary }}
+					className="font-display text-[20px] leading-7 mt-1"
+					style={{ color: themeColors.text }}
 				>
 					{ride.origin.name} → {ride.destination.name}
 				</Text>
-			</View>
-
-			<View className="px-4 py-3">
-				<RouteRail
-					origin={{
-						place: ride.origin.name,
-						time: hhmm(ride.departure),
-					}}
-					destination={{
-						place: ride.destination.name,
-						time: hhmm(ride.arrival),
-					}}
-					railColor={themeColors.border}
-				/>
-				<View className="flex-row items-center justify-between mt-2.5">
+				<View className="mt-3">
+					<RouteRail
+						origin={{
+							place: ride.origin.name,
+							time: hhmm(ride.departure),
+						}}
+						destination={{
+							place: ride.destination.name,
+							time: hhmm(ride.arrival),
+						}}
+						railColor={themeColors.border}
+					/>
+				</View>
+				<View className="flex-row items-center justify-between mt-3">
 					<Text
-						className="font-mono text-[10px] uppercase tracking-[1px] flex-1"
+						className="font-sans text-[12px] flex-1"
 						style={{ color: themeColors.secondary }}
 					>
 						{modeLabel} · {stopsLabel}
@@ -123,7 +114,7 @@ export default function HistoryReceipt({
 				</View>
 				{booking.reason ? (
 					<Text
-						className="font-sans text-[11px] mt-1"
+						className="font-sans text-[12px] mt-1"
 						style={{ color: themeColors.error }}
 					>
 						{booking.reason}
@@ -131,9 +122,7 @@ export default function HistoryReceipt({
 				) : null}
 			</View>
 
-			<Perforation tight />
-
-			<View className="px-4 pb-4" style={{ position: 'relative' }}>
+			<View className="px-5 pb-5" style={{ position: 'relative' }}>
 				<View className="flex-row items-center">
 					<QRStamp seed={booking.id} size={50} muted />
 					<View className="flex-1 ml-3">
@@ -177,7 +166,7 @@ export default function HistoryReceipt({
 				</View>
 
 				{booking.status === 'concluida' && onReview ? (
-					<View className="mt-3">
+					<View className="mt-4">
 						<BoleiaButton
 							small
 							title="Avaliar motorista"

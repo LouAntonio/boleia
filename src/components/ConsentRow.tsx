@@ -28,16 +28,15 @@ export default function ConsentRow({
 			style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
 		>
 			<View
-				className="h-5 w-5 rounded-full border items-center justify-center mr-3"
+				className="h-6 w-6 rounded-lg items-center justify-center mr-3"
 				style={{
-					borderColor: checked
-						? themeColors.mato
-						: themeColors.border,
-					backgroundColor: checked ? themeColors.mato : 'transparent',
+					backgroundColor: checked
+						? themeColors.primary
+						: themeColors.background,
 				}}
 			>
 				{checked && (
-					<Ionicons name="checkmark" size={13} color="#FFFFFF" />
+					<Ionicons name="checkmark" size={14} color="#17141B" />
 				)}
 			</View>
 			<Text

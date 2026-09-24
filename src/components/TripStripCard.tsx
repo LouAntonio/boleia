@@ -7,7 +7,10 @@ import { rideMode } from '../mock/repos/rideRepo';
 import RouteStrip, { StripStop } from './RouteStrip';
 import StatusStamp from './StatusStamp';
 
-// Cartão de viagem: RouteStrip + meta — usado em listas e detalhe
+const ASFALTO = '#17141B';
+
+// Cartão de viagem compacto Boleia viva — superfície cheia com sombra,
+// selo de modo em pastilha, rail de paragens e linha de preço.
 export default function TripStripCard({
 	ride,
 	progress,
@@ -43,20 +46,22 @@ export default function TripStripCard({
 	return (
 		<Pressable
 			onPress={onPress}
-			// eslint-disable-next-line react-native/no-inline-styles
+			className="rounded-2xl overflow-hidden"
 			style={({ pressed }) => ({
 				backgroundColor: themeColors.card,
-				borderRadius: 16,
-				borderWidth: 1,
-				borderColor: themeColors.border,
-				opacity: pressed ? 0.85 : 1,
+				opacity: pressed ? 0.9 : 1,
+				transform: [{ scale: pressed ? 0.99 : 1 }],
+				shadowColor: '#000',
+				shadowOpacity: 0.08,
+				shadowOffset: { width: 0, height: 4 },
+				shadowRadius: 12,
+				elevation: 3,
 			})}
 		>
 			<View className="p-4">
 				<View className="flex-row items-center justify-between mb-1">
 					<Text
-						className="font-display text-[15px] flex-1 mr-2"
-						// eslint-disable-next-line react-native/no-inline-styles
+						className="font-display text-[17px] flex-1 mr-2"
 						style={{ color: themeColors.text }}
 						numberOfLines={1}
 					>
@@ -64,13 +69,13 @@ export default function TripStripCard({
 					</Text>
 					<View className="flex-row items-center">
 						<View
-							className="rounded-full px-2 py-0.5 border mr-2"
-							// eslint-disable-next-line react-native/no-inline-styles
-							style={{ borderColor: themeColors.border }}
+							className="rounded-full px-2.5 py-1 mr-2"
+							style={{
+								backgroundColor: themeColors.background,
+							}}
 						>
 							<Text
 								className="font-mono text-[9px] uppercase tracking-[1px]"
-								// eslint-disable-next-line react-native/no-inline-styles
 								style={{ color: themeColors.laterite }}
 							>
 								{rideMode(ride) === 'interprovincial'
@@ -84,7 +89,6 @@ export default function TripStripCard({
 				<View className="flex-row items-center justify-between mb-3">
 					<Text
 						className="font-sans text-[12px]"
-						// eslint-disable-next-line react-native/no-inline-styles
 						style={{ color: themeColors.secondary }}
 					>
 						Saída{' '}
@@ -96,14 +100,12 @@ export default function TripStripCard({
 					</Text>
 					{reserved ? (
 						<View
-							className="rounded-full px-2 py-0.5"
-							// eslint-disable-next-line react-native/no-inline-styles
-							style={{ backgroundColor: themeColors.mato }}
+							className="rounded-full px-2.5 py-1"
+							style={{ backgroundColor: themeColors.primary }}
 						>
 							<Text
 								className="font-mono text-[9px] uppercase tracking-[1px]"
-								// eslint-disable-next-line react-native/no-inline-styles
-								style={{ color: themeColors.background }}
+								style={{ color: ASFALTO }}
 							>
 								Já tens reserva
 							</Text>
@@ -120,18 +122,15 @@ export default function TripStripCard({
 
 				<View
 					className="mt-4 pt-3 flex-row items-center justify-between border-t"
-					// eslint-disable-next-line react-native/no-inline-styles
 					style={{ borderColor: themeColors.border }}
 				>
 					<Text
-						className="font-mono text-[14px]"
-						// eslint-disable-next-line react-native/no-inline-styles
+						className="font-display text-[17px]"
 						style={{ color: themeColors.text }}
 					>
 						{fmtKz(ride.pricePerSeat)}
 						<Text
 							className="font-sans text-[11px]"
-							// eslint-disable-next-line react-native/no-inline-styles
 							style={{ color: themeColors.secondary }}
 						>
 							{' '}
@@ -141,18 +140,21 @@ export default function TripStripCard({
 					<View className="flex-row items-center">
 						<Text
 							className="font-mono text-[12px] mr-3"
-							// eslint-disable-next-line react-native/no-inline-styles
 							style={{ color: themeColors.secondary }}
 						>
 							{durationBetween(ride.departure, ride.arrival)}
 						</Text>
 						<Text
 							className="font-sansMedium text-[11px]"
-							// eslint-disable-next-line react-native/no-inline-styles
-							style={{ color: themeColors.secondary }}
+							style={{
+								color:
+									seatsLeft > 0
+										? themeColors.secondary
+										: themeColors.error,
+							}}
 						>
 							{seatsLeft > 0
-								? `${seatsLeft} lugar${seatsLeft > 1 ? 'es' : ''} livre${seatsLeft > 1 ? 's' : ''}`
+								? `${seatsLeft} livre${seatsLeft > 1 ? 's' : ''}`
 								: 'Lotada'}
 						</Text>
 					</View>

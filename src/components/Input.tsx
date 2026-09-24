@@ -39,20 +39,11 @@ export default function Input({
 
 	const containerDynamicStyle = useMemo(
 		() => ({
-			borderColor: error
-				? themeColors.error
-				: isFocused
-					? themeColors.primary
-					: themeColors.border,
-			backgroundColor: isDark
-				? isFocused
-					? '#1A1A1A'
-					: '#121212'
-				: isFocused
-					? '#FFFFFF'
-					: '#F5F5F5',
+			borderColor: error ? themeColors.error : 'transparent',
+			borderWidth: error ? 1.5 : 0,
+			backgroundColor: themeColors.background,
 		}),
-		[error, isFocused, isDark, themeColors],
+		[error, themeColors],
 	);
 
 	const textInputStyle = useMemo(
@@ -80,7 +71,7 @@ export default function Input({
 				</Text>
 			)}
 			<View
-				className="flex-row items-center border-2 rounded-2xl overflow-hidden px-4"
+				className="flex-row items-center rounded-2xl overflow-hidden px-4"
 				style={[
 					styles.inputContainer,
 					containerDynamicStyle,

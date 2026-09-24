@@ -7,6 +7,7 @@ import PublishScreen from '../screens/boleia/PublishScreen';
 import TripsScreen from '../screens/boleia/TripsScreen';
 import ProfileScreen from '../screens/boleia/ProfileScreen';
 import { useThemeColors } from '../hooks/useThemeColors';
+import PillTabBarButton from './PillTabBarButton';
 
 const Tab = createBottomTabNavigator<DriverTabsParamList>();
 
@@ -16,8 +17,9 @@ export default function DriverTabs() {
 		<Tab.Navigator
 			screenOptions={{
 				headerShown: false,
-				tabBarActiveTintColor: themeColors.text,
-				tabBarInactiveTintColor: themeColors.border,
+				tabBarButton: PillTabBarButton,
+				tabBarActiveTintColor: themeColors.card,
+				tabBarInactiveTintColor: themeColors.secondary,
 				tabBarStyle: {
 					backgroundColor: themeColors.card,
 					borderTopColor: themeColors.border,

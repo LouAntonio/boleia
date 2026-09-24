@@ -6,9 +6,9 @@ import { useNavigation } from '@react-navigation/native';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
+import Eyebrow from '../../components/Eyebrow';
 import ConsentRow from '../../components/ConsentRow';
 import Input from '../../components/Input';
-import Perforation from '../../components/Perforation';
 import { signUp, apiErrorMessage } from '../../lib/api';
 import { maskPhone, normalizePhone } from '../../utils/phone';
 
@@ -76,7 +76,7 @@ export default function RegisterScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Boleia"
+			eyebrow="Cadastro · Boleia"
 			title="Cria a tua conta"
 			subtitle="O mesmo perfil serve para viajares como passageiro ou montares a tua boleia como motorista."
 			back={() => navigation.goBack()}
@@ -99,6 +99,9 @@ export default function RegisterScreen() {
 				</View>
 			}
 		>
+			<View className="mb-4">
+				<Eyebrow>1 · Os teus dados</Eyebrow>
+			</View>
 			<View className="flex-row">
 				<View className="flex-1 mr-2">
 					<Input
@@ -127,6 +130,9 @@ export default function RegisterScreen() {
 					/>
 				</View>
 			</View>
+			<View className="mb-4 mt-5">
+				<Eyebrow>2 · Contacto</Eyebrow>
+			</View>
 			<Input
 				label="Número de telefone"
 				value={phone}
@@ -151,6 +157,9 @@ export default function RegisterScreen() {
 				leftIcon="mail-outline"
 				autoCapitalize="none"
 			/>
+			<View className="mb-4 mt-5">
+				<Eyebrow>3 · Segurança</Eyebrow>
+			</View>
 			<Input
 				label="Senha"
 				value={password}
@@ -190,13 +199,9 @@ export default function RegisterScreen() {
 					{error}
 				</Text>
 			) : null}
-			<Perforation />
-			<Text
-				className="font-mono text-[10px] uppercase tracking-[2px] mb-1"
-				style={{ color: themeColors.laterite }}
-			>
-				Termos e privacidade
-			</Text>
+			<View className="mb-3 mt-6">
+				<Eyebrow>4 · Termos e privacidade</Eyebrow>
+			</View>
 			<ConsentRow
 				label="Aceito os Termos de Serviço"
 				checked={terms}

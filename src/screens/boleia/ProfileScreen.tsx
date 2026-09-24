@@ -23,6 +23,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import Perforation from '../../components/Perforation';
+import Eyebrow from '../../components/Eyebrow';
 import QRStamp from '../../components/QRStamp';
 import { Ionicons } from '@expo/vector-icons';
 import { navigationRef } from '../../lib/navigationRef';
@@ -47,24 +48,6 @@ const THEMES: { mode: ThemeMode; label: string }[] = [
 	{ mode: 'dark', label: 'Escuro' },
 	{ mode: 'system', label: 'Sistema' },
 ];
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-	const { themeColors } = useThemeColors();
-	return (
-		<View className="flex-row items-center">
-			<View
-				className="w-[14px] h-[2px] mr-2"
-				style={{ backgroundColor: themeColors.laterite }}
-			/>
-			<Text
-				className="font-mono text-[10px] uppercase tracking-[3px]"
-				style={{ color: themeColors.text }}
-			>
-				{children}
-			</Text>
-		</View>
-	);
-}
 
 function PanelStat({
 	value,
@@ -166,11 +149,14 @@ function RolePanel({
 			className="mb-4"
 		>
 			<View
-				className="rounded-3xl border overflow-hidden"
+				className="rounded-3xl overflow-hidden"
 				style={{
-					borderColor: active ? band : themeColors.border,
-					borderWidth: active ? 2 : 1,
 					backgroundColor: themeColors.card,
+					shadowColor: '#000',
+					shadowOpacity: 0.08,
+					shadowOffset: { width: 0, height: 4 },
+					shadowRadius: 12,
+					elevation: 3,
 				}}
 			>
 				<Pressable
@@ -409,87 +395,82 @@ export default function ProfileScreen() {
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
-				<View className="mt-2">
-					<Eyebrow>Perfil</Eyebrow>
-					<Text
-						className="font-display text-[22px] -mt-0.5"
-						style={{ color: themeColors.text }}
-					>
-						O teu perfil
-					</Text>
+				<View
+					className="-mx-5 px-5 pt-3 pb-12"
+					style={{ backgroundColor: themeColors.text }}
+				>
+					<View className="flex-row items-center">
+						<View
+							className="w-16 h-16 rounded-full items-center justify-center"
+							style={{
+								backgroundColor: themeColors.primary,
+								borderWidth: 2,
+								borderColor: themeColors.laterite,
+							}}
+						>
+							<Text
+								className="font-display text-[20px]"
+								style={{ color: ASFALTO }}
+							>
+								{me ? initials(me.firstName, me.lastName) : '?'}
+							</Text>
+						</View>
+						<View className="flex-1 ml-3">
+							<Text
+								className="font-mono text-[10px] uppercase tracking-[3px]"
+								style={{ color: themeColors.card }}
+							>
+								Sócio Boleia
+							</Text>
+							<Text
+								className="font-display text-[22px] -mt-0.5"
+								style={{ color: themeColors.card }}
+								numberOfLines={1}
+							>
+								{me ? `${me.firstName} ${me.lastName}` : '—'}
+							</Text>
+						</View>
+					</View>
+					<View className="flex-row items-center mt-3">
+						<Text
+							className="font-mono text-[15px] mr-1.5"
+							style={{ color: themeColors.primary }}
+						>
+							★
+						</Text>
+						<Text
+							className="font-sansMedium text-[13px]"
+							style={{ color: themeColors.card }}
+						>
+							{rating}
+							{me && me.ratingsCount > 0
+								? ` · ${me.ratingsCount} avaliaçõe${me.ratingsCount > 1 ? 's' : ''}`
+								: ''}
+						</Text>
+						<Text
+							className="font-mono text-[10px] uppercase tracking-[2px] ml-3"
+							style={{ color: themeColors.card, opacity: 0.7 }}
+						>
+							desde {since}
+						</Text>
+					</View>
 				</View>
 
 				{/* Bilhete de sócio */}
 				<Animated.View entering={FadeInDown.duration(260)}>
 					<View
-						className="rounded-3xl border overflow-hidden mt-3"
+						className="rounded-3xl overflow-hidden -mt-7"
 						style={{
-							borderColor: themeColors.border,
 							backgroundColor: themeColors.card,
+							shadowColor: '#000',
+							shadowOpacity: 0.1,
+							shadowOffset: { width: 0, height: 6 },
+							shadowRadius: 16,
+							elevation: 4,
 						}}
 					>
-						<View
-							className="px-4 pt-3.5 pb-3 flex-row items-center"
-							style={{ backgroundColor: themeColors.text }}
-						>
-							<View
-								className="w-14 h-14 rounded-full items-center justify-center"
-								style={{
-									backgroundColor: themeColors.primary,
-									borderWidth: 2,
-									borderColor: themeColors.laterite,
-								}}
-							>
-								<Text
-									className="font-display text-[18px]"
-									style={{ color: ASFALTO }}
-								>
-									{me
-										? initials(me.firstName, me.lastName)
-										: '?'}
-								</Text>
-							</View>
-							<View className="flex-1 ml-3">
-								<Text
-									className="font-mono text-[10px] uppercase tracking-[3px]"
-									style={{ color: themeColors.card }}
-								>
-									Sócio Boleia
-								</Text>
-								<Text
-									className="font-display text-[22px] -mt-0.5"
-									style={{ color: themeColors.card }}
-									numberOfLines={1}
-								>
-									{me
-										? `${me.firstName} ${me.lastName}`
-										: '—'}
-								</Text>
-							</View>
-						</View>
-						<Perforation flush />
-						<View className="px-4 pt-3 pb-4">
+						<View className="px-4 py-4">
 							<View className="flex-row items-center">
-								<Text
-									className="font-mono text-[15px] mr-1.5"
-									style={{ color: themeColors.laterite }}
-								>
-									★
-								</Text>
-								<Text
-									className="font-sansMedium text-[13px]"
-									style={{ color: themeColors.secondary }}
-								>
-									{rating}
-									{me && me.ratingsCount > 0
-										? ` · ${me.ratingsCount} avaliaçõe${me.ratingsCount > 1 ? 's' : ''}`
-										: ''}
-								</Text>
-							</View>
-							<View
-								className="flex-row items-center mt-3.5 pt-3 border-t"
-								style={{ borderColor: themeColors.border }}
-							>
 								<QRStamp seed={sessionUserId} size={34} />
 								<View className="flex-1 ml-3">
 									<Text
@@ -525,7 +506,7 @@ export default function ProfileScreen() {
 				</Animated.View>
 
 				{/* Papéis */}
-				<View className="mt-6 mb-3">
+				<View className="mt-6 mb-4">
 					<Eyebrow>Uma conta · dois papéis</Eyebrow>
 				</View>
 
@@ -587,11 +568,8 @@ export default function ProfileScreen() {
 					onActivate={() => setRole('driver')}
 				>
 					<View
-						className="mt-3 rounded-xl border overflow-hidden"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
+						className="mt-3 rounded-xl overflow-hidden"
+						style={{ backgroundColor: themeColors.background }}
 					>
 						<Pressable
 							onPress={() => navigation.navigate('Kyc')}
@@ -640,14 +618,17 @@ export default function ProfileScreen() {
 				{currentRole === 'driver' ? (
 					<Animated.View
 						entering={FadeInDown.delay(200).duration(260)}
-						className="mt-2"
 					>
 						<Eyebrow>Recibo de ganhos</Eyebrow>
 						<View
-							className="rounded-3xl border overflow-hidden mt-3"
+							className="rounded-3xl overflow-hidden mt-4"
 							style={{
-								borderColor: themeColors.border,
 								backgroundColor: themeColors.card,
+								shadowColor: '#000',
+								shadowOpacity: 0.08,
+								shadowOffset: { width: 0, height: 4 },
+								shadowRadius: 12,
+								elevation: 3,
 							}}
 						>
 							<View
@@ -724,10 +705,14 @@ export default function ProfileScreen() {
 				<View className="mt-6">
 					<Eyebrow>Segurança</Eyebrow>
 					<View
-						className="rounded-3xl border overflow-hidden mt-3"
+						className="rounded-3xl overflow-hidden mt-4"
 						style={{
-							borderColor: themeColors.border,
 							backgroundColor: themeColors.card,
+							shadowColor: '#000',
+							shadowOpacity: 0.08,
+							shadowOffset: { width: 0, height: 4 },
+							shadowRadius: 12,
+							elevation: 3,
 						}}
 					>
 						<View className="px-4 py-3 flex-row items-center">
@@ -767,9 +752,8 @@ export default function ProfileScreen() {
 								Nome
 							</Text>
 							<View
-								className="rounded-xl border px-3.5 mb-3"
+								className="rounded-xl px-3.5 mb-3"
 								style={{
-									borderColor: themeColors.border,
 									backgroundColor: themeColors.background,
 								}}
 							>
@@ -792,9 +776,8 @@ export default function ProfileScreen() {
 								Telefone
 							</Text>
 							<View
-								className="rounded-xl border px-3.5 mb-3"
+								className="rounded-xl px-3.5 mb-3"
 								style={{
-									borderColor: themeColors.border,
 									backgroundColor: themeColors.background,
 								}}
 							>
@@ -836,11 +819,8 @@ export default function ProfileScreen() {
 				<View className="mt-6">
 					<Eyebrow>Definições</Eyebrow>
 					<View
-						className="flex-row rounded-full p-1 border mt-3"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
+						className="flex-row rounded-full p-1 mt-4"
+						style={{ backgroundColor: themeColors.card }}
 					>
 						{THEMES.map((t) => {
 							const active = theme === t.mode;
@@ -870,7 +850,17 @@ export default function ProfileScreen() {
 						})}
 					</View>
 
-					<View className="mt-4 rounded-2xl border overflow-hidden">
+					<View
+						className="mt-4 rounded-2xl overflow-hidden"
+						style={{
+							backgroundColor: themeColors.card,
+							shadowColor: '#000',
+							shadowOpacity: 0.08,
+							shadowOffset: { width: 0, height: 4 },
+							shadowRadius: 12,
+							elevation: 3,
+						}}
+					>
 						<Pressable
 							onPress={() => navigation.navigate('SosCenter')}
 							className="flex-row items-center justify-between px-4 py-3.5 border-b"

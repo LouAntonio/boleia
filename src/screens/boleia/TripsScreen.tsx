@@ -5,16 +5,21 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
 import { fmtKz, initials } from '../../mock/helpers';
-import SectionTitle from '../../components/SectionTitle';
 import TripStripCard from '../../components/TripStripCard';
 import StatusStamp from '../../components/StatusStamp';
 import BoleiaButton from '../../components/BoleiaButton';
+import ScreenHeader from '../../components/ScreenHeader';
+import EmptyState from '../../components/EmptyState';
 import { ridesForDriver } from '../../mock/repos/rideRepo';
 import { confirmBooking, declineBooking } from '../../mock/repos/bookingRepo';
 import { startRide } from '../../mock/repos/liveRepo';
 import { useNavigation } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { BoleiaMainStackParamList } from '../../types/navigation';
+import {
+	BoleiaMainStackParamList,
+	DriverTabsParamList,
+} from '../../types/navigation';
 
 export default function TripsScreen() {
 	const { themeColors } = useThemeColors();
@@ -22,6 +27,8 @@ export default function TripsScreen() {
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
+	const tabNavigation =
+		useNavigation<BottomTabNavigationProp<DriverTabsParamList>>();
 	const mine = ridesForDriver(useSessionUserId());
 	const allBookings = useDbStore((s) => s.db.bookings);
 	const users = useDbStore((s) => s.db.users);
@@ -32,30 +39,19 @@ export default function TripsScreen() {
 				className="flex-1 px-5"
 				style={{ backgroundColor: themeColors.background }}
 			>
-				<View className="mt-2 mb-4">
-					<Text
-						className="font-mono text-[10px] uppercase tracking-[3px]"
-						style={{ color: themeColors.laterite }}
-					>
-						Viagens · talões
-					</Text>
-					<Text
-						className="font-display text-[22px] -mt-0.5"
-						style={{ color: themeColors.text }}
-					>
-						As tuas viagens
-					</Text>
+				<ScreenHeader
+					eyebrow="Viagens · talões"
+					title="As tuas viagens"
+				/>
+				<View className="flex-1 justify-center pb-10">
+					<EmptyState
+						icon="add-circle-outline"
+						title="Ainda nada publicado"
+						copy="Publica a tua primeira viagem e gere aqui os pedidos de boleia."
+						actionTitle="Publicar viagem"
+						onAction={() => tabNavigation.navigate('DriverPublish')}
+					/>
 				</View>
-				<SectionTitle tone="laterite">
-					Ainda nada publicado
-				</SectionTitle>
-				<Text
-					className="font-sans text-[13px]"
-					style={{ color: themeColors.secondary }}
-				>
-					Publica a tua primeira viagem e gere aqui os pedidos de
-					boleia.
-				</Text>
 			</SafeAreaView>
 		);
 	}
@@ -65,30 +61,13 @@ export default function TripsScreen() {
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
-			<View className="mt-2 mb-4">
-				<Text
-					className="font-mono text-[10px] uppercase tracking-[3px]"
-					style={{ color: themeColors.laterite }}
-				>
-					Viagens · talões
-				</Text>
-				<Text
-					className="font-display text-[22px] -mt-0.5"
-					style={{ color: themeColors.text }}
-				>
-					As tuas viagens
-				</Text>
-				<Text
-					className="font-mono text-[11px]"
-					style={{ color: themeColors.secondary }}
-				>
-					{mine.length} viagem
-					{mine.length === 1 ? '' : 's'} publicada
-					{mine.length === 1 ? '' : 's'}
-				</Text>
-			</View>
+			<ScreenHeader
+				eyebrow="Viagens · talões"
+				title="As tuas viagens"
+				meta={`${mine.length} viagem${mine.length === 1 ? '' : 's'} publicada${mine.length === 1 ? '' : 's'}`}
+			/>
 			<ScrollView
-				className="flex-1"
+				className="flex-1 mt-4"
 				contentContainerStyle={{ paddingBottom: 48 }}
 			>
 				{mine.map((ride) => {
@@ -110,10 +89,9 @@ export default function TripsScreen() {
 							/>
 							{ride.status === 'programada' && (
 								<View
-									className="mx-1 -mt-1 rounded-b-2xl border border-t-0 px-3 pb-3 pt-2"
+									className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3 pt-2"
 									style={{
-										borderColor: themeColors.border,
-										backgroundColor: themeColors.card,
+										backgroundColor: themeColors.background,
 									}}
 								>
 									<View className="flex-row">
@@ -134,10 +112,9 @@ export default function TripsScreen() {
 							)}
 							{ride.status === 'em_curso' && (
 								<View
-									className="mx-1 -mt-1 rounded-b-2xl border border-t-0 px-3 pb-3 pt-2"
+									className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3 pt-2"
 									style={{
-										borderColor: themeColors.border,
-										backgroundColor: themeColors.card,
+										backgroundColor: themeColors.background,
 									}}
 								>
 									<View className="flex-row">
@@ -157,10 +134,9 @@ export default function TripsScreen() {
 							)}
 							{bookings.length > 0 && (
 								<View
-									className="mx-1 -mt-1 rounded-b-2xl border border-t-0 px-3 pb-3"
+									className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3"
 									style={{
-										borderColor: themeColors.border,
-										backgroundColor: themeColors.card,
+										backgroundColor: themeColors.background,
 									}}
 								>
 									{pending.length > 0 ? (
@@ -183,7 +159,7 @@ export default function TripsScreen() {
 																className="w-8 h-8 rounded-full items-center justify-center mr-2"
 																style={{
 																	backgroundColor:
-																		themeColors.border,
+																		themeColors.card,
 																}}
 															>
 																<Text
@@ -335,7 +311,7 @@ export default function TripsScreen() {
 																className="w-8 h-8 rounded-full items-center justify-center mr-2"
 																style={{
 																	backgroundColor:
-																		themeColors.border,
+																		themeColors.card,
 																}}
 															>
 																<Text

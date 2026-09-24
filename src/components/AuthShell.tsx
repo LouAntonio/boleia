@@ -64,11 +64,23 @@ export default function AuthShell({
 							entering={FadeInDown.duration(800).delay(200)}
 							className="items-center"
 						>
-							<Image
-								source={require('../../assets/images/logo.png')}
-								className="w-20 h-20 rounded-3xl mb-4"
-								resizeMode="contain"
-							/>
+							<View
+								className="p-1.5 rounded-[28px] mb-4"
+								style={{
+									backgroundColor: themeColors.primary,
+									shadowColor: themeColors.primary,
+									shadowOpacity: 0.35,
+									shadowOffset: { width: 0, height: 6 },
+									shadowRadius: 16,
+									elevation: 6,
+								}}
+							>
+								<Image
+									source={require('../../assets/images/logo.png')}
+									className="w-20 h-20 rounded-3xl"
+									resizeMode="contain"
+								/>
+							</View>
 							<Text
 								className="font-mono text-[11px] uppercase tracking-[3px]"
 								style={{ color: themeColors.laterite }}
@@ -92,10 +104,14 @@ export default function AuthShell({
 						</Animated.View>
 						<Animated.View
 							entering={FadeInUp.duration(800).delay(400)}
-							className="mt-7 rounded-3xl border px-5 py-6"
+							className="mt-7 rounded-3xl px-5 py-6"
 							style={{
-								borderColor: themeColors.border,
 								backgroundColor: themeColors.card,
+								shadowColor: '#000',
+								shadowOpacity: 0.1,
+								shadowOffset: { width: 0, height: 6 },
+								shadowRadius: 16,
+								elevation: 4,
 							}}
 						>
 							{children}

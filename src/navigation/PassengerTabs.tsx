@@ -7,6 +7,7 @@ import ExploreScreen from '../screens/boleia/ExploreScreen';
 import BookingsScreen from '../screens/boleia/BookingsScreen';
 import ProfileScreen from '../screens/boleia/ProfileScreen';
 import { useThemeColors } from '../hooks/useThemeColors';
+import PillTabBarButton from './PillTabBarButton';
 
 const Tab = createBottomTabNavigator<PassengerTabsParamList>();
 
@@ -16,8 +17,9 @@ export default function PassengerTabs() {
 		<Tab.Navigator
 			screenOptions={{
 				headerShown: false,
-				tabBarActiveTintColor: themeColors.text,
-				tabBarInactiveTintColor: themeColors.border,
+				tabBarButton: PillTabBarButton,
+				tabBarActiveTintColor: themeColors.card,
+				tabBarInactiveTintColor: themeColors.secondary,
 				tabBarStyle: {
 					backgroundColor: themeColors.card,
 					borderTopColor: themeColors.border,

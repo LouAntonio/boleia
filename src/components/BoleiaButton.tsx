@@ -10,10 +10,13 @@ import { useThemeColors } from '../hooks/useThemeColors';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+// Tinta fixa sobre o ouro — contraste AA nos dois temas.
+const ASFALTO = '#17141B';
+
 type Variant = 'primary' | 'dark' | 'outline' | 'ghost';
 
-// Botão Boleia — ouro com texto asfalto, animação de press (escala) e glow.
-// `strong` aplica o estilo FDA: uppercase + tracking. Cantos 12, microcopy PT-AO.
+// Botão Boleia — ouro cheio com tinta asfalto, animação de press (escala) e
+// sombra curta. `strong` aplica uppercase + tracking. Cantos 14.
 export default function BoleiaButton({
 	title,
 	onPress,
@@ -39,7 +42,7 @@ export default function BoleiaButton({
 	}));
 
 	const fg: Record<Variant, string> = {
-		primary: disabled ? themeColors.secondary : themeColors.text,
+		primary: disabled ? themeColors.secondary : ASFALTO,
 		dark: disabled ? themeColors.secondary : themeColors.card,
 		outline: disabled ? themeColors.border : themeColors.text,
 		ghost: disabled ? themeColors.border : themeColors.laterite,
@@ -55,16 +58,20 @@ export default function BoleiaButton({
 		return {
 			backgroundColor: bg[variant],
 			borderColor:
-				variant === 'outline' ? themeColors.text : 'transparent',
+				variant === 'outline'
+					? disabled
+						? themeColors.border
+						: themeColors.text
+					: 'transparent',
 			borderWidth: variant === 'outline' ? 1.5 : 0,
 			shadowColor:
 				variant === 'primary' && !disabled
 					? themeColors.primary
 					: 'transparent',
-			shadowOpacity: variant === 'primary' && !disabled ? 0.35 : 0,
-			shadowOffset: { width: 0, height: 4 },
-			shadowRadius: 10,
-			elevation: variant === 'primary' && !disabled ? 5 : 0,
+			shadowOpacity: variant === 'primary' && !disabled ? 0.2 : 0,
+			shadowOffset: { width: 0, height: 3 },
+			shadowRadius: 8,
+			elevation: variant === 'primary' && !disabled ? 3 : 0,
 		};
 	}, [variant, disabled, themeColors]);
 
@@ -83,8 +90,8 @@ export default function BoleiaButton({
 			onPressOut={handlePressOut}
 			disabled={disabled || loading}
 			style={[styles.base, containerStyle, animatedStyle]}
-			className={`rounded-xl items-center justify-center flex-row ${
-				small ? 'px-3 py-2' : 'h-[58px]'
+			className={`rounded-2xl items-center justify-center flex-row ${
+				small ? 'px-4 py-2.5' : 'h-[58px]'
 			}`}
 		>
 			{loading ? (
@@ -109,6 +116,6 @@ export default function BoleiaButton({
 
 const styles = StyleSheet.create({
 	base: {
-		shadowRadius: 10,
+		shadowRadius: 8,
 	},
 });
