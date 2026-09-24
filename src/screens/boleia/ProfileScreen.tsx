@@ -1,7 +1,16 @@
-import React from 'react';
-import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+	View,
+	Text,
+	Pressable,
+	ScrollView,
+	Alert,
+	TextInput,
+	ActivityIndicator,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useFocusEffect } from '@react-navigation/native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUser, useSessionUserId } from '../../hooks/useSessionUser';
 import { useAppStore } from '../../store/appStore';
@@ -18,6 +27,13 @@ import QRStamp from '../../components/QRStamp';
 import { Ionicons } from '@expo/vector-icons';
 import { navigationRef } from '../../lib/navigationRef';
 import { clearAuthToken } from '../../lib/api';
+import {
+	apiErrorMessage,
+	getEmergencyContact,
+	saveEmergencyContact,
+} from '../../lib/api';
+import { Eligibility, fetchEligibility } from '../../lib/eligibility';
+import BoleiaButton from '../../components/BoleiaButton';
 
 // Tinta de leitura sobre as bandas tingidas — mesmos fixos do BookingStub.
 // As bandas ativas usam os tons claros nos DOIS temas: texto CELU passa AA.
@@ -277,6 +293,74 @@ export default function ProfileScreen() {
 	const rides = useDbStore((s) => s.db.rides);
 	const sessionUserId = useSessionUserId();
 
+	// Estado real (API) de KYC/viaturas — os gates de pedir/registar
+	// corrida leem daqui, não do mock.
+	const [elig, setElig] = useState<Eligibility | null>(null);
+	const [emgName, setEmgName] = useState('');
+	const [emgPhone, setEmgPhone] = useState('');
+	const [emgSaving, setEmgSaving] = useState(false);
+	const [emgSaved, setEmgSaved] = useState(false);
+
+	useFocusEffect(
+		useCallback(() => {
+			let alive = true;
+			fetchEligibility().then((e) => {
+				if (alive) setElig(e);
+			});
+			getEmergencyContact()
+				.then((c) => {
+					if (!alive || !c) return;
+					setEmgName(c.name);
+					setEmgPhone(c.phone);
+				})
+				.catch(() => undefined);
+			return () => {
+				alive = false;
+			};
+		}, []),
+	);
+
+	const saveEmergency = async () => {
+		if (emgName.trim().length < 2 || emgSaving) return;
+		setEmgSaving(true);
+		setEmgSaved(false);
+		try {
+			const saved = await saveEmergencyContact({
+				name: emgName.trim(),
+				phone: emgPhone.trim(),
+			});
+			setEmgName(saved.name);
+			setEmgPhone(saved.phone);
+			setEmgSaved(true);
+		} catch (error) {
+			Alert.alert(
+				'Contacto de emergência',
+				apiErrorMessage(error, 'Não foi possível guardar.'),
+			);
+		} finally {
+			setEmgSaving(false);
+		}
+	};
+
+	const kycStamp = !elig?.loaded
+		? (me?.kyc?.status ?? 'nao_submetido')
+		: !elig.kycDriver
+			? 'nao_submetido'
+			: elig.kycDriver.status === 'VERIFIED'
+				? 'verificado'
+				: elig.kycDriver.status === 'PENDING'
+					? 'pendente'
+					: elig.kycDriver.status === 'REJECTED'
+						? 'recusado'
+						: 'nao_submetido';
+	const vehicleStamp = !elig?.loaded
+		? (me?.vehicle?.status ?? 'nao_submetido')
+		: elig.verifiedVehicles.length > 0
+			? 'verificado'
+			: elig.vehicles.length > 0
+				? 'pendente'
+				: 'nao_submetido';
+
 	const myBookings = bookings.filter((b) => b.passengerId === sessionUserId);
 	const feitas = myBookings.filter((b) => b.status === 'concluida').length;
 	const proximas = myBookings.filter((b) =>
@@ -523,9 +607,7 @@ export default function ProfileScreen() {
 							>
 								BI e carta de condução
 							</Text>
-							<VerificationStamp
-								status={me?.kyc?.status ?? 'nao_submetido'}
-							/>
+							<VerificationStamp status={kycStamp} />
 						</Pressable>
 						<Pressable
 							onPress={() => navigation.navigate('Vehicle')}
@@ -540,12 +622,11 @@ export default function ProfileScreen() {
 							>
 								Viatura
 							</Text>
-							<VerificationStamp
-								status={me?.vehicle?.status ?? 'nao_submetido'}
-							/>
+							<VerificationStamp status={vehicleStamp} />
 						</Pressable>
 					</View>
-					{me?.vehicle?.status !== 'verificado' ? (
+					{me?.vehicle?.status !== 'verificado' &&
+					vehicleStamp !== 'verificado' ? (
 						<Text
 							className="font-sans text-[12px] mt-2"
 							style={{ color: themeColors.secondary }}
@@ -638,6 +719,118 @@ export default function ProfileScreen() {
 						</View>
 					</Animated.View>
 				) : null}
+
+				{/* Pessoa de confiança — usada pelo SOS */}
+				<View className="mt-6">
+					<Eyebrow>Segurança</Eyebrow>
+					<View
+						className="rounded-3xl border overflow-hidden mt-3"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<View className="px-4 py-3 flex-row items-center">
+							<View
+								className="w-9 h-9 rounded-full items-center justify-center"
+								style={{
+									backgroundColor: `${themeColors.laterite}1A`,
+								}}
+							>
+								<Ionicons
+									name="shield-checkmark-outline"
+									size={19}
+									color={themeColors.laterite}
+								/>
+							</View>
+							<View className="flex-1 ml-3">
+								<Text
+									className="font-sansMedium text-[14px]"
+									style={{ color: themeColors.text }}
+								>
+									Pessoa de confiança
+								</Text>
+								<Text
+									className="font-sans text-[12px] mt-0.5"
+									style={{ color: themeColors.secondary }}
+								>
+									A central Boleia liga a esta pessoa numa
+									emergência.
+								</Text>
+							</View>
+						</View>
+						<View className="px-4 pb-4">
+							<Text
+								className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+								style={{ color: themeColors.secondary }}
+							>
+								Nome
+							</Text>
+							<View
+								className="rounded-xl border px-3.5 mb-3"
+								style={{
+									borderColor: themeColors.border,
+									backgroundColor: themeColors.background,
+								}}
+							>
+								<TextInput
+									value={emgName}
+									onChangeText={(t) => {
+										setEmgName(t);
+										setEmgSaved(false);
+									}}
+									placeholder="Ex.: Marta António"
+									placeholderTextColor={themeColors.border}
+									className="py-3 font-sans text-[15px]"
+									style={{ color: themeColors.text }}
+								/>
+							</View>
+							<Text
+								className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+								style={{ color: themeColors.secondary }}
+							>
+								Telefone
+							</Text>
+							<View
+								className="rounded-xl border px-3.5 mb-3"
+								style={{
+									borderColor: themeColors.border,
+									backgroundColor: themeColors.background,
+								}}
+							>
+								<TextInput
+									value={emgPhone}
+									onChangeText={(t) => {
+										setEmgPhone(t.replace(/[^\d+\s]/g, ''));
+										setEmgSaved(false);
+									}}
+									placeholder="Ex.: 923000111"
+									placeholderTextColor={themeColors.border}
+									keyboardType="phone-pad"
+									className="py-3 font-mono text-[15px]"
+									style={{ color: themeColors.text }}
+								/>
+							</View>
+							{emgSaving ? (
+								<View className="items-center py-2">
+									<ActivityIndicator
+										color={themeColors.laterite}
+									/>
+								</View>
+							) : (
+								<BoleiaButton
+									title={
+										emgSaved
+											? 'Guardado ✓'
+											: 'Guardar contacto'
+									}
+									onPress={saveEmergency}
+									disabled={emgName.trim().length < 2}
+								/>
+							)}
+						</View>
+					</View>
+				</View>
 
 				{/* Definições */}
 				<View className="mt-6">

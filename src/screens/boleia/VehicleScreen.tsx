@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
 	View,
 	Text,
@@ -6,6 +6,7 @@ import {
 	ScrollView,
 	Pressable,
 	ActivityIndicator,
+	Alert,
 	KeyboardTypeOptions,
 	useWindowDimensions,
 	LayoutChangeEvent,
@@ -13,19 +14,25 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { useThemeColors } from '../../hooks/useThemeColors';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import BoleiaButton from '../../components/BoleiaButton';
 import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
 import PhotoLightbox from '../../components/PhotoLightbox';
-import { useSessionUser, useSessionUserId } from '../../hooks/useSessionUser';
-import { submitVehicle } from '../../mock/repos/driverRepo';
+import {
+	ApiVehicle,
+	apiErrorMessage,
+	createVehicle,
+	deleteVehicle,
+	listMyVehicles,
+	uploadPhoto,
+} from '../../lib/api';
 
 const CELU = '#F7F3E7';
-const BAND_LATERITE = '#B4531F';
 const BAND_MATO = '#1F7A5B';
+const BAND_LATERITE = '#B4531F';
 const MAX_PHOTOS = 6;
 
 // Card com banda tingida (viatura/motorista = mato).
@@ -138,26 +145,56 @@ function Field({
 	);
 }
 
+function statusLabel(status: ApiVehicle['status']): string {
+	if (status === 'VERIFIED') return 'Verificada';
+	if (status === 'PENDING') return 'Em análise';
+	if (status === 'REJECTED') return 'Recusada';
+	return 'Por submeter';
+}
+
 export default function VehicleScreen() {
 	const navigation =
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Vehicle'>
 		>();
 	const { themeColors } = useThemeColors();
-	const me = useSessionUser();
-	const sessionUserId = useSessionUserId();
 
-	const [make, setMake] = useState(me?.vehicle?.make ?? '');
-	const [model, setModel] = useState(me?.vehicle?.model ?? '');
-	const [color, setColor] = useState(me?.vehicle?.color ?? '');
-	const [plate, setPlate] = useState(me?.vehicle?.plate ?? '');
-	const [seats, setSeats] = useState(String(me?.vehicle?.seats ?? 4));
-	const [photos, setPhotos] = useState<string[]>(me?.vehicle?.photos ?? []);
+	const [vehicles, setVehicles] = useState<ApiVehicle[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [adding, setAdding] = useState(false);
+
+	const [make, setMake] = useState('');
+	const [model, setModel] = useState('');
+	const [color, setColor] = useState('');
+	const [plate, setPlate] = useState('');
+	const [seats, setSeats] = useState('4');
+	const [photos, setPhotos] = useState<string[]>([]);
 	const [submitting, setSubmitting] = useState(false);
+	const [progress, setProgress] = useState('');
 	const [viewing, setViewing] = useState<{
 		uri: string;
 		label: string;
 	} | null>(null);
+
+	const reload = useCallback(async () => {
+		try {
+			setVehicles(await listMyVehicles());
+		} catch (error) {
+			Alert.alert(
+				'Viaturas',
+				apiErrorMessage(error, 'Não foi possível carregar.'),
+			);
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	useFocusEffect(
+		useCallback(() => {
+			setLoading(true);
+			reload();
+		}, [reload]),
+	);
 
 	// Largura real do ecrã para dimensionar os slots de foto de forma explícita
 	// (sem aspectRatio nem largura percentual em filhos de flex-row).
@@ -169,9 +206,6 @@ export default function VehicleScreen() {
 		Math.max(84, Math.floor((layoutW - 72 - 16) / 3)),
 	);
 	const slotsWidth = slot * 3 + 16;
-
-	const vehicle = me?.vehicle;
-	const status = vehicle?.status ?? 'nao_submetido';
 
 	const seatCount = Math.min(30, Math.max(2, Number(seats) || 4));
 	const canSubmit =
@@ -193,18 +227,76 @@ export default function VehicleScreen() {
 		setPhotos((prev) => prev.filter((_, j) => j !== i));
 	const extraPhotos = photos.slice(3, MAX_PHOTOS);
 
-	const submit = () => {
-		if (!canSubmit) return;
+	const resetForm = () => {
+		setMake('');
+		setModel('');
+		setColor('');
+		setPlate('');
+		setSeats('4');
+		setPhotos([]);
+		setAdding(false);
+	};
+
+	const submit = async () => {
+		if (!canSubmit || submitting) return;
 		setSubmitting(true);
-		submitVehicle(sessionUserId, {
-			make,
-			model,
-			color,
-			plate,
-			seats: seatCount,
-			photos: photos.filter(Boolean),
-		});
-		setTimeout(() => setSubmitting(false), 300);
+		try {
+			const uris = photos.filter(Boolean);
+			const photoIds: string[] = [];
+			for (const uri of uris) {
+				setProgress(
+					`A enviar foto ${photoIds.length + 1}/${uris.length}…`,
+				);
+				photoIds.push(await uploadPhoto(uri, 'VEHICLE'));
+			}
+			setProgress('A registar…');
+			await createVehicle({
+				make: make.trim(),
+				model: model.trim(),
+				color: color.trim(),
+				plate: plate.trim().toUpperCase(),
+				seats: seatCount,
+				photoIds,
+			});
+			resetForm();
+			await reload();
+		} catch (error) {
+			Alert.alert(
+				'Viatura',
+				apiErrorMessage(error, 'Não foi possível registar.'),
+			);
+		} finally {
+			setSubmitting(false);
+			setProgress('');
+		}
+	};
+
+	const remove = (id: string, label: string) => {
+		Alert.alert(
+			'Remover viatura',
+			`Remover ${label}? Só é possível se não tiver corridas associadas.`,
+			[
+				{ text: 'Cancelar', style: 'cancel' },
+				{
+					text: 'Remover',
+					style: 'destructive',
+					onPress: async () => {
+						try {
+							await deleteVehicle(id);
+							await reload();
+						} catch (error) {
+							Alert.alert(
+								'Viatura',
+								apiErrorMessage(
+									error,
+									'Não foi possível remover.',
+								),
+							);
+						}
+					},
+				},
+			],
+		);
 	};
 
 	return (
@@ -245,323 +337,368 @@ export default function VehicleScreen() {
 								className="font-mono text-[9px] uppercase tracking-[3px] ml-1"
 								style={{ color: themeColors.secondary }}
 							>
-								Viatura · Registo
+								Viaturas · Registo
 							</Text>
 						</View>
 						<Text
 							className="font-display text-[22px] leading-6"
 							style={{ color: themeColors.text }}
 						>
-							Regista a tua viatura
+							As tuas viaturas
 						</Text>
 					</View>
 				</View>
 
-				{status === 'verificado' ? (
-					<View
-						className="rounded-3xl border overflow-hidden"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<View
-							className="px-4 py-3 flex-row items-center"
-							style={{ backgroundColor: BAND_MATO }}
-						>
-							<View
-								className="w-9 h-9 rounded-full items-center justify-center"
-								style={{ backgroundColor: `${CELU}26` }}
-							>
-								<Ionicons
-									name="checkmark"
-									size={18}
-									color={CELU}
-								/>
-							</View>
-							<View className="flex-1 ml-3">
-								<Text
-									className="font-display text-[16px]"
-									style={{ color: CELU }}
-								>
-									Viatura verificada
-								</Text>
-								<Text
-									className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
-									style={{ color: CELU, opacity: 0.85 }}
-								>
-									Lista para publicar
-								</Text>
-							</View>
-						</View>
-						<View className="px-4 py-4">
-							<Text
-								className="font-sans text-[13px] leading-5"
-								style={{ color: themeColors.secondary }}
-							>
-								Viatura verificada. Já podes publicar viagens a
-								partir do painel de motorista.
-							</Text>
-							<View className="mt-4">
-								<BoleiaButton
-									title="Voltar ao painel"
-									onPress={() => navigation.goBack()}
-									strong
-								/>
-							</View>
-						</View>
-					</View>
-				) : status === 'pendente' ? (
-					<View
-						className="rounded-3xl border overflow-hidden"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<View
-							className="px-4 py-3 flex-row items-center"
-							style={{ backgroundColor: BAND_LATERITE }}
-						>
-							<View
-								className="w-9 h-9 rounded-full items-center justify-center"
-								style={{ backgroundColor: `${CELU}26` }}
-							>
-								<ActivityIndicator color={CELU} size="small" />
-							</View>
-							<View className="flex-1 ml-3">
-								<Text
-									className="font-display text-[16px]"
-									style={{ color: CELU }}
-								>
-									A verificar
-								</Text>
-								<Text
-									className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
-									style={{ color: CELU, opacity: 0.85 }}
-								>
-									Processo em análise
-								</Text>
-							</View>
-						</View>
-						<View className="px-4 py-4">
-							<Text
-								className="font-sans text-[13px] leading-5"
-								style={{ color: themeColors.secondary }}
-							>
-								Estamos a confirmar os dados da viatura. Leva só
-								uns segundos neste demo.
-							</Text>
-						</View>
+				{loading ? (
+					<View className="items-center py-10">
+						<ActivityIndicator color={themeColors.laterite} />
 					</View>
 				) : (
 					<View>
-						<SectionCard
-							band={BAND_MATO}
-							icon="car-sport-outline"
-							title="Dados da viatura"
-							subtitle="Características"
-						>
-							<View className="flex-row mb-3">
-								<Field
-									label="Marca"
-									value={make}
-									setter={setMake}
-									placeholder="ex.: Toyota"
-									className="mr-3"
-								/>
-								<Field
-									label="Modelo"
-									value={model}
-									setter={setModel}
-									placeholder="ex.: Hiace"
-								/>
-							</View>
-							<View className="flex-row mb-3">
-								<Field
-									label="Cor"
-									value={color}
-									setter={setColor}
-									placeholder="ex.: Branca"
-									className="mr-3"
-								/>
-								<Field
-									label={`Lotação (${seatCount})`}
-									value={seats}
-									setter={(t) =>
-										setSeats(
-											t.replace(/\D/g, '').slice(0, 2),
-										)
-									}
-									placeholder="ex.: 12"
-									keyboardType="numeric"
-									mono
-								/>
-							</View>
-							<Field
-								label="Matrícula"
-								value={plate}
-								setter={setPlate}
-								placeholder="ex.: LG-12-35-BT"
-								autoCapitalize="characters"
-								mono
-							/>
-						</SectionCard>
-
-						<SectionCard
-							band={BAND_MATO}
-							icon="images-outline"
-							title="Fotos da viatura"
-							subtitle="Mínimo 3 Fotos"
-						>
-							<View className="mb-4">
-								<ProgressRail
-									done={Math.min(
-										photos.filter(Boolean).length,
-										3,
-									)}
-									total={3}
-								/>
-							</View>
-
-							<View
-								style={{
-									flexDirection: 'row',
-									alignSelf: 'center',
-									alignItems: 'flex-start',
-									marginBottom: 8,
-								}}
-							>
-								{[0, 1, 2].map((i) => (
-									<PhotoSlot
-										key={i}
-										uri={photos[i] ?? null}
-										label={`Foto ${i + 1}`}
-										size={slot}
-										className={i < 2 ? 'mr-2' : ''}
-										onView={() =>
-											setViewing({
-												uri: photos[i] ?? '',
-												label: `Foto ${i + 1}`,
-											})
-										}
-										onPick={() =>
-											pickOne((u) =>
-												setPhotos((prev) =>
-													i < prev.length
-														? prev.map((p, j) =>
-																j === i ? u : p,
-															)
-														: [...prev, u],
-												),
-											)
-										}
-										onRemove={
-											photos[i]
-												? () => removeAt(i)
-												: undefined
-										}
-									/>
-								))}
-							</View>
-
-							{extraPhotos.length > 0 ? (
+						{vehicles.map((v) => {
+							const verified = v.status === 'VERIFIED';
+							return (
 								<View
+									key={v.id}
+									className="rounded-3xl border overflow-hidden mb-4"
 									style={{
-										flexDirection: 'row',
-										alignSelf: 'center',
-										alignItems: 'flex-start',
-										marginBottom: 8,
+										borderColor: themeColors.border,
+										backgroundColor: themeColors.card,
 									}}
 								>
-									{extraPhotos.map((uri, i) => (
-										<PhotoSlot
-											key={i + 3}
-											uri={uri}
-											label={`Foto ${i + 4}`}
-											size={slot}
-											className={
-												i < extraPhotos.length - 1
-													? 'mr-2'
-													: ''
+									<View
+										className="px-4 py-3 flex-row items-center"
+										style={{
+											backgroundColor: verified
+												? BAND_MATO
+												: BAND_LATERITE,
+										}}
+									>
+										<View
+											className="w-9 h-9 rounded-full items-center justify-center"
+											style={{
+												backgroundColor: `${CELU}26`,
+											}}
+										>
+											<Ionicons
+												name={
+													verified
+														? 'checkmark'
+														: 'time-outline'
+												}
+												size={18}
+												color={CELU}
+											/>
+										</View>
+										<View className="flex-1 ml-3">
+											<Text
+												className="font-display text-[16px]"
+												style={{ color: CELU }}
+											>
+												{v.make} {v.model} · {v.plate}
+											</Text>
+											<Text
+												className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
+												style={{
+													color: CELU,
+													opacity: 0.85,
+												}}
+											>
+												{statusLabel(v.status)} ·{' '}
+												{v.seats} lugares
+											</Text>
+										</View>
+										<Pressable
+											onPress={() =>
+												remove(
+													v.id,
+													`${v.make} ${v.model}`,
+												)
 											}
-											onView={() =>
-												setViewing({
-													uri,
-													label: `Foto ${i + 4}`,
-												})
+											hitSlop={8}
+										>
+											<Ionicons
+												name="trash-outline"
+												size={18}
+												color={CELU}
+											/>
+										</Pressable>
+									</View>
+									<View className="px-4 py-3">
+										<Text
+											className="font-sans text-[13px]"
+											style={{
+												color: themeColors.secondary,
+											}}
+										>
+											{v.color}
+											{verified
+												? ' — pronta para publicar viagens.'
+												: ' — em análise pela equipa Boleia.'}
+										</Text>
+									</View>
+								</View>
+							);
+						})}
+
+						{adding ? (
+							<View>
+								<SectionCard
+									band={BAND_MATO}
+									icon="car-sport-outline"
+									title="Nova viatura"
+									subtitle="Características"
+								>
+									<View className="flex-row mb-3">
+										<Field
+											label="Marca"
+											value={make}
+											setter={setMake}
+											placeholder="ex.: Toyota"
+											className="mr-3"
+										/>
+										<Field
+											label="Modelo"
+											value={model}
+											setter={setModel}
+											placeholder="ex.: Hiace"
+										/>
+									</View>
+									<View className="flex-row mb-3">
+										<Field
+											label="Cor"
+											value={color}
+											setter={setColor}
+											placeholder="ex.: Branca"
+											className="mr-3"
+										/>
+										<Field
+											label={`Lotação (${seatCount})`}
+											value={seats}
+											setter={(t) =>
+												setSeats(
+													t
+														.replace(/\D/g, '')
+														.slice(0, 2),
+												)
 											}
-											onPick={() =>
+											placeholder="ex.: 12"
+											keyboardType="numeric"
+											mono
+										/>
+									</View>
+									<Field
+										label="Matrícula"
+										value={plate}
+										setter={setPlate}
+										placeholder="ex.: LD-12-34-AB"
+										autoCapitalize="characters"
+										mono
+									/>
+								</SectionCard>
+
+								<SectionCard
+									band={BAND_MATO}
+									icon="images-outline"
+									title="Fotos da viatura"
+									subtitle="Mínimo 3 Fotos"
+								>
+									<View className="mb-4">
+										<ProgressRail
+											done={Math.min(
+												photos.filter(Boolean).length,
+												3,
+											)}
+											total={3}
+										/>
+									</View>
+
+									<View
+										style={{
+											flexDirection: 'row',
+											alignSelf: 'center',
+											alignItems: 'flex-start',
+											marginBottom: 8,
+										}}
+									>
+										{[0, 1, 2].map((i) => (
+											<PhotoSlot
+												key={i}
+												uri={photos[i] ?? null}
+												label={`Foto ${i + 1}`}
+												size={slot}
+												className={i < 2 ? 'mr-2' : ''}
+												onView={() =>
+													setViewing({
+														uri: photos[i] ?? '',
+														label: `Foto ${i + 1}`,
+													})
+												}
+												onPick={() =>
+													pickOne((u) =>
+														setPhotos((prev) =>
+															i < prev.length
+																? prev.map(
+																		(
+																			p,
+																			j,
+																		) =>
+																			j ===
+																			i
+																				? u
+																				: p,
+																	)
+																: [...prev, u],
+														),
+													)
+												}
+												onRemove={
+													photos[i]
+														? () => removeAt(i)
+														: undefined
+												}
+											/>
+										))}
+									</View>
+
+									{extraPhotos.length > 0 ? (
+										<View
+											style={{
+												flexDirection: 'row',
+												alignSelf: 'center',
+												alignItems: 'flex-start',
+												marginBottom: 8,
+											}}
+										>
+											{extraPhotos.map((uri, i) => (
+												<PhotoSlot
+													key={i + 3}
+													uri={uri}
+													label={`Foto ${i + 4}`}
+													size={slot}
+													className={
+														i <
+														extraPhotos.length - 1
+															? 'mr-2'
+															: ''
+													}
+													onView={() =>
+														setViewing({
+															uri,
+															label: `Foto ${i + 4}`,
+														})
+													}
+													onPick={() =>
+														pickOne((u) =>
+															setPhotos((prev) =>
+																prev.map(
+																	(p, j) =>
+																		j ===
+																		i + 3
+																			? u
+																			: p,
+																),
+															),
+														)
+													}
+													onRemove={() =>
+														removeAt(i + 3)
+													}
+												/>
+											))}
+										</View>
+									) : null}
+
+									{photos.length < MAX_PHOTOS ? (
+										<Pressable
+											onPress={() =>
 												pickOne((u) =>
 													setPhotos((prev) =>
-														prev.map((p, j) =>
-															j === i + 3 ? u : p,
-														),
+														prev.length < MAX_PHOTOS
+															? [...prev, u]
+															: prev,
 													),
 												)
 											}
-											onRemove={() => removeAt(i + 3)}
-										/>
-									))}
-								</View>
-							) : null}
+											className="rounded-2xl border py-3.5 mt-2"
+											style={({ pressed }) => ({
+												width: slotsWidth,
+												alignSelf: 'center',
+												flexDirection: 'row',
+												alignItems: 'center',
+												justifyContent: 'center',
+												borderColor: themeColors.border,
+												borderStyle: 'dashed',
+												backgroundColor:
+													themeColors.card,
+												opacity: pressed ? 0.8 : 1,
+											})}
+										>
+											<Ionicons
+												name="add"
+												size={17}
+												color={themeColors.laterite}
+											/>
+											<Text
+												className="font-mono text-[10px] uppercase tracking-[2px] ml-2"
+												style={{
+													color: themeColors.secondary,
+												}}
+											>
+												Adicionar fotos
+											</Text>
+										</Pressable>
+									) : (
+										<Text
+											className="font-sans text-[11px] mt-2 text-center self-center"
+											style={{
+												color: themeColors.secondary,
+												width: slotsWidth,
+											}}
+										>
+											Máximo de {MAX_PHOTOS} fotos
+											atingido.
+										</Text>
+									)}
+								</SectionCard>
 
-							{photos.length < MAX_PHOTOS ? (
-								<Pressable
-									onPress={() =>
-										pickOne((u) =>
-											setPhotos((prev) =>
-												prev.length < MAX_PHOTOS
-													? [...prev, u]
-													: prev,
-											),
-										)
-									}
-									className="rounded-2xl border py-3.5 mt-2"
-									style={({ pressed }) => ({
-										width: slotsWidth,
-										alignSelf: 'center',
-										flexDirection: 'row',
-										alignItems: 'center',
-										justifyContent: 'center',
-										borderColor: themeColors.border,
-										borderStyle: 'dashed',
-										backgroundColor: themeColors.card,
-										opacity: pressed ? 0.8 : 1,
-									})}
-								>
-									<Ionicons
-										name="add"
-										size={17}
-										color={themeColors.laterite}
-									/>
+								{submitting && progress ? (
 									<Text
-										className="font-mono text-[10px] uppercase tracking-[2px] ml-2"
-										style={{ color: themeColors.secondary }}
+										className="font-sans text-[12px] mb-3 text-center"
+										style={{
+											color: themeColors.secondary,
+										}}
 									>
-										Adicionar fotos
+										{progress}
 									</Text>
-								</Pressable>
-							) : (
-								<Text
-									className="font-sans text-[11px] mt-2 text-center self-center"
-									style={{
-										color: themeColors.secondary,
-										width: slotsWidth,
-									}}
-								>
-									Máximo de {MAX_PHOTOS} fotos atingido.
-								</Text>
-							)}
-						</SectionCard>
+								) : null}
 
-						<BoleiaButton
-							title="Registar viatura"
-							onPress={submit}
-							loading={submitting}
-							disabled={!canSubmit}
-							strong
-						/>
+								<BoleiaButton
+									title="Registar viatura"
+									onPress={submit}
+									loading={submitting}
+									disabled={!canSubmit}
+									strong
+								/>
+								<View className="mt-3">
+									<BoleiaButton
+										title="Cancelar"
+										onPress={resetForm}
+										disabled={submitting}
+									/>
+								</View>
+							</View>
+						) : (
+							<BoleiaButton
+								title={
+									vehicles.length === 0
+										? 'Registar viatura'
+										: 'Registar outra viatura'
+								}
+								onPress={() => setAdding(true)}
+								strong={vehicles.length === 0}
+							/>
+						)}
 					</View>
 				)}
 			</ScrollView>

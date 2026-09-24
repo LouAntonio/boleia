@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
+import { Eligibility, fetchEligibility } from '../../lib/eligibility';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -50,6 +52,20 @@ export default function RideDetailScreen() {
 		{ ok: true; bookingId: string } | { ok: false; error: string } | null
 	>(null);
 	const [pending, setPending] = useState(false);
+	const [elig, setElig] = useState<Eligibility | null>(null);
+	useFocusEffect(
+		useCallback(() => {
+			let alive = true;
+			fetchEligibility().then((e) => {
+				if (alive) setElig(e);
+			});
+			return () => {
+				alive = false;
+			};
+		}, []),
+	);
+	// Gate real: pedir boleia exige KYC de passageiro verificado.
+	const passengerBlocked = elig?.loaded === true && !elig.passengerReady;
 
 	if (!ride) {
 		return (
@@ -348,10 +364,47 @@ export default function RideDetailScreen() {
 
 					{!result && (
 						<View className="mt-5">
+							{passengerBlocked ? (
+								<View
+									className="rounded-2xl border p-4 mb-3"
+									style={{
+										borderColor: themeColors.laterite,
+										backgroundColor: themeColors.card,
+									}}
+								>
+									<Text
+										className="font-sansBold text-[14px]"
+										style={{ color: themeColors.text }}
+									>
+										Verifica a tua identidade
+									</Text>
+									<Text
+										className="font-sans text-[12px] mt-1 leading-5"
+										style={{
+											color: themeColors.secondary,
+										}}
+									>
+										Para pedir boleias precisas do KYC de
+										passageiro verificado (BI + selfies).
+									</Text>
+									<View className="mt-3">
+										<BoleiaButton
+											title="Verificar identidade"
+											onPress={() =>
+												navigation.navigate('Kyc')
+											}
+										/>
+									</View>
+								</View>
+							) : null}
 							<BoleiaButton
 								title="Pedir boleia"
 								onPress={() => {
 									if (drop <= 0) return;
+									if (passengerBlocked) {
+										navigation.navigate('Kyc');
+										return;
+									}
 									setPending(true);
 									setTimeout(() => {
 										const res = requestBooking({

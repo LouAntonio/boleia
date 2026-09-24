@@ -35,11 +35,12 @@ Run order: `npm ci` → `typecheck` → `lint` → `format:check` → `doctor` (
     - `BoleiaMainNavigator`: tabs (`PassengerTabs` / `DriverTabs`) + stack `Kyc`, `Vehicle`, `PublishTrip`, `RideDetail`, `PublicProfile`, `ActiveRide`, `Review`, `SosCenter`, `Notifications`
 - **Styling**: NativeWind (Tailwind CSS for RN). Import `'./global.css'` in `App.tsx`. Metro config wired via `withNativeWind()`.
 - **Custom theme colors** (`src/store/colors.ts` + tailwind.config.js): `primary` (#F2A900), `secondary`, `laterite` (#B4531F), `mato`, `error`, `border`, `card`, `background`, `text`
-- **State management**: Zustand para estado local. Autenticação e account usam **API real** (`src/lib/api.ts`, axios) contra o backend NestJS (`API_URL` via react-native-dotenv). Viagens, reservas e reviews continuam **mock** — `src/mock/db.ts` (persist em AsyncStorage) + `src/mock/repos/*` (repositórios síncronos).
+- **State management**: Zustand para estado local. Autenticação, account, **KYC (passageiro + motorista), viaturas, localidades, contacto de emergência e publicação de corridas** usam **API real** (`src/lib/api.ts`, axios) contra o backend NestJS (`API_URL` via react-native-dotenv). Pesquisa/listagem de viagens, reservas, reviews e acompanhamento ao vivo continuam **mock** — `src/mock/db.ts` (persist em AsyncStorage) + `src/mock/repos/*` (repositórios síncronos).
 - **Mock layer**: `src/mock/` — `db.ts` (zustand persist), `seed.ts` (dataset Angola), `locale.ts` (21 províncias, ~306 municípios reais — sem coordenadas por município; `PROVINCE_COORDS` por província para estimar distâncias), `helpers.ts`, `repos/` (`authRepo`, `driverRepo`, `rideRepo`, `bookingRepo`, `reviewRepo`, `liveRepo`)
 - **Simulação "ao vivo"**: `liveRepo.startRide` põe a viagem `em_curso`; `advanceLive` avança `vinculos` por intervalo (7s no `BoleiaMainNavigator`) e `finalizeRide` conclui as reservas e credita o motorista (90% do valor).
 - **Pagamentos**: `carteira` (desconto/refund), `dinheiro` (ao motorista). **`multicaixa`/MCX é placeholder ("Em breve")** — bloqueado na UI de `RideDetailScreen`, não chega ao repo.
-- **Source tree**: `src/{components,hooks,lib,mock,navigation,screens,store,types,utils}`. Cliente HTTP em `src/lib/api.ts` (axios; auth/account reais). O resto da app usa o mock.
+- **Source tree**: `src/{components,hooks,lib,mock,navigation,screens,store,types,utils}`. Cliente HTTP em `src/lib/api.ts` (axios; auth/account/KYC/viaturas/localidades/emergência/corridas reais); elegibilidade real em `src/lib/eligibility.ts` (gates de pedir/registar corrida). O resto da app usa o mock.
+- **KYC obrigatório (real)**: passageiro precisa `kycPassenger=VERIFIED` (nome + BI frente/verso + ≥2 selfies + corpo inteiro) para pedir; motorista precisa `kycDriver=VERIFIED` + ≥1 viatura `VERIFIED` para publicar (`KycScreen` tem modo passageiro/motorista, upload real via Cloudinary). `driverRepo.submitKyc/submitVehicle` são legado do demo.
 
 ## Style conventions
 

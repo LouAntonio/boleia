@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUser } from '../../hooks/useSessionUser';
+import { Eligibility, fetchEligibility } from '../../lib/eligibility';
 import { useAppStore } from '../../store/appStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -75,8 +77,24 @@ export default function HomeScreen() {
 		>();
 	const currentRole = useAppStore((s) => s.currentRole);
 	const me = useSessionUser();
-	const kycOk = me?.kyc?.status === 'verificado';
-	const vehicleOk = me?.vehicle?.status === 'verificado';
+	const [elig, setElig] = useState<Eligibility | null>(null);
+	useFocusEffect(
+		useCallback(() => {
+			let alive = true;
+			fetchEligibility().then((e) => {
+				if (alive) setElig(e);
+			});
+			return () => {
+				alive = false;
+			};
+		}, []),
+	);
+	const kycOk = elig?.loaded
+		? elig.kycDriver?.status === 'VERIFIED'
+		: me?.kyc?.status === 'verificado';
+	const vehicleOk = elig?.loaded
+		? elig.verifiedVehicles.length > 0
+		: me?.vehicle?.status === 'verificado';
 
 	return (
 		<SafeAreaView

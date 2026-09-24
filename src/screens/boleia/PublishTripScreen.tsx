@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
 	View,
 	Text,
@@ -20,6 +20,15 @@ import TimePicker from '../../components/TimePicker';
 import Perforation from '../../components/Perforation';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
+import { useFocusEffect } from '@react-navigation/native';
+import {
+	ApiVehicle,
+	apiErrorMessage,
+	createRide as createRideApi,
+	listLocalities,
+	listMyVehicles,
+	listProvinces,
+} from '../../lib/api';
 import {
 	createRide,
 	estimateRoute,
@@ -32,6 +41,32 @@ import { toDateKey } from '../../utils/date';
 
 const PRICE_SUGGEST = [12000, 15000, 18000, 22000];
 const MAX_STOPS = 4;
+
+// Resolve o id UUID da API a partir de (província, município) do mock —
+// os nomes são os mesmos do seed (21 províncias / 306 municípios reais).
+let provincesCache: { id: string; name: string }[] | null = null;
+const localitiesCache = new Map<string, { id: string; name: string }[]>();
+
+async function resolveApiLocalityId(
+	province: string,
+	municipality: string,
+): Promise<string | null> {
+	try {
+		if (!provincesCache) {
+			provincesCache = await listProvinces();
+		}
+		const prov = provincesCache.find((p) => p.name === province);
+		if (!prov) return null;
+		let locals = localitiesCache.get(prov.id);
+		if (!locals) {
+			locals = await listLocalities(prov.id);
+			localitiesCache.set(prov.id, locals);
+		}
+		return locals.find((l) => l.name === municipality)?.id ?? null;
+	} catch {
+		return null;
+	}
+}
 
 type StopDraft = {
 	kind: 'locality' | 'free';
@@ -47,8 +82,35 @@ export default function PublishTripScreen() {
 	const { themeColors } = useThemeColors();
 	const driverId = useSessionUserId();
 	const me = useDbStore((s) => s.db.users.find((u) => u.id === driverId));
-	const vehicle = me?.vehicle;
-	const maxSeats = vehicle?.seats ?? 4;
+	const mockVehicle = me?.vehicle;
+
+	// Viaturas reais verificadas (gate server-side exige >=1).
+	const [apiVehicles, setApiVehicles] = useState<ApiVehicle[]>([]);
+	const [vehicleId, setVehicleId] = useState<string | null>(null);
+	const [publishing, setPublishing] = useState(false);
+	const [publishError, setPublishError] = useState<string | null>(null);
+
+	useFocusEffect(
+		useCallback(() => {
+			let alive = true;
+			listMyVehicles()
+				.then((list) => {
+					if (!alive) return;
+					const verified = list.filter(
+						(v) => v.status === 'VERIFIED',
+					);
+					setApiVehicles(verified);
+					setVehicleId((prev) => prev ?? verified[0]?.id ?? null);
+				})
+				.catch(() => undefined);
+			return () => {
+				alive = false;
+			};
+		}, []),
+	);
+
+	const selectedVehicle = apiVehicles.find((v) => v.id === vehicleId);
+	const maxSeats = selectedVehicle?.seats ?? mockVehicle?.seats ?? 4;
 
 	const [mode, setMode] = useState<RideMode>('interprovincial');
 	const [province, setProvince] = useState('');
@@ -165,19 +227,58 @@ export default function PublishTripScreen() {
 		seats >= 1 &&
 		seats <= maxSeats;
 
-	const publish = () => {
-		if (!canPublish || !from || !to) return;
+	const publish = async () => {
+		if (!canPublish || !from || !to || publishing) return;
+		setPublishing(true);
+		setPublishError(null);
 		const dep = new Date(`${date}T${hour}:00`);
+		const arrivalISO = arrival ? arrival.toISOString() : undefined;
+		try {
+			// 1) Publicar na API real (gates de KYC/viatura no servidor).
+			if (vehicleId && fromLoc && toLoc) {
+				const originId = await resolveApiLocalityId(
+					fromLoc.province,
+					fromLoc.municipality,
+				);
+				const destId = await resolveApiLocalityId(
+					toLoc.province,
+					toLoc.municipality,
+				);
+				if (originId && destId) {
+					await createRideApi({
+						vehicleId,
+						originLocalityId: originId,
+						destinationLocalityId: destId,
+						departureAt: dep.toISOString(),
+						arrivalAt:
+							arrivalISO ??
+							new Date(
+								dep.getTime() + 4 * 60 * 60000,
+							).toISOString(),
+						pricePerSeat: price,
+						seatsTotal: seats,
+					});
+				}
+			}
+		} catch (error) {
+			setPublishing(false);
+			setPublishError(
+				apiErrorMessage(error, 'Não foi possível publicar.'),
+			);
+			return;
+		}
+		// 2) Espelho no mock para o demo continuar a listar a viagem.
 		const ride = createRide({
 			driverId,
 			originLocalityId: from,
 			destinationLocalityId: to,
 			departureISO: dep.toISOString(),
-			arrivalISO: arrival ? arrival.toISOString() : undefined,
+			arrivalISO,
 			seatsTotal: seats,
 			pricePerSeat: price,
 			stops: stopsInput,
 		});
+		setPublishing(false);
 		setPublished(ride.id);
 		setTimeout(() => {
 			navigation.goBack();
@@ -270,9 +371,11 @@ export default function PublishTripScreen() {
 							{me
 								? `${me.firstName} ${me.lastName}`
 								: 'Motorista'}
-							{vehicle
-								? ` · ${vehicle.make} ${vehicle.model} · lotação ${maxSeats}`
-								: ''}
+							{selectedVehicle
+								? ` · ${selectedVehicle.make} ${selectedVehicle.model} · lotação ${maxSeats}`
+								: mockVehicle
+									? ` · ${mockVehicle.make} ${mockVehicle.model} · lotação ${maxSeats}`
+									: ''}
 						</Text>
 					</View>
 				</View>
@@ -599,6 +702,78 @@ export default function PublishTripScreen() {
 					</View>
 				</View>
 
+				{/* Viatura verificada (obrigatória, escolha real) */}
+				{apiVehicles.length > 0 ? (
+					<View
+						className="rounded-3xl border mt-4 px-4 py-4"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<Text
+							className="font-display text-[17px]"
+							style={{ color: themeColors.text }}
+						>
+							Viatura da viagem
+						</Text>
+						<Text
+							className="font-sans text-[12px] mt-0.5 mb-3"
+							style={{ color: themeColors.secondary }}
+						>
+							Só viaturas verificadas. Escolhe qual vai à estrada.
+						</Text>
+						{apiVehicles.map((v) => {
+							const active = v.id === vehicleId;
+							return (
+								<Pressable
+									key={v.id}
+									onPress={() => setVehicleId(v.id)}
+									className="flex-row items-center rounded-2xl border px-3.5 py-3 mb-2"
+									style={{
+										borderColor: active
+											? themeColors.mato
+											: themeColors.border,
+										backgroundColor: themeColors.background,
+									}}
+								>
+									<Ionicons
+										name={
+											active
+												? 'checkmark-circle'
+												: 'ellipse-outline'
+										}
+										size={20}
+										color={
+											active
+												? themeColors.mato
+												: themeColors.border
+										}
+									/>
+									<View className="flex-1 ml-3">
+										<Text
+											className="font-sansBold text-[14px]"
+											style={{
+												color: themeColors.text,
+											}}
+										>
+											{v.make} {v.model} · {v.plate}
+										</Text>
+										<Text
+											className="font-sans text-[12px]"
+											style={{
+												color: themeColors.secondary,
+											}}
+										>
+											{v.color} · {v.seats} lugares
+										</Text>
+									</View>
+								</Pressable>
+							);
+						})}
+					</View>
+				) : null}
+
 				{/* Paragens intermédias */}
 				<View
 					className="rounded-3xl border mt-4 px-4 py-4"
@@ -805,10 +980,20 @@ export default function PublishTripScreen() {
 					</View>
 				) : null}
 
+				{publishError ? (
+					<Text
+						className="font-sans text-[12px] mt-3"
+						style={{ color: themeColors.error }}
+					>
+						{publishError}
+					</Text>
+				) : null}
+
 				<View className="mt-6">
 					<BoleiaButton
 						title="Publicar viagem"
 						onPress={publish}
+						loading={publishing}
 						disabled={!canPublish}
 					/>
 				</View>
