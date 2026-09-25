@@ -48,7 +48,7 @@ export default function ResetPasswordScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Recuperação de senha"
+			contextLabel="Recuperação de senha"
 			title="Senha nova"
 			subtitle="Escolhe uma senha com pelo menos 8 caracteres. Vais usá-la para entrar a partir de agora."
 			back={() => navigation.goBack()}

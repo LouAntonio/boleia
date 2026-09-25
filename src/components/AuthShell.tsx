@@ -12,18 +12,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useThemeColors } from '../hooks/useThemeColors';
 
-// Envelope de autenticação — header centrado animado (logo + eyebrow + título
-// + subtítulo), cartão-ticket e rodapé. Fusão da identidade Boleia com o
-// ritmo de entrada do FDA.
+// Envelope de autenticação — header centrado animado (logo + rótulo de contexto
+// + título + subtítulo), cartão neutro e rodapé. O rótulo de contexto é
+// opcional: quando o logótipo já diz o nome do produto (Login), é omitido em
+// vez de repetir. Hierarquia por tipografia e cor semântica `secondary` —
+// nunca cor de assinatura.
 export default function AuthShell({
-	eyebrow,
+	contextLabel,
 	title,
 	subtitle,
 	back,
 	children,
 	footer,
 }: {
-	eyebrow: string;
+	contextLabel?: string;
 	title: string;
 	subtitle?: ReactNode;
 	back?: () => void;
@@ -50,11 +52,13 @@ export default function AuthShell({
 						{back ? (
 							<Pressable
 								onPress={back}
-								className="mb-4 self-start"
+								accessibilityRole="button"
+								accessibilityLabel="Voltar"
+								className="mb-4 self-start min-h-[44px] justify-center"
 							>
 								<Text
 									className="font-sansBold text-body-small"
-									style={{ color: themeColors.laterite }}
+									style={{ color: themeColors.primary }}
 								>
 									← Voltar
 								</Text>
@@ -81,14 +85,16 @@ export default function AuthShell({
 									resizeMode="contain"
 								/>
 							</View>
+							{contextLabel ? (
+								<Text
+									className="font-sansMedium text-body-xs"
+									style={{ color: themeColors.secondary }}
+								>
+									{contextLabel}
+								</Text>
+							) : null}
 							<Text
-								className="font-sansMedium text-body-xs"
-								style={{ color: themeColors.laterite }}
-							>
-								{eyebrow}
-							</Text>
-							<Text
-								className="font-sansExtraBold text-title-primary tracking-tight text-center mt-3"
+								className="font-sansExtraBold text-title-primary text-center mt-3"
 								style={{ color: themeColors.text }}
 							>
 								{title}

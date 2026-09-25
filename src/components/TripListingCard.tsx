@@ -8,7 +8,7 @@ import StatusStamp from './StatusStamp';
 
 // ResultCard/Trip — "os detalhes mais importantes de uma viagem num só
 // pacote": itinerário + coluna de preço + resumo da oferta + amenities.
-// Enough information to decide without opening the detail.
+// informação suficiente para decidir sem abrir o detalhe.
 export default function TripListingCard({
 	ride,
 	reserved,

@@ -4,7 +4,7 @@ import { useThemeColors } from '../hooks/useThemeColors';
 
 // Cabeçalho padrão de ecrã — `title/primary` (28/110%, ExtraBold) como
 // hierarquia principal e a meta em `body/small`. Sem cor de destaque no
-// subtítulo: a cor é reservada a estados, não atitles.
+// subtítulo: a cor é reservada a estados, não estáveis.
 export default function ScreenHeader({
 	title,
 	meta,

@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 
-// Linha de consentimento estilo radio — círculo que muda para mato quando
+// Linha de consentimento estilo radio — círculo que muda para success quando
 // marcado. Usada nos termos, privacidade e novidades do cadastro.
 export default function ConsentRow({
 	label,

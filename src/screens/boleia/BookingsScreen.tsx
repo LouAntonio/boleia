@@ -19,8 +19,6 @@ import {
 	PassengerTabsParamList,
 } from '../../types/navigation';
 
-// Tinta fixa da banda confirmada — igual ao BookingStub nos dois temas.
-
 const UPCOMING = ['pedido', 'confirmada', 'em_viagem'];
 const HISTORY = ['concluida', 'recusada', 'cancelada', 'expirada'];
 

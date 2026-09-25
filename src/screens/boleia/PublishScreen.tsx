@@ -86,7 +86,7 @@ export default function PublishScreen() {
 								<Ionicons
 									name="checkmark-circle-outline"
 									size={26}
-									color={themeColors.mato}
+									color={themeColors.success}
 								/>
 							</View>
 							<Text

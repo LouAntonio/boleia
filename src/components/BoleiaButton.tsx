@@ -10,9 +10,11 @@ import { useThemeColors } from '../hooks/useThemeColors';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// Variantes do sistema Pixar: `primary` é accent/bg/default com txt/inverted
-// (a tinta do produto, não branco). Os nomes históricos `dark`, `outline` e
-// `ghost` mantêm-se para não quebrar as chamadas existentes.
+// Variantes do sistema Pixar: cada fundo tem o seu token `on*` de tinta
+// (`primary`→`onPrimary`, `warning`→`onWarning`, `success`→`onSuccess`), de modo
+// que a tinta nunca é derivada do fundo nem branco hardcoded. Os nomes
+// históricos `dark`, `outline` e `ghost` mantêm-se para não quebrar as
+// chamadas existentes.
 type Variant =
 	| 'primary'
 	| 'secondary'
@@ -77,7 +79,7 @@ export default function BoleiaButton({
 			case 'warning':
 				return {
 					bg: themeColors.laterite,
-					fg: themeColors.onPrimary,
+					fg: themeColors.onWarning,
 					borderColor: 'transparent',
 					borderWidth: 0,
 				};

@@ -77,7 +77,7 @@ export default function RegisterScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Cadastro · Boleia"
+			contextLabel="Cadastro · Boleia"
 			title="Cria a tua conta"
 			subtitle="O mesmo perfil serve para viajares como passageiro ou montares a tua boleia como motorista."
 			back={() => navigation.goBack()}
@@ -92,7 +92,7 @@ export default function RegisterScreen() {
 					<Pressable onPress={() => navigation.goBack()}>
 						<Text
 							className="font-sansBold text-body-small"
-							style={{ color: themeColors.laterite }}
+							style={{ color: themeColors.primary }}
 						>
 							Entrar
 						</Text>

@@ -158,9 +158,7 @@ export default function TripSearch() {
 			variant="row"
 			scope="province"
 			label={label}
-			dotColor={
-				kind === 'from' ? themeColors.primary : themeColors.laterite
-			}
+			dotColor={kind === 'from' ? themeColors.text : themeColors.primary}
 			value={value}
 			onChange={kind === 'from' ? selectFrom : selectTo}
 			exclude={kind === 'from' ? to : from}
@@ -172,9 +170,7 @@ export default function TripSearch() {
 			variant="row"
 			scope="municipality"
 			label={label}
-			dotColor={
-				kind === 'from' ? themeColors.primary : themeColors.laterite
-			}
+			dotColor={kind === 'from' ? themeColors.text : themeColors.primary}
 			value={value}
 			onChange={kind === 'from' ? selectFrom : selectTo}
 			exclude={kind === 'from' ? to : from}

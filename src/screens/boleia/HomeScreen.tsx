@@ -48,7 +48,7 @@ function BrandHeader({
 					</Text>
 					<Text
 						className="font-sansMedium text-body-xs ml-2"
-						style={{ color: themeColors.laterite }}
+						style={{ color: themeColors.secondary }}
 					>
 						{role === 'passenger' ? 'PASSAGEIRO' : 'MOTORISTA'}
 					</Text>
@@ -108,7 +108,7 @@ function CheckRow({
 			<Text
 				className="font-sansMedium text-body-xs w-6"
 				style={{
-					color: done ? themeColors.mato : themeColors.secondary,
+					color: done ? themeColors.success : themeColors.secondary,
 				}}
 			>
 				{index}
@@ -132,7 +132,7 @@ function CheckRow({
 				size={20}
 				color={
 					done
-						? themeColors.mato
+						? themeColors.success
 						: locked
 							? themeColors.border
 							: themeColors.secondary
@@ -205,12 +205,16 @@ export default function HomeScreen() {
 		.sort((a, b) => Date.parse(a.departure) - Date.parse(b.departure))
 		.slice(0, 3);
 
+	// O ponto é reforço visual; o significado real está em `statusLabel` (regra
+	// do design system: nunca só cor). "A aguardar" é pendente, não um aviso —
+	// por isso é neutro. `caution` foi descartado aqui por ser demasiado claro
+	// sobre `card` (~1.6:1, abaixo do mínimo de 3:1 para elemento não-textual).
 	const statusDot =
 		nextUp?.booking.status === 'em_viagem'
-			? themeColors.mato
+			? themeColors.primary
 			: nextUp?.booking.status === 'confirmada'
-				? themeColors.primary
-				: themeColors.laterite;
+				? themeColors.success
+				: themeColors.secondary;
 	const statusLabel =
 		nextUp?.booking.status === 'em_viagem'
 			? 'Ao vivo'
@@ -255,7 +259,7 @@ export default function HomeScreen() {
 							<View className="mt-6">
 								<SectionTitle>A seguir</SectionTitle>
 								<View className="mt-4">
-									<Card tone="warning">
+									<Card>
 										<Pressable
 											onPress={() =>
 												navigation.navigate(
@@ -334,7 +338,7 @@ export default function HomeScreen() {
 										<Text
 											className="font-sansBold text-body-xs"
 											style={{
-												color: themeColors.laterite,
+												color: themeColors.secondary,
 											}}
 										>
 											Ver tudo →
@@ -361,7 +365,7 @@ export default function HomeScreen() {
 					<View>
 						<SectionTitle>Painel de motorista</SectionTitle>
 						<View className="mt-4">
-							<Card tone="warning">
+							<Card>
 								<Text
 									className="font-sansExtraBold text-title-secondary"
 									style={{ color: themeColors.text }}

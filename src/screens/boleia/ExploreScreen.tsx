@@ -165,7 +165,7 @@ export default function ExploreScreen() {
 							style={{
 								color:
 									sort === opt.key
-										? themeColors.laterite
+										? themeColors.primary
 										: themeColors.secondary,
 							}}
 						>

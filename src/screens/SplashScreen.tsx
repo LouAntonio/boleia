@@ -210,7 +210,7 @@ export default function SplashScreen({
 							styles.node,
 							{
 								left: railWidth - R,
-								backgroundColor: themeColors.laterite,
+								backgroundColor: themeColors.primary,
 								opacity: stampOpacity,
 								transform: [{ scale: stampScale }],
 							},

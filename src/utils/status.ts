@@ -22,7 +22,7 @@ export const STATUS_LABEL: Record<string, string> = {
 export type StatusTone =
 	| 'pending' // laterite — aguardar/programada
 	| 'active' // primary — confirmada/em curso
-	| 'done' // mato — concluída/verificado
+	| 'done' // success — concluída/verificado
 	| 'failed' // error — cancelada/recusada/expirada
 	| 'neutral'; // ferro
 

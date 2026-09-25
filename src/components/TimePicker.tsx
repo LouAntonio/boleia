@@ -69,7 +69,7 @@ export default function TimePicker({
 			<Pressable
 				key={key}
 				onPress={onPress}
-				hitSlop={2}
+				hitSlop={6}
 				className="absolute items-center justify-center"
 				style={{
 					left: pos.left,
@@ -109,7 +109,7 @@ export default function TimePicker({
 				<View className="flex-1 ml-3">
 					<Text
 						className="font-sansMedium text-body-xs"
-						style={{ color: themeColors.laterite }}
+						style={{ color: themeColors.secondary }}
 					>
 						{label}
 					</Text>
@@ -172,6 +172,7 @@ export default function TimePicker({
 							</Text>
 							<Pressable
 								onPress={() => setVisible(false)}
+								hitSlop={6}
 								className="w-8 h-8 rounded-full items-center justify-center"
 								style={{
 									backgroundColor: themeColors.background,

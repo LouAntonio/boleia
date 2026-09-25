@@ -18,6 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import { onBand } from '../../store/colors';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import BackButton from '../../components/BackButton';
 import { useAppStore } from '../../store/appStore';
 import BoleiaButton from '../../components/BoleiaButton';
 import PhotoSlot from '../../components/PhotoSlot';
@@ -33,7 +34,7 @@ import {
 
 type Mode = 'passenger' | 'driver';
 
-// Card com banda tingida (identidade = laterite; verificado = mato).
+// Card com banda tingida (identidade = laterite; verificado = success).
 function SectionCard({
 	band,
 	icon,
@@ -380,26 +381,13 @@ export default function KycScreen() {
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
 				<View className="flex-row items-center pt-1 pb-4">
-					<Pressable
-						onPress={() => navigation.goBack()}
-						className="w-9 h-9 rounded-full items-center justify-center border mr-3"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<Ionicons
-							name="chevron-back"
-							size={18}
-							color={themeColors.text}
-						/>
-					</Pressable>
+					<BackButton onPress={() => navigation.goBack()} />
 					<View className="flex-1">
 						<View className="flex-row items-center mb-1">
 							<Ionicons
 								name="checkmark-circle"
 								size={11}
-								color={themeColors.laterite}
+								color={themeColors.success}
 							/>
 							<Text
 								className="font-sansMedium text-body-xs ml-1"
@@ -460,7 +448,7 @@ export default function KycScreen() {
 
 				{loading ? (
 					<View className="items-center py-10">
-						<ActivityIndicator color={themeColors.laterite} />
+						<ActivityIndicator color={themeColors.primary} />
 					</View>
 				) : status === 'VERIFIED' ? (
 					<View

@@ -29,7 +29,6 @@ export const colors = {
 		successWeak: '#C5FFC6', // success/bg/weak
 		error: '#BA303B', // danger/txt
 		dangerWeak: '#FBE9EA', // danger/bg/weak
-		mato: '#107046', // alias legado de success
 	},
 	dark: {
 		background: '#171B20', // neutral/bg/deep
@@ -49,7 +48,6 @@ export const colors = {
 		successWeak: '#123528', // success/bg/weak (dark)
 		error: '#FF8A93', // danger/txt/light (dark) — 6.6:1 sobre card
 		dangerWeak: '#3A1618', // danger/bg/weak (dark)
-		mato: '#1FDA82',
 	},
 };
 

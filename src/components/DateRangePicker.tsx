@@ -89,7 +89,7 @@ export default function DateRangePicker({
 	};
 
 	const renderCell = (day: number, i: number) => {
-		if (day === 0) return <View key={i} className="flex-1 h-10" />;
+		if (day === 0) return <View key={i} className="flex-1 h-11" />;
 		const key = toDateKey(new Date(year, month, day));
 		const disabled = key < today;
 		const isStart = key === draftFrom;
@@ -101,14 +101,14 @@ export default function DateRangePicker({
 			return (
 				<View
 					key={i}
-					className="flex-1 h-10 items-center justify-center"
+					className="flex-1 h-11 items-center justify-center"
 				>
 					<View
 						className="w-9 h-9 rounded-full items-center justify-center"
 						style={{
 							backgroundColor: isStart
 								? themeColors.primary
-								: themeColors.laterite,
+								: themeColors.text,
 						}}
 					>
 						<Text
@@ -127,7 +127,7 @@ export default function DateRangePicker({
 				key={i}
 				disabled={disabled}
 				onPress={() => tapDay(day)}
-				className="flex-1 h-10 items-center justify-center"
+				className="flex-1 h-11 items-center justify-center"
 				style={
 					isRange
 						? { backgroundColor: 'rgba(242,169,0,0.16)' }
@@ -144,7 +144,7 @@ export default function DateRangePicker({
 						color: disabled
 							? themeColors.border
 							: isRange
-								? themeColors.laterite
+								? themeColors.primary
 								: themeColors.text,
 					}}
 				>
@@ -167,7 +167,7 @@ export default function DateRangePicker({
 				<View className="flex-1 ml-3">
 					<Text
 						className="font-sansMedium text-body-xs"
-						style={{ color: themeColors.laterite }}
+						style={{ color: themeColors.secondary }}
 					>
 						{label}
 					</Text>
@@ -230,6 +230,7 @@ export default function DateRangePicker({
 							</Text>
 							<Pressable
 								onPress={() => setVisible(false)}
+								hitSlop={6}
 								className="w-8 h-8 rounded-full items-center justify-center"
 								style={{
 									backgroundColor: themeColors.background,
@@ -247,6 +248,7 @@ export default function DateRangePicker({
 							<Pressable
 								onPress={prevMonth}
 								disabled={!canPrev}
+								hitSlop={6}
 								className="w-8 h-8 items-center justify-center rounded-full border"
 								style={{
 									borderColor: themeColors.border,
@@ -267,6 +269,7 @@ export default function DateRangePicker({
 							</Text>
 							<Pressable
 								onPress={nextMonth}
+								hitSlop={6}
 								className="w-8 h-8 items-center justify-center rounded-full border"
 								style={{ borderColor: themeColors.border }}
 							>
@@ -304,7 +307,7 @@ export default function DateRangePicker({
 							<View className="flex-1">
 								<Text
 									className="font-sansMedium text-body-xs"
-									style={{ color: themeColors.laterite }}
+									style={{ color: themeColors.secondary }}
 								>
 									Intervalo
 								</Text>

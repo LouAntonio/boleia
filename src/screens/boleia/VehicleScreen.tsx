@@ -19,6 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import { onBand } from '../../store/colors';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import BackButton from '../../components/BackButton';
 import BoleiaButton from '../../components/BoleiaButton';
 import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
 import PhotoLightbox from '../../components/PhotoLightbox';
@@ -33,7 +34,7 @@ import {
 
 const MAX_PHOTOS = 6;
 
-// Card com banda tingida (viatura/motorista = mato).
+// Card com banda tingida (viatura/motorista = success).
 function SectionCard({
 	band,
 	icon,
@@ -311,26 +312,13 @@ export default function VehicleScreen() {
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
 				<View className="flex-row items-center pt-1 pb-4">
-					<Pressable
-						onPress={() => navigation.goBack()}
-						className="w-9 h-9 rounded-full items-center justify-center border mr-3"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<Ionicons
-							name="chevron-back"
-							size={18}
-							color={themeColors.text}
-						/>
-					</Pressable>
+					<BackButton onPress={() => navigation.goBack()} />
 					<View className="flex-1">
 						<View className="flex-row items-center mb-1">
 							<Ionicons
 								name="checkmark-circle"
 								size={11}
-								color={themeColors.laterite}
+								color={themeColors.secondary}
 							/>
 							<Text
 								className="font-sansMedium text-body-xs ml-1"
@@ -350,7 +338,7 @@ export default function VehicleScreen() {
 
 				{loading ? (
 					<View className="items-center py-10">
-						<ActivityIndicator color={themeColors.laterite} />
+						<ActivityIndicator color={themeColors.primary} />
 					</View>
 				) : (
 					<View>
@@ -649,12 +637,12 @@ export default function VehicleScreen() {
 											<Ionicons
 												name="add"
 												size={17}
-												color={themeColors.laterite}
+												color={themeColors.primary}
 											/>
 											<Text
 												className="font-sansMedium text-body-xs ml-2"
 												style={{
-													color: themeColors.secondary,
+													color: themeColors.primary,
 												}}
 											>
 												Adicionar fotos

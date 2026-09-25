@@ -53,7 +53,7 @@ export default function ProfileSetupScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Conta criada"
+			contextLabel="Conta criada"
 			title="Dados do teu perfil"
 			subtitle="O mesmo perfil serve para viajares como passageiro ou montares a tua boleia como motorista."
 			back={() => navigation.goBack()}

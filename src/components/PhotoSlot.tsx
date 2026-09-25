@@ -59,13 +59,13 @@ export default function PhotoSlot({
 						<View
 							className="w-9 h-9 rounded-full items-center justify-center"
 							style={{
-								backgroundColor: `${themeColors.laterite}1A`,
+								backgroundColor: themeColors.accentWeak,
 							}}
 						>
 							<Ionicons
 								name="camera-outline"
 								size={17}
-								color={themeColors.laterite}
+								color={themeColors.primary}
 							/>
 						</View>
 						<Text
@@ -79,7 +79,7 @@ export default function PhotoSlot({
 				{uri && onRemove ? (
 					<Pressable
 						onPress={onRemove}
-						hitSlop={8}
+						hitSlop={10}
 						className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full items-center justify-center"
 						style={({ pressed }) => ({
 							backgroundColor: themeColors.text,
@@ -105,7 +105,7 @@ export default function PhotoSlot({
 	);
 }
 
-// Rail de progresso do dossiê — a pista enche (mato) à medida que as fotos entram.
+// Rail de progresso do dossiê — a pista enche (success) à medida que as fotos entram.
 export function ProgressRail({ done, total }: { done: number; total: number }) {
 	const { themeColors } = useThemeColors();
 	const p = Math.max(0, Math.min(1, done / total));
@@ -124,7 +124,7 @@ export function ProgressRail({ done, total }: { done: number; total: number }) {
 					className="font-sansMedium text-body-xs"
 					style={{
 						color: complete
-							? themeColors.mato
+							? themeColors.success
 							: themeColors.secondary,
 					}}
 				>
@@ -138,7 +138,7 @@ export function ProgressRail({ done, total }: { done: number; total: number }) {
 				<View
 					className="h-full rounded-full"
 					style={{
-						backgroundColor: themeColors.mato,
+						backgroundColor: themeColors.success,
 						width: `${p * 100}%`,
 					}}
 				/>

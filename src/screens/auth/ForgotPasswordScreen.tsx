@@ -50,7 +50,7 @@ export default function ForgotPasswordScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Recuperação de senha"
+			contextLabel="Recuperação de senha"
 			title="Esqueceu-se da senha?"
 			subtitle="Diz-nos o teu número. Vais receber um código por WhatsApp para criares uma senha nova."
 			back={() => navigation.goBack()}

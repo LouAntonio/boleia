@@ -114,7 +114,7 @@ export default function LocalityPicker({
 				<View className="flex-1 ml-3">
 					<Text
 						className="font-sansMedium text-body-xs"
-						style={{ color: themeColors.laterite }}
+						style={{ color: themeColors.secondary }}
 					>
 						{label ?? 'Local'}
 					</Text>
@@ -145,7 +145,7 @@ export default function LocalityPicker({
 				className="rounded-xl px-4 py-3 border"
 				style={{
 					borderColor: hasValue
-						? themeColors.laterite
+						? themeColors.primary
 						: themeColors.border,
 					backgroundColor: themeColors.card,
 				}}
@@ -232,6 +232,7 @@ export default function LocalityPicker({
 							</Text>
 							<Pressable
 								onPress={() => setVisible(false)}
+								hitSlop={6}
 								className="w-8 h-8 rounded-full items-center justify-center"
 								style={{
 									backgroundColor: themeColors.background,

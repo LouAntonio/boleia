@@ -171,7 +171,7 @@ export default function RideDetailScreen() {
 							myBooking.status === 'pedido' ? (
 								<Text
 									className="font-sans text-body-xs"
-									style={{ color: themeColors.laterite }}
+									style={{ color: themeColors.secondary }}
 								>
 									O motorista confirma em ~6s (demo).
 								</Text>
@@ -234,7 +234,7 @@ export default function RideDetailScreen() {
 				className="flex-1 px-5"
 				contentContainerStyle={{ paddingBottom: 48 }}
 			>
-				<Card tone="warning" padded={false}>
+				<Card padded={false}>
 					<View className="p-4">
 						<View className="flex-row items-center justify-between mb-1">
 							<View
@@ -243,7 +243,7 @@ export default function RideDetailScreen() {
 							>
 								<Text
 									className="font-sansMedium text-body-xs"
-									style={{ color: themeColors.laterite }}
+									style={{ color: themeColors.secondary }}
 								>
 									{rideMode(ride) === 'interprovincial'
 										? 'Interprovincial'
@@ -375,12 +375,12 @@ export default function RideDetailScreen() {
 
 				{/* Reserva */}
 				<View className="mt-6">
-					<Card tone="warning">
+					<Card>
 						<SectionTitle>Pedir boleia</SectionTitle>
 
 						<Text
 							className="font-sansMedium text-body-xs mb-1.5"
-							style={{ color: themeColors.laterite }}
+							style={{ color: themeColors.secondary }}
 						>
 							Sobes na origem
 						</Text>
@@ -398,7 +398,7 @@ export default function RideDetailScreen() {
 
 						<Text
 							className="font-sansMedium text-body-xs mb-1.5 mt-3"
-							style={{ color: themeColors.laterite }}
+							style={{ color: themeColors.secondary }}
 						>
 							Onde desces
 						</Text>
@@ -434,7 +434,7 @@ export default function RideDetailScreen() {
 
 						<Text
 							className="font-sansMedium text-body-xs mb-1.5 mt-3"
-							style={{ color: themeColors.laterite }}
+							style={{ color: themeColors.secondary }}
 						>
 							Lugares ({available} livre
 							{available === 1 ? '' : 's'})
@@ -472,7 +472,7 @@ export default function RideDetailScreen() {
 
 						<Text
 							className="font-sansMedium text-body-xs mb-1.5 mt-3"
-							style={{ color: themeColors.laterite }}
+							style={{ color: themeColors.secondary }}
 						>
 							Como pagas
 						</Text>
@@ -512,19 +512,21 @@ export default function RideDetailScreen() {
 								<View
 									className="mt-4 p-4 rounded-xl border flex-row items-center"
 									style={{
-										borderColor: themeColors.mato,
+										borderColor: themeColors.success,
 										backgroundColor: themeColors.card,
 									}}
 								>
 									<Ionicons
 										name="checkmark-circle"
 										size={28}
-										color={themeColors.mato}
+										color={themeColors.success}
 									/>
 									<View className="flex-1 ml-3">
 										<Text
 											className="font-sansBold text-label-small"
-											style={{ color: themeColors.mato }}
+											style={{
+												color: themeColors.success,
+											}}
 										>
 											Pedido enviado
 										</Text>
@@ -554,7 +556,7 @@ export default function RideDetailScreen() {
 								<View
 									className="rounded-xl border p-4"
 									style={{
-										borderColor: themeColors.laterite,
+										borderColor: themeColors.border,
 										backgroundColor: themeColors.card,
 									}}
 								>
@@ -639,6 +641,7 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 		<View className="flex-row items-center pt-2 pb-3">
 			<Pressable
 				onPress={onBack}
+				hitSlop={4}
 				className="w-9 h-9 rounded-full items-center justify-center mr-3"
 				style={{
 					backgroundColor: themeColors.card,
@@ -658,7 +661,7 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 			<View className="flex-1">
 				<Text
 					className="font-sansMedium text-body-xs"
-					style={{ color: themeColors.laterite }}
+					style={{ color: themeColors.secondary }}
 				>
 					Detalhe da viagem
 				</Text>
@@ -678,6 +681,7 @@ function Stepper({ label, onPress }: { label: string; onPress: () => void }) {
 	return (
 		<Pressable
 			onPress={onPress}
+			hitSlop={2}
 			className="w-10 h-10 rounded-full items-center justify-center"
 			style={{ backgroundColor: themeColors.background }}
 		>

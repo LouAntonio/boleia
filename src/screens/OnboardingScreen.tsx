@@ -132,7 +132,7 @@ export default function OnboardingScreen() {
 			>
 				<Text
 					className="font-sansBold text-body-small"
-					style={{ color: themeColors.laterite }}
+					style={{ color: themeColors.primary }}
 				>
 					Saltar
 				</Text>
@@ -184,7 +184,7 @@ export default function OnboardingScreen() {
 								entering={FadeInDown.duration(600).delay(500)}
 								className="h-1.5 w-14 rounded-full mt-3"
 								style={{
-									backgroundColor: themeColors.laterite,
+									backgroundColor: themeColors.primary,
 								}}
 							/>
 							<Animated.Text

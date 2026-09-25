@@ -35,8 +35,6 @@ import {
 import { Eligibility, fetchEligibility } from '../../lib/eligibility';
 import BoleiaButton from '../../components/BoleiaButton';
 
-// Tinta de leitura sobre as bandas tingidas — mesmos fixos do BookingStub.
-
 const THEMES: { mode: ThemeMode; label: string }[] = [
 	{ mode: 'light', label: 'Claro' },
 	{ mode: 'dark', label: 'Escuro' },
@@ -84,7 +82,7 @@ function PanelStat({
 const STAMP_TONE: Record<StatusTone, string> = {
 	pending: 'laterite',
 	active: 'primary',
-	done: 'mato',
+	done: 'success',
 	failed: 'error',
 	neutral: 'secondary',
 };
@@ -399,7 +397,7 @@ export default function ProfileScreen() {
 							style={{
 								backgroundColor: themeColors.primary,
 								borderWidth: 2,
-								borderColor: themeColors.laterite,
+								borderColor: themeColors.border,
 							}}
 						>
 							<Text
@@ -733,13 +731,13 @@ export default function ProfileScreen() {
 							<View
 								className="w-9 h-9 rounded-full items-center justify-center"
 								style={{
-									backgroundColor: `${themeColors.laterite}1A`,
+									backgroundColor: themeColors.accentWeak,
 								}}
 							>
 								<Ionicons
 									name="shield-checkmark-outline"
 									size={19}
-									color={themeColors.laterite}
+									color={themeColors.primary}
 								/>
 							</View>
 							<View className="flex-1 ml-3">
@@ -811,7 +809,7 @@ export default function ProfileScreen() {
 							{emgSaving ? (
 								<View className="items-center py-2">
 									<ActivityIndicator
-										color={themeColors.laterite}
+										color={themeColors.primary}
 									/>
 								</View>
 							) : (
@@ -888,13 +886,13 @@ export default function ProfileScreen() {
 								<View
 									className="w-9 h-9 rounded-full items-center justify-center"
 									style={{
-										backgroundColor: `${themeColors.laterite}1A`,
+										backgroundColor: themeColors.accentWeak,
 									}}
 								>
 									<Ionicons
 										name="shield-checkmark-outline"
 										size={19}
-										color={themeColors.laterite}
+										color={themeColors.primary}
 									/>
 								</View>
 								<Text

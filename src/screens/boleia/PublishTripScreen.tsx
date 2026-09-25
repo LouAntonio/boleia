@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import BackButton from '../../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -383,20 +384,7 @@ export default function PublishTripScreen() {
 			>
 				{/* Cabeçalho do assistente */}
 				<View className="flex-row items-center pt-1">
-					<Pressable
-						onPress={() => navigation.goBack()}
-						className="w-9 h-9 rounded-full items-center justify-center border mr-3"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<Ionicons
-							name="chevron-back"
-							size={18}
-							color={themeColors.text}
-						/>
-					</Pressable>
+					<BackButton onPress={() => navigation.goBack()} />
 					<View className="flex-1">
 						<GroupLabel>
 							Passo {step + 1} de {STEPS.length} · Nova viagem
@@ -421,7 +409,7 @@ export default function PublishTripScreen() {
 										i < step
 											? themeColors.primary
 											: i === step
-												? themeColors.laterite
+												? themeColors.primary
 												: themeColors.border,
 								}}
 							/>
@@ -440,12 +428,12 @@ export default function PublishTripScreen() {
 							: ''}
 				</Text>
 
-				{/* Bilhete — conteúdo por passo */}
+				{/* Conte — conteúdo por passo */}
 				{!published && step <= 1 ? (
 					<View
 						className="rounded-xl border overflow-hidden mt-4"
 						style={{
-							borderColor: themeColors.laterite,
+							borderColor: themeColors.border,
 							backgroundColor: themeColors.card,
 						}}
 					>
@@ -462,7 +450,7 @@ export default function PublishTripScreen() {
 										<Ionicons
 											name="navigate-outline"
 											size={20}
-											color={themeColors.laterite}
+											color={themeColors.primary}
 										/>
 									</View>
 
@@ -556,7 +544,7 @@ export default function PublishTripScreen() {
 										variant="row"
 										scope="municipality"
 										label="Para onde vais"
-										dotColor={themeColors.laterite}
+										dotColor={themeColors.primary}
 										value={to}
 										onChange={setTo}
 										exclude={from}
@@ -573,7 +561,7 @@ export default function PublishTripScreen() {
 										<Text
 											className="font-sans text-body-xs"
 											style={{
-												color: themeColors.laterite,
+												color: themeColors.secondary,
 											}}
 										>
 											Rota{' '}
@@ -634,7 +622,7 @@ export default function PublishTripScreen() {
 											<Ionicons
 												name="flag-outline"
 												size={15}
-												color={themeColors.mato}
+												color={themeColors.success}
 											/>
 											<Text
 												className="font-sansMedium text-body-xs ml-2"
@@ -683,7 +671,7 @@ export default function PublishTripScreen() {
 														name="refresh"
 														size={14}
 														color={
-															themeColors.laterite
+															themeColors.primary
 														}
 													/>
 												</Pressable>
@@ -759,7 +747,7 @@ export default function PublishTripScreen() {
 										<Text
 											className="font-sansMedium text-body-small"
 											style={{
-												color: themeColors.laterite,
+												color: themeColors.secondary,
 											}}
 										>
 											Kz
@@ -795,6 +783,7 @@ export default function PublishTripScreen() {
 												onPress={() =>
 													setSeats((s) => s - 1)
 												}
+												hitSlop={2}
 												className="w-10 h-10 rounded-full items-center justify-center"
 												style={{
 													backgroundColor:
@@ -827,6 +816,7 @@ export default function PublishTripScreen() {
 														),
 													)
 												}
+												hitSlop={2}
 												className="w-10 h-10 rounded-full items-center justify-center"
 												style={{
 													backgroundColor:
@@ -884,7 +874,7 @@ export default function PublishTripScreen() {
 									className="flex-row items-center rounded-xl border px-3.5 py-3 mb-2"
 									style={{
 										borderColor: active
-											? themeColors.mato
+											? themeColors.success
 											: 'transparent',
 										borderWidth: active ? 1.5 : 0,
 										backgroundColor: themeColors.background,
@@ -899,7 +889,7 @@ export default function PublishTripScreen() {
 										size={20}
 										color={
 											active
-												? themeColors.mato
+												? themeColors.success
 												: themeColors.border
 										}
 									/>
@@ -1130,11 +1120,11 @@ export default function PublishTripScreen() {
 								<Ionicons
 									name="add"
 									size={17}
-									color={themeColors.laterite}
+									color={themeColors.primary}
 								/>
 								<Text
 									className="font-sansMedium text-body-small ml-1.5"
-									style={{ color: themeColors.laterite }}
+									style={{ color: themeColors.primary }}
 								>
 									Adicionar paragem
 								</Text>
@@ -1145,7 +1135,7 @@ export default function PublishTripScreen() {
 
 				{!published && step === 2 ? (
 					<View className="mt-4">
-						<Card tone="warning">
+						<Card>
 							<Text
 								className="font-sansExtraBold text-title-secondary"
 								style={{ color: themeColors.text }}
@@ -1242,7 +1232,7 @@ export default function PublishTripScreen() {
 						<Card tone="success">
 							<Text
 								className="font-sansBold text-label-small"
-								style={{ color: themeColors.mato }}
+								style={{ color: themeColors.success }}
 							>
 								Viagem publicada ✓
 							</Text>
@@ -1360,6 +1350,7 @@ export default function PublishTripScreen() {
 								</Text>
 								<Pressable
 									onPress={() => setArrivalEditorOpen(false)}
+									hitSlop={6}
 									className="w-8 h-8 rounded-full items-center justify-center"
 									style={{
 										backgroundColor: themeColors.background,

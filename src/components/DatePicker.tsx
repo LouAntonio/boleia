@@ -72,7 +72,7 @@ export default function DatePicker({
 	};
 
 	const renderCell = (day: number, i: number) => {
-		if (day === 0) return <View key={i} className="flex-1 h-10" />;
+		if (day === 0) return <View key={i} className="flex-1 h-11" />;
 		const key = toDateKey(new Date(year, month, day));
 		const disabled = key < today;
 		const active = key === draft;
@@ -82,7 +82,7 @@ export default function DatePicker({
 				key={i}
 				disabled={disabled}
 				onPress={() => setDraft(key)}
-				className="flex-1 h-10 items-center justify-center"
+				className="flex-1 h-11 items-center justify-center"
 			>
 				{active ? (
 					<View
@@ -127,7 +127,7 @@ export default function DatePicker({
 				<View className="flex-1 ml-3">
 					<Text
 						className="font-sansMedium text-body-xs"
-						style={{ color: themeColors.laterite }}
+						style={{ color: themeColors.secondary }}
 					>
 						{label}
 					</Text>
@@ -199,6 +199,7 @@ export default function DatePicker({
 							</Text>
 							<Pressable
 								onPress={() => setVisible(false)}
+								hitSlop={6}
 								className="w-8 h-8 rounded-full items-center justify-center"
 								style={{
 									backgroundColor: themeColors.background,
@@ -216,6 +217,7 @@ export default function DatePicker({
 							<Pressable
 								onPress={prevMonth}
 								disabled={!canPrev}
+								hitSlop={6}
 								className="w-8 h-8 items-center justify-center rounded-full border"
 								style={{
 									borderColor: themeColors.border,
@@ -236,6 +238,7 @@ export default function DatePicker({
 							</Text>
 							<Pressable
 								onPress={nextMonth}
+								hitSlop={6}
 								className="w-8 h-8 items-center justify-center rounded-full border"
 								style={{ borderColor: themeColors.border }}
 							>
@@ -275,7 +278,7 @@ export default function DatePicker({
 							<View className="flex-1">
 								<Text
 									className="font-sansMedium text-body-xs"
-									style={{ color: themeColors.laterite }}
+									style={{ color: themeColors.secondary }}
 								>
 									Partida
 								</Text>

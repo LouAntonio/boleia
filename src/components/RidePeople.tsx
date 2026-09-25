@@ -22,7 +22,7 @@ export default function RidePeople({
 		<View className="mt-6">
 			<Text
 				className="font-sansMedium text-body-xs mb-1.5"
-				style={{ color: themeColors.laterite }}
+				style={{ color: themeColors.secondary }}
 			>
 				Quem vai contigo
 			</Text>
@@ -45,7 +45,7 @@ export default function RidePeople({
 						style={{
 							backgroundColor: themeColors.primary,
 							borderWidth: 2,
-							borderColor: themeColors.laterite,
+							borderColor: themeColors.border,
 						}}
 					>
 						<Text
@@ -69,7 +69,7 @@ export default function RidePeople({
 						<View className="flex-row items-center mt-0.5">
 							<Text
 								className="font-sansMedium text-body-xs"
-								style={{ color: themeColors.laterite }}
+								style={{ color: themeColors.secondary }}
 							>
 								★ {driver?.rating?.toFixed(1) ?? 'novo'}
 							</Text>
@@ -153,7 +153,7 @@ export default function RidePeople({
 								</Text>
 								<Text
 									className="font-sansMedium text-body-xs"
-									style={{ color: themeColors.laterite }}
+									style={{ color: themeColors.secondary }}
 								>
 									★ {u.rating?.toFixed(1) ?? 'novo'}
 								</Text>

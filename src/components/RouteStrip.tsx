@@ -105,7 +105,7 @@ export default function RouteStrip({
 									? {
 											...styles.node,
 											backgroundColor:
-												themeColors.laterite,
+												themeColors.primary,
 										}
 									: row.kind === 'origin'
 										? {
@@ -137,7 +137,7 @@ export default function RouteStrip({
 							<Text
 								style={[
 									styles.tag,
-									{ color: themeColors.laterite },
+									{ color: themeColors.secondary },
 								]}
 							>
 								PARTIDA
@@ -147,7 +147,7 @@ export default function RouteStrip({
 							<View
 								style={[
 									styles.stamp,
-									{ borderColor: themeColors.laterite },
+									{ borderColor: themeColors.border },
 								]}
 							>
 								<Text

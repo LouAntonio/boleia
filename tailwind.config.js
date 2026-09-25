@@ -5,22 +5,6 @@ module.exports = {
 	presets: [require('nativewind/preset')],
 	theme: {
 		extend: {
-			colors: {
-				// Tokens Pixar — espelham src/store/colors.ts (fonte runtime).
-				primary: '#0071EB', // accent/bg/default
-				'primary-dark': '#47A0FF', // accent/bg/default (dark)
-				accentWeak: '#E6F2FE',
-				secondary: '#576680', // neutral/txt/weak
-				ink: '#001536', // neutral/txt/default
-				'off-white': '#F5F7FB', // neutral/bg/weak
-				surface: '#FFFFFF', // neutral/bg/elevated
-				'soft-black': '#25282B', // elevated (dark)
-				success: '#107046',
-				successWeak: '#C5FFC6',
-				warning: '#B84412',
-				caution: '#FFCC56',
-				danger: '#BA303B',
-			},
 			// Escala semântica do Pixar: title/label/body. Seven steps, com 行
 			// herdados (110% títulos, 120% corpo, 140% texto pequeno).
 			fontSize: {

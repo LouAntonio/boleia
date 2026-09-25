@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import BackButton from '../../components/BackButton';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -61,24 +62,11 @@ export default function ReviewScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<View className="flex-row items-center pt-2 pb-3">
-				<Pressable
-					onPress={() => navigation.goBack()}
-					className="w-9 h-9 rounded-full items-center justify-center border mr-3"
-					style={{
-						borderColor: themeColors.border,
-						backgroundColor: themeColors.card,
-					}}
-				>
-					<Ionicons
-						name="chevron-back"
-						size={18}
-						color={themeColors.text}
-					/>
-				</Pressable>
+				<BackButton onPress={() => navigation.goBack()} />
 				<View className="flex-1">
 					<Text
 						className="font-sansMedium text-body-xs"
-						style={{ color: themeColors.laterite }}
+						style={{ color: themeColors.secondary }}
 					>
 						{subjectLabel}
 					</Text>
@@ -98,7 +86,7 @@ export default function ReviewScreen() {
 						style={{
 							backgroundColor: themeColors.primary,
 							borderWidth: 2,
-							borderColor: themeColors.laterite,
+							borderColor: themeColors.border,
 						}}
 					>
 						<Text
@@ -130,24 +118,24 @@ export default function ReviewScreen() {
 					<View
 						className="mt-10 items-center p-5 rounded-xl border"
 						style={{
-							borderColor: themeColors.mato,
+							borderColor: themeColors.success,
 							backgroundColor: themeColors.card,
 						}}
 					>
 						<Ionicons
 							name="checkmark-circle"
 							size={34}
-							color={themeColors.mato}
+							color={themeColors.success}
 						/>
 						<Text
 							className="font-sansMedium text-body-xs mt-2"
-							style={{ color: themeColors.mato }}
+							style={{ color: themeColors.success }}
 						>
 							Recibo
 						</Text>
 						<Text
 							className="font-sansBold text-label mt-0.5"
-							style={{ color: themeColors.mato }}
+							style={{ color: themeColors.success }}
 						>
 							Avaliação guardada
 						</Text>
@@ -170,7 +158,7 @@ export default function ReviewScreen() {
 						>
 							<Text
 								className="font-sansMedium text-body-xs"
-								style={{ color: themeColors.laterite }}
+								style={{ color: themeColors.secondary }}
 							>
 								A tua nota
 							</Text>

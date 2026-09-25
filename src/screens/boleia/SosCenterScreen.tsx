@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import BackButton from '../../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -36,20 +37,7 @@ export default function SosCenterScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<View className="flex-row items-center pt-2 pb-3">
-				<Pressable
-					onPress={() => navigation.goBack()}
-					className="w-9 h-9 rounded-full items-center justify-center border mr-3"
-					style={{
-						borderColor: themeColors.border,
-						backgroundColor: themeColors.card,
-					}}
-				>
-					<Ionicons
-						name="chevron-back"
-						size={18}
-						color={themeColors.text}
-					/>
-				</Pressable>
+				<BackButton onPress={() => navigation.goBack()} />
 				<Text
 					className="font-sansExtraBold text-title-secondary"
 					style={{ color: themeColors.text }}
@@ -82,7 +70,7 @@ export default function SosCenterScreen() {
 						<Ionicons
 							name="shield-checkmark-outline"
 							size={30}
-							color={themeColors.mato}
+							color={themeColors.success}
 						/>
 						<Text
 							className="font-sansMedium text-body-small mt-2"
@@ -118,7 +106,7 @@ export default function SosCenterScreen() {
 										style={{
 											backgroundColor: active
 												? themeColors.error
-												: themeColors.mato,
+												: themeColors.success,
 										}}
 									>
 										<Ionicons
@@ -150,7 +138,7 @@ export default function SosCenterScreen() {
 								</Text>
 								<Text
 									className="font-sansMedium text-body-xs mt-1"
-									style={{ color: themeColors.laterite }}
+									style={{ color: themeColors.secondary }}
 								>
 									{route(e.rideId)}
 								</Text>
@@ -168,11 +156,13 @@ export default function SosCenterScreen() {
 										<Ionicons
 											name="checkmark-circle"
 											size={16}
-											color={themeColors.mato}
+											color={themeColors.success}
 										/>
 										<Text
 											className="font-sans text-body-xs ml-1.5"
-											style={{ color: themeColors.mato }}
+											style={{
+												color: themeColors.success,
+											}}
 										>
 											Assistência confirmada
 										</Text>

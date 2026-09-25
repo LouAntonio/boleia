@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import BackButton from '../../components/BackButton';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
-import { Ionicons } from '@expo/vector-icons';
 import StatusStamp from '../../components/StatusStamp';
 import SectionTitle from '../../components/SectionTitle';
 import { useDbStore } from '../../mock/db';
@@ -36,7 +36,7 @@ function Stat({
 		>
 			<Text
 				className="font-sansMedium text-label"
-				style={{ color: themeColors.laterite }}
+				style={{ color: themeColors.text }}
 			>
 				{value}
 			</Text>
@@ -90,24 +90,11 @@ export default function PublicProfileScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<View className="flex-row items-center pt-2 pb-3">
-				<Pressable
-					onPress={() => navigation.goBack()}
-					className="w-9 h-9 rounded-full items-center justify-center border mr-3"
-					style={{
-						borderColor: themeColors.border,
-						backgroundColor: themeColors.card,
-					}}
-				>
-					<Ionicons
-						name="chevron-back"
-						size={18}
-						color={themeColors.text}
-					/>
-				</Pressable>
+				<BackButton onPress={() => navigation.goBack()} />
 				<View className="flex-1">
 					<Text
 						className="font-sansMedium text-body-xs"
-						style={{ color: themeColors.laterite }}
+						style={{ color: themeColors.secondary }}
 					>
 						Perfil público
 					</Text>
@@ -138,7 +125,7 @@ export default function PublicProfileScreen() {
 							style={{
 								backgroundColor: themeColors.primary,
 								borderWidth: 2,
-								borderColor: themeColors.laterite,
+								borderColor: themeColors.border,
 							}}
 						>
 							<Text
@@ -157,7 +144,7 @@ export default function PublicProfileScreen() {
 						<View className="flex-row items-center mt-1">
 							<Text
 								className="font-sansMedium text-label-small mr-1"
-								style={{ color: themeColors.laterite }}
+								style={{ color: themeColors.secondary }}
 							>
 								★
 							</Text>
@@ -235,11 +222,11 @@ export default function PublicProfileScreen() {
 								</View>
 								<View
 									className="rounded-full border px-2.5 py-1"
-									style={{ borderColor: themeColors.mato }}
+									style={{ borderColor: themeColors.success }}
 								>
 									<Text
 										className="font-sansMedium text-body-xs"
-										style={{ color: themeColors.mato }}
+										style={{ color: themeColors.success }}
 									>
 										Registada
 									</Text>
@@ -273,7 +260,7 @@ export default function PublicProfileScreen() {
 										className="w-[4px]"
 										style={{
 											backgroundColor:
-												themeColors.laterite,
+												themeColors.primary,
 										}}
 									/>
 									<View className="flex-1 p-3.5">
@@ -281,7 +268,7 @@ export default function PublicProfileScreen() {
 											<Text
 												className="font-sansMedium text-body-small mr-2"
 												style={{
-													color: themeColors.laterite,
+													color: themeColors.secondary,
 												}}
 											>
 												★ {r.rating}

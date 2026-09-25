@@ -66,7 +66,6 @@ export default function LoginScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Boleia"
 			title="Entra com o teu número"
 			subtitle="Tel e senha. Se te esqueceres da senha, recuperas com um código por WhatsApp."
 			footer={
@@ -77,7 +76,7 @@ export default function LoginScreen() {
 					>
 						<Text
 							className="font-sansBold text-body-small"
-							style={{ color: themeColors.laterite }}
+							style={{ color: themeColors.primary }}
 						>
 							Esqueci-me da senha
 						</Text>
@@ -94,7 +93,7 @@ export default function LoginScreen() {
 						>
 							<Text
 								className="font-sansBold text-body-small"
-								style={{ color: themeColors.laterite }}
+								style={{ color: themeColors.primary }}
 							>
 								Criar conta
 							</Text>

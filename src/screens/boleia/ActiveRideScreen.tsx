@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import BackButton from '../../components/BackButton';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -91,24 +92,11 @@ export default function ActiveRideScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<View className="flex-row items-center pt-2 pb-3">
-				<Pressable
-					onPress={() => navigation.goBack()}
-					className="w-9 h-9 rounded-full items-center justify-center border mr-3"
-					style={{
-						borderColor: themeColors.border,
-						backgroundColor: themeColors.card,
-					}}
-				>
-					<Ionicons
-						name="chevron-back"
-						size={18}
-						color={themeColors.text}
-					/>
-				</Pressable>
+				<BackButton onPress={() => navigation.goBack()} />
 				<View className="flex-1">
 					<Text
 						className="font-sansMedium text-body-xs"
-						style={{ color: themeColors.laterite }}
+						style={{ color: themeColors.secondary }}
 					>
 						Viagem ao vivo
 					</Text>
@@ -124,13 +112,13 @@ export default function ActiveRideScreen() {
 						<View
 							className="w-2 h-2 rounded-full mr-1.5"
 							style={{
-								backgroundColor: themeColors.mato,
+								backgroundColor: themeColors.success,
 								opacity: ride.status === 'em_curso' ? 0.35 : 1,
 							}}
 						/>
 						<Text
 							className="font-sansMedium text-body-xs"
-							style={{ color: themeColors.mato }}
+							style={{ color: themeColors.success }}
 						>
 							Ao vivo
 						</Text>
@@ -151,7 +139,7 @@ export default function ActiveRideScreen() {
 				{ride.status === 'em_curso' && (
 					<Text
 						className="font-sans text-body-small mb-3"
-						style={{ color: themeColors.mato }}
+						style={{ color: themeColors.success }}
 					>
 						Em movimento — a pista enche à medida que avanças.
 					</Text>
@@ -256,7 +244,7 @@ export default function ActiveRideScreen() {
 							className="flex-1 items-center py-3.5 rounded-xl"
 							style={{
 								backgroundColor: sosSent
-									? themeColors.mato
+									? themeColors.success
 									: themeColors.error,
 							}}
 						>
@@ -276,7 +264,7 @@ export default function ActiveRideScreen() {
 					{sosSent && (
 						<Text
 							className="font-sans text-body-xs mt-2"
-							style={{ color: themeColors.mato }}
+							style={{ color: themeColors.success }}
 						>
 							Notificação enviada à central Boleia. Fica perto de
 							ti uma pessoa de confiança.

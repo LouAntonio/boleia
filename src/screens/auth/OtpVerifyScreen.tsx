@@ -69,7 +69,7 @@ export default function OtpVerifyScreen() {
 
 	return (
 		<AuthShell
-			eyebrow="Confirmação"
+			contextLabel="Confirmação"
 			title="Insere o código"
 			subtitle={
 				<>
@@ -97,7 +97,7 @@ export default function OtpVerifyScreen() {
 					<Pressable onPress={resend}>
 						<Text
 							className="font-sansBold text-body-small"
-							style={{ color: themeColors.laterite }}
+							style={{ color: themeColors.primary }}
 						>
 							{resent ? 'Reenviado ✓' : 'Reenviar código'}
 						</Text>
