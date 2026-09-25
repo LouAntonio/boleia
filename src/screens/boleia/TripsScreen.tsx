@@ -40,8 +40,8 @@ export default function TripsScreen() {
 				style={{ backgroundColor: themeColors.background }}
 			>
 				<ScreenHeader
-					eyebrow="Viagens · talões"
 					title="As tuas viagens"
+					meta="Viagens publicadas e pedidos de boleia"
 				/>
 				<View className="flex-1 justify-center pb-10">
 					<EmptyState
@@ -62,7 +62,6 @@ export default function TripsScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<ScreenHeader
-				eyebrow="Viagens · talões"
 				title="As tuas viagens"
 				meta={`${mine.length} viagem${mine.length === 1 ? '' : 's'} publicada${mine.length === 1 ? '' : 's'}`}
 			/>
@@ -163,7 +162,7 @@ export default function TripsScreen() {
 																}}
 															>
 																<Text
-																	className="font-sansBold text-[11px]"
+																	className="font-sansBold text-body-xs"
 																	style={{
 																		color: themeColors.text,
 																	}}
@@ -177,7 +176,7 @@ export default function TripsScreen() {
 																</Text>
 															</View>
 															<Text
-																className="font-sansBold text-[14px]"
+																className="font-sansBold text-body-small"
 																style={{
 																	color: themeColors.text,
 																}}
@@ -188,7 +187,7 @@ export default function TripsScreen() {
 															</Text>
 														</View>
 														<Text
-															className="font-mono text-[13px]"
+															className="font-sansMedium text-body-small"
 															style={{
 																color: themeColors.secondary,
 															}}
@@ -201,7 +200,7 @@ export default function TripsScreen() {
 														</Text>
 													</View>
 													<Text
-														className="font-mono text-[11px] mt-0.5"
+														className="font-sansMedium text-body-xs mt-0.5"
 														style={{
 															color: themeColors.secondary,
 														}}
@@ -217,7 +216,7 @@ export default function TripsScreen() {
 														{ride.destination.name}
 													</Text>
 													<Text
-														className="font-mono text-[11px]"
+														className="font-sansMedium text-body-xs"
 														style={{
 															color: themeColors.secondary,
 														}}
@@ -265,7 +264,7 @@ export default function TripsScreen() {
 									) : (
 										<View className="flex-row items-center justify-between pt-2">
 											<Text
-												className="font-sans text-[12px]"
+												className="font-sans text-body-xs"
 												style={{
 													color: themeColors.secondary,
 												}}
@@ -315,7 +314,7 @@ export default function TripsScreen() {
 																}}
 															>
 																<Text
-																	className="font-sansBold text-[11px]"
+																	className="font-sansBold text-body-xs"
 																	style={{
 																		color: themeColors.text,
 																	}}
@@ -329,7 +328,7 @@ export default function TripsScreen() {
 																</Text>
 															</View>
 															<Text
-																className="font-sansMedium text-[13px]"
+																className="font-sansMedium text-body-small"
 																style={{
 																	color: themeColors.text,
 																}}

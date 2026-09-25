@@ -9,8 +9,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
-import Eyebrow from '../../components/Eyebrow';
-import TicketCard from '../../components/TicketCard';
+import GroupLabel from '../../components/GroupLabel';
+
+import Card from '../../components/Card';
 import StatusStamp from '../../components/StatusStamp';
 import BoleiaButton from '../../components/BoleiaButton';
 
@@ -63,9 +64,9 @@ export default function PublishScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<View className="mt-2">
-				<Eyebrow>Motorista verificado</Eyebrow>
+				<GroupLabel>Motorista verificado</GroupLabel>
 				<Text
-					className="font-display text-[22px] mt-1"
+					className="font-sansExtraBold text-title-secondary mt-1"
 					style={{ color: themeColors.text }}
 				>
 					Publicar viagem
@@ -74,7 +75,7 @@ export default function PublishScreen() {
 
 			{kycOk && vehicleOk ? (
 				<View className="mt-4">
-					<TicketCard accent="mato" padded={false}>
+					<Card tone="success" padded={false}>
 						<View className="p-5">
 							<View
 								className="w-12 h-12 rounded-full items-center justify-center mb-3"
@@ -89,13 +90,13 @@ export default function PublishScreen() {
 								/>
 							</View>
 							<Text
-								className="font-sansBold text-[16px]"
+								className="font-sansBold text-label"
 								style={{ color: themeColors.text }}
 							>
 								Pronto a publicar
 							</Text>
 							<Text
-								className="font-sans text-[13px] mt-1 leading-5"
+								className="font-sans text-body-small mt-1 leading-5"
 								style={{ color: themeColors.secondary }}
 							>
 								Monta a tua viagem: rota, dia, hora, preço e
@@ -110,11 +111,11 @@ export default function PublishScreen() {
 								/>
 							</View>
 						</View>
-					</TicketCard>
+					</Card>
 				</View>
 			) : (
 				<View className="mt-4">
-					<TicketCard accent="laterite" padded={false}>
+					<Card tone="warning" padded={false}>
 						<View className="p-5">
 							<View
 								className="w-12 h-12 rounded-full items-center justify-center mb-3"
@@ -129,13 +130,13 @@ export default function PublishScreen() {
 								/>
 							</View>
 							<Text
-								className="font-sansBold text-[16px]"
+								className="font-sansBold text-label"
 								style={{ color: themeColors.text }}
 							>
 								Só motoristas verificados publicam
 							</Text>
 							<Text
-								className="font-sans text-[13px] mt-1 leading-5"
+								className="font-sans text-body-small mt-1 leading-5"
 								style={{ color: themeColors.secondary }}
 							>
 								Antes de publicar viagens, completa o teu perfil
@@ -150,7 +151,7 @@ export default function PublishScreen() {
 									style={{ borderColor: themeColors.border }}
 								>
 									<Text
-										className="font-sansMedium text-[14px]"
+										className="font-sansMedium text-body-small"
 										style={{ color: themeColors.text }}
 									>
 										1 · BI e carta de condução
@@ -165,7 +166,7 @@ export default function PublishScreen() {
 									className="flex-row items-center justify-between py-3 mt-1"
 								>
 									<Text
-										className="font-sansMedium text-[14px]"
+										className="font-sansMedium text-body-small"
 										style={{ color: themeColors.text }}
 									>
 										2 · Viatura
@@ -174,7 +175,7 @@ export default function PublishScreen() {
 								</Pressable>
 							</View>
 						</View>
-					</TicketCard>
+					</Card>
 				</View>
 			)}
 		</SafeAreaView>

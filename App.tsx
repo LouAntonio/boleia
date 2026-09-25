@@ -12,12 +12,8 @@ import {
 	HankenGrotesk_400Regular,
 	HankenGrotesk_500Medium,
 	HankenGrotesk_700Bold,
+	HankenGrotesk_800ExtraBold,
 } from '@expo-google-fonts/hanken-grotesk';
-import {
-	BricolageGrotesque_700Bold,
-	BricolageGrotesque_800ExtraBold,
-} from '@expo-google-fonts/bricolage-grotesque';
-import { IBMPlexMono_400Regular } from '@expo-google-fonts/ibm-plex-mono';
 import * as SplashScreen from 'expo-splash-screen';
 import { useThemeStore } from './src/store/themeStore';
 import { useThemeColors } from './src/hooks/useThemeColors';
@@ -34,9 +30,7 @@ export default function App() {
 		HankenGrotesk_400Regular,
 		HankenGrotesk_500Medium,
 		HankenGrotesk_700Bold,
-		BricolageGrotesque_700Bold,
-		BricolageGrotesque_800ExtraBold,
-		IBMPlexMono_400Regular,
+		HankenGrotesk_800ExtraBold,
 	});
 
 	useEffect(() => {

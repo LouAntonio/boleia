@@ -21,7 +21,7 @@ const TRACK_H = 3;
 
 // Splash — "o primeiro trajeto": o wordmark entra primeiro e a linha
 // da estrada (a cor de marca é o traço central) desenha-se de origem a
-// destino, com o carimbo laterite no final. Dados em mono, como um bilhete.
+// destino, com um marcador de estado no final. Wordmark em Hanken 800.
 export default function SplashScreen({
 	duration = 2000,
 }: {
@@ -155,7 +155,7 @@ export default function SplashScreen({
 				}}
 			>
 				<Text
-					className="font-display text-[56px] tracking-tight"
+					className="font-sansExtraBold text-[56px] tracking-tight"
 					// eslint-disable-next-line react-native/no-inline-styles
 					style={{ color: themeColors.text, lineHeight: 64 }}
 				>
@@ -170,7 +170,7 @@ export default function SplashScreen({
 			>
 				<Text
 					numberOfLines={1}
-					className="font-mono text-[12px]"
+					className="font-sansMedium text-body-xs"
 					style={{ color: themeColors.text }}
 				>
 					06:00 · Luanda
@@ -220,7 +220,7 @@ export default function SplashScreen({
 
 				<Text
 					numberOfLines={1}
-					className="font-mono text-[12px]"
+					className="font-sansMedium text-body-xs"
 					style={{ color: themeColors.secondary }}
 				>
 					Benguela · 12:20
@@ -231,12 +231,9 @@ export default function SplashScreen({
 				style={[styles.caption, { opacity: captionOpacity }]}
 			>
 				<Text
-					className="font-mono text-[11px] uppercase"
+					className="font-sansMedium text-body-small"
 					// eslint-disable-next-line react-native/no-inline-styles
-					style={{
-						color: themeColors.laterite,
-						letterSpacing: 3,
-					}}
+					style={{ color: themeColors.secondary }}
 				>
 					Mobilidade interprovincial
 				</Text>

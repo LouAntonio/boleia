@@ -14,13 +14,13 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import BoleiaButton from '../../components/BoleiaButton';
-import Eyebrow from '../../components/Eyebrow';
-import TicketCard from '../../components/TicketCard';
+import GroupLabel from '../../components/GroupLabel';
+
+import Card from '../../components/Card';
 import StickyCta from '../../components/StickyCta';
 import LocalityPicker from '../../components/LocalityPicker';
 import DatePicker from '../../components/DatePicker';
 import TimePicker from '../../components/TimePicker';
-import Perforation from '../../components/Perforation';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
 import { useFocusEffect } from '@react-navigation/native';
@@ -82,13 +82,13 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
 	return (
 		<View className="flex-row items-center justify-between py-1.5">
 			<Text
-				className="font-sans text-[13px]"
+				className="font-sans text-body-small"
 				style={{ color: themeColors.secondary }}
 			>
 				{label}
 			</Text>
 			<Text
-				className="font-sansBold text-[13px] text-right ml-3"
+				className="font-sansBold text-body-small text-right ml-3"
 				style={{ color: themeColors.text }}
 			>
 				{value}
@@ -360,7 +360,7 @@ export default function PublishTripScreen() {
 			}}
 		>
 			<Text
-				className="font-sansMedium text-[12px]"
+				className="font-sansMedium text-body-xs"
 				style={{
 					color: active ? themeColors.card : themeColors.secondary,
 				}}
@@ -398,11 +398,11 @@ export default function PublishTripScreen() {
 						/>
 					</Pressable>
 					<View className="flex-1">
-						<Eyebrow>
+						<GroupLabel>
 							Passo {step + 1} de {STEPS.length} · Nova viagem
-						</Eyebrow>
+						</GroupLabel>
 						<Text
-							className="font-display text-[22px] leading-6 mt-1"
+							className="font-sansExtraBold text-title-secondary leading-6 mt-1"
 							style={{ color: themeColors.text }}
 						>
 							{published ? 'Viagem publicada' : STEPS[step]}
@@ -429,7 +429,7 @@ export default function PublishTripScreen() {
 					</View>
 				) : null}
 				<Text
-					className="font-mono text-[9px] uppercase tracking-[2px] mt-3"
+					className="font-sansMedium text-body-xs mt-3"
 					style={{ color: themeColors.secondary }}
 				>
 					{me ? `${me.firstName} ${me.lastName}` : 'Motorista'}
@@ -443,7 +443,7 @@ export default function PublishTripScreen() {
 				{/* Bilhete — conteúdo por passo */}
 				{!published && step <= 1 ? (
 					<View
-						className="rounded-3xl border overflow-hidden mt-4"
+						className="rounded-xl border overflow-hidden mt-4"
 						style={{
 							borderColor: themeColors.laterite,
 							backgroundColor: themeColors.card,
@@ -454,7 +454,7 @@ export default function PublishTripScreen() {
 								<View className="px-4 pt-4">
 									<View className="flex-row items-center justify-between">
 										<Text
-											className="font-display text-[19px]"
+											className="font-sansExtraBold text-title-secondary"
 											style={{ color: themeColors.text }}
 										>
 											A tua rota
@@ -498,7 +498,7 @@ export default function PublishTripScreen() {
 														}
 													/>
 													<Text
-														className="font-sansMedium text-[12px] ml-1.5"
+														className="font-sansMedium text-body-xs ml-1.5"
 														style={{
 															color: active
 																? themeColors.card
@@ -571,7 +571,7 @@ export default function PublishTripScreen() {
 								{derived && derived !== mode ? (
 									<View className="px-4 pt-2">
 										<Text
-											className="font-sans text-[12px]"
+											className="font-sans text-body-xs"
 											style={{
 												color: themeColors.laterite,
 											}}
@@ -594,13 +594,13 @@ export default function PublishTripScreen() {
 							<>
 								<View className="px-4 pt-4">
 									<Text
-										className="font-display text-[19px]"
+										className="font-sansExtraBold text-title-secondary"
 										style={{ color: themeColors.text }}
 									>
 										Dia e hora
 									</Text>
 									<Text
-										className="font-sans text-[12px] mt-0.5 mb-3"
+										className="font-sans text-body-xs mt-0.5 mb-3"
 										style={{ color: themeColors.secondary }}
 									>
 										Escolhe o dia de partida e a hora. A
@@ -623,7 +623,7 @@ export default function PublishTripScreen() {
 									<View className="px-4 pb-2">
 										<Pressable
 											onPress={openArrivalEditor}
-											className="flex-row items-center rounded-2xl px-3.5 py-2.5"
+											className="flex-row items-center rounded-xl px-3.5 py-2.5"
 											style={({ pressed }) => ({
 												borderColor: themeColors.border,
 												backgroundColor:
@@ -637,7 +637,7 @@ export default function PublishTripScreen() {
 												color={themeColors.mato}
 											/>
 											<Text
-												className="font-mono text-[9px] uppercase tracking-[2px] ml-2"
+												className="font-sansMedium text-body-xs ml-2"
 												style={{
 													color: themeColors.secondary,
 												}}
@@ -645,7 +645,7 @@ export default function PublishTripScreen() {
 												Chegada prevista
 											</Text>
 											<Text
-												className="flex-1 font-sansBold text-[13px] text-right"
+												className="flex-1 font-sansBold text-body-small text-right"
 												style={{
 													color: themeColors.text,
 												}}
@@ -698,7 +698,7 @@ export default function PublishTripScreen() {
 										</Pressable>
 										{!arrivalAfterDeparture ? (
 											<Text
-												className="font-sans text-[11px] mt-1.5"
+												className="font-sans text-body-xs mt-1.5"
 												style={{
 													color: themeColors.error,
 												}}
@@ -715,13 +715,13 @@ export default function PublishTripScreen() {
 							<>
 								<View className="px-4 pt-4">
 									<Text
-										className="font-display text-[19px]"
+										className="font-sansExtraBold text-title-secondary"
 										style={{ color: themeColors.text }}
 									>
 										Preço e lugares
 									</Text>
 									<Text
-										className="font-sans text-[12px] mt-0.5 mb-3"
+										className="font-sans text-body-xs mt-0.5 mb-3"
 										style={{ color: themeColors.secondary }}
 									>
 										Quanto custa cada lugar e quantos
@@ -730,13 +730,13 @@ export default function PublishTripScreen() {
 								</View>
 								<View className="px-4">
 									<Text
-										className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+										className="font-sansMedium text-body-xs mb-1.5"
 										style={{ color: themeColors.secondary }}
 									>
 										Preço por lugar
 									</Text>
 									<View
-										className="flex-row items-center rounded-2xl px-4 mb-3"
+										className="flex-row items-center rounded-xl px-4 mb-3"
 										style={{
 											borderColor: themeColors.border,
 											backgroundColor:
@@ -753,11 +753,11 @@ export default function PublishTripScreen() {
 											placeholderTextColor={
 												themeColors.border
 											}
-											className="flex-1 py-3.5 font-mono text-[22px]"
+											className="flex-1 py-3.5 font-sansMedium text-title-secondary"
 											style={{ color: themeColors.text }}
 										/>
 										<Text
-											className="font-mono text-[13px] uppercase tracking-wider"
+											className="font-sansMedium text-body-small"
 											style={{
 												color: themeColors.laterite,
 											}}
@@ -784,7 +784,7 @@ export default function PublishTripScreen() {
 
 								<View className="px-4 pt-1 pb-4">
 									<Text
-										className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+										className="font-sansMedium text-body-xs mb-1.5"
 										style={{ color: themeColors.secondary }}
 									>
 										Lugares livres ({maxSeats} na viatura)
@@ -802,7 +802,7 @@ export default function PublishTripScreen() {
 												}}
 											>
 												<Text
-													className="font-display text-[18px]"
+													className="font-sansExtraBold text-title-tertiary"
 													style={{
 														color: themeColors.text,
 													}}
@@ -812,7 +812,7 @@ export default function PublishTripScreen() {
 											</Pressable>
 										) : null}
 										<Text
-											className="font-display text-[28px] mx-6"
+											className="font-sansExtraBold text-title-primary mx-6"
 											style={{ color: themeColors.text }}
 										>
 											{seats}
@@ -834,7 +834,7 @@ export default function PublishTripScreen() {
 												}}
 											>
 												<Text
-													className="font-display text-[18px]"
+													className="font-sansExtraBold text-title-tertiary"
 													style={{
 														color: themeColors.text,
 													}}
@@ -853,7 +853,7 @@ export default function PublishTripScreen() {
 				{/* Viatura verificada (obrigatória, escolha real) */}
 				{!published && step === 1 && apiVehicles.length > 0 ? (
 					<View
-						className="rounded-3xl mt-4 px-4 py-4"
+						className="rounded-xl mt-4 px-4 py-4"
 						style={{
 							backgroundColor: themeColors.card,
 							shadowColor: '#000',
@@ -864,13 +864,13 @@ export default function PublishTripScreen() {
 						}}
 					>
 						<Text
-							className="font-display text-[17px]"
+							className="font-sansExtraBold text-label"
 							style={{ color: themeColors.text }}
 						>
 							Viatura da viagem
 						</Text>
 						<Text
-							className="font-sans text-[12px] mt-0.5 mb-3"
+							className="font-sans text-body-xs mt-0.5 mb-3"
 							style={{ color: themeColors.secondary }}
 						>
 							Só viaturas verificadas. Escolhe qual vai à estrada.
@@ -881,7 +881,7 @@ export default function PublishTripScreen() {
 								<Pressable
 									key={v.id}
 									onPress={() => setVehicleId(v.id)}
-									className="flex-row items-center rounded-2xl border px-3.5 py-3 mb-2"
+									className="flex-row items-center rounded-xl border px-3.5 py-3 mb-2"
 									style={{
 										borderColor: active
 											? themeColors.mato
@@ -905,7 +905,7 @@ export default function PublishTripScreen() {
 									/>
 									<View className="flex-1 ml-3">
 										<Text
-											className="font-sansBold text-[14px]"
+											className="font-sansBold text-body-small"
 											style={{
 												color: themeColors.text,
 											}}
@@ -913,7 +913,7 @@ export default function PublishTripScreen() {
 											{v.make} {v.model} · {v.plate}
 										</Text>
 										<Text
-											className="font-sans text-[12px]"
+											className="font-sans text-body-xs"
 											style={{
 												color: themeColors.secondary,
 											}}
@@ -928,7 +928,7 @@ export default function PublishTripScreen() {
 				) : null}
 				{!published && step === 1 && apiVehicles.length === 0 ? (
 					<View
-						className="rounded-3xl mt-4 px-4 py-4"
+						className="rounded-xl mt-4 px-4 py-4"
 						style={{
 							backgroundColor: themeColors.card,
 							shadowColor: '#000',
@@ -939,7 +939,7 @@ export default function PublishTripScreen() {
 						}}
 					>
 						<Text
-							className="font-sans text-[13px] leading-5"
+							className="font-sans text-body-small leading-5"
 							style={{ color: themeColors.secondary }}
 						>
 							A tua viatura verificada será associada à viagem
@@ -951,7 +951,7 @@ export default function PublishTripScreen() {
 				{/* Paragens intermédias */}
 				{!published && step === 0 ? (
 					<View
-						className="rounded-3xl mt-4 px-4 py-4"
+						className="rounded-xl mt-4 px-4 py-4"
 						style={{
 							backgroundColor: themeColors.card,
 							shadowColor: '#000',
@@ -962,13 +962,13 @@ export default function PublishTripScreen() {
 						}}
 					>
 						<Text
-							className="font-display text-[17px]"
+							className="font-sansExtraBold text-label"
 							style={{ color: themeColors.text }}
 						>
 							Paragens intermédias
 						</Text>
 						<Text
-							className="font-sans text-[12px] mt-0.5 mb-3"
+							className="font-sans text-body-xs mt-0.5 mb-3"
 							style={{ color: themeColors.secondary }}
 						>
 							Municípios ou pontos no caminho — opcional.
@@ -976,11 +976,11 @@ export default function PublishTripScreen() {
 
 						{stops.length === 0 ? (
 							<View
-								className="rounded-2xl border border-dashed p-4 mb-3 items-center"
+								className="rounded-xl border border-dashed p-4 mb-3 items-center"
 								style={{ borderColor: themeColors.secondary }}
 							>
 								<Text
-									className="font-mono text-[11px] uppercase tracking-[2px]"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.border }}
 								>
 									Sem paragens
@@ -990,7 +990,7 @@ export default function PublishTripScreen() {
 							stops.map((s, i) => (
 								<View
 									key={`stop-${i}`}
-									className="rounded-2xl p-3 mb-3"
+									className="rounded-xl p-3 mb-3"
 									style={{
 										borderColor: themeColors.border,
 										backgroundColor: themeColors.background,
@@ -1045,7 +1045,7 @@ export default function PublishTripScreen() {
 														}}
 													>
 														<Text
-															className="font-sansMedium text-[11px]"
+															className="font-sansMedium text-body-xs"
 															style={{
 																color: active
 																	? themeColors.card
@@ -1106,7 +1106,7 @@ export default function PublishTripScreen() {
 												placeholderTextColor={
 													themeColors.border
 												}
-												className="flex-1 py-3 font-sans text-[14px]"
+												className="flex-1 py-3 font-sans text-body-small"
 												style={{
 													color: themeColors.text,
 												}}
@@ -1120,7 +1120,7 @@ export default function PublishTripScreen() {
 						{stops.length < MAX_STOPS ? (
 							<Pressable
 								onPress={addStop}
-								className="rounded-2xl border border-dashed py-3.5 flex-row items-center justify-center"
+								className="rounded-xl border border-dashed py-3.5 flex-row items-center justify-center"
 								style={({ pressed }) => ({
 									borderColor: themeColors.secondary,
 									backgroundColor: themeColors.card,
@@ -1133,7 +1133,7 @@ export default function PublishTripScreen() {
 									color={themeColors.laterite}
 								/>
 								<Text
-									className="font-sansMedium text-[13px] ml-1.5"
+									className="font-sansMedium text-body-small ml-1.5"
 									style={{ color: themeColors.laterite }}
 								>
 									Adicionar paragem
@@ -1145,18 +1145,18 @@ export default function PublishTripScreen() {
 
 				{!published && step === 2 ? (
 					<View className="mt-4">
-						<TicketCard accent="laterite">
+						<Card tone="warning">
 							<Text
-								className="font-display text-[19px]"
+								className="font-sansExtraBold text-title-secondary"
 								style={{ color: themeColors.text }}
 							>
 								Rever viagem
 							</Text>
 							<Text
-								className="font-sans text-[12px] mt-0.5 mb-3"
+								className="font-sans text-body-xs mt-0.5 mb-3"
 								style={{ color: themeColors.secondary }}
 							>
-								Confere o bilhete antes de ir à estrada.
+								Confere os detalhes antes de publicar.
 							</Text>
 							<ReviewRow
 								label="Rota"
@@ -1222,29 +1222,32 @@ export default function PublishTripScreen() {
 										: String(stopsInput.length)
 								}
 							/>
-							<Perforation tight />
+							<View
+								className="my-3 border-t"
+								style={{ borderColor: themeColors.border }}
+							/>
 							<Text
-								className="font-sans text-[12px] leading-5"
+								className="font-sans text-body-xs leading-5"
 								style={{ color: themeColors.secondary }}
 							>
 								Ao publicar, a viagem aparece na montra Explorar
 								para os passageiros.
 							</Text>
-						</TicketCard>
+						</Card>
 					</View>
 				) : null}
 
 				{published ? (
 					<View className="mt-6">
-						<TicketCard accent="mato">
+						<Card tone="success">
 							<Text
-								className="font-sansBold text-[15px]"
+								className="font-sansBold text-label-small"
 								style={{ color: themeColors.mato }}
 							>
 								Viagem publicada ✓
 							</Text>
 							<Text
-								className="font-mono text-[12px] mt-1"
+								className="font-sansMedium text-body-xs mt-1"
 								style={{ color: themeColors.secondary }}
 							>
 								{new Date(
@@ -1256,13 +1259,13 @@ export default function PublishTripScreen() {
 								})}{' '}
 								às {hour} · {seats} lugares · {fmtKz(price)}
 							</Text>
-						</TicketCard>
+						</Card>
 					</View>
 				) : null}
 
 				{publishError ? (
 					<Text
-						className="font-sans text-[12px] mt-3"
+						className="font-sans text-body-xs mt-3"
 						style={{ color: themeColors.error }}
 					>
 						{publishError}
@@ -1279,7 +1282,7 @@ export default function PublishTripScreen() {
 								className="py-2.5 pr-2"
 							>
 								<Text
-									className="font-sansBold text-[13px] uppercase tracking-wider"
+									className="font-sansBold text-body-small"
 									style={{ color: themeColors.card }}
 								>
 									Voltar
@@ -1291,7 +1294,7 @@ export default function PublishTripScreen() {
 								className="py-2.5 pr-2"
 							>
 								<Text
-									className="font-sansBold text-[13px] uppercase tracking-wider"
+									className="font-sansBold text-body-small"
 									style={{ color: themeColors.card }}
 								>
 									Sair
@@ -1350,7 +1353,7 @@ export default function PublishTripScreen() {
 
 							<View className="flex-row items-center justify-between mb-1">
 								<Text
-									className="font-display text-[18px]"
+									className="font-sansExtraBold text-title-tertiary"
 									style={{ color: themeColors.text }}
 								>
 									Chegada prevista
@@ -1370,7 +1373,7 @@ export default function PublishTripScreen() {
 								</Pressable>
 							</View>
 							<Text
-								className="font-sans text-[12px] mb-2"
+								className="font-sans text-body-xs mb-2"
 								style={{ color: themeColors.secondary }}
 							>
 								O cálculo automático fica pré-preenchido —
@@ -1408,7 +1411,7 @@ export default function PublishTripScreen() {
 
 							{!arrivalAfterDeparture ? (
 								<Text
-									className="font-sans text-[12px] mt-1"
+									className="font-sans text-body-xs mt-1"
 									style={{ color: themeColors.error }}
 								>
 									A chegada não pode ser antes da partida.

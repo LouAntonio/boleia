@@ -15,8 +15,8 @@ const RAIL_W = 26;
 const RAIL = 4;
 const TIME_W = 46;
 
-// RouteStrip — caule vertical da estrada: horas em mono à esquerda,
-// pista tracejada que preenche com o avanço, carimbo laterite na chegada.
+// RouteStrip — caule vertical da estrada: horas à esquerda,
+// pista tracejada que preenche com o avanço, marcador de estado na chegada.
 export default function RouteStrip({
 	origin,
 	stops = [],
@@ -40,7 +40,7 @@ export default function RouteStrip({
 
 	return (
 		<View style={[styles.container, { height: totalH }]}>
-			{/* Horas (mono) */}
+			{/* Horas */}
 			<View style={styles.timeCol}>
 				{rows.map((row, i) => (
 					<View
@@ -202,9 +202,8 @@ const styles = StyleSheet.create({
 		width: TIME_W,
 	},
 	time: {
-		fontFamily: 'IBMPlexMono_400Regular',
+		fontFamily: 'HankenGrotesk_500Medium',
 		fontSize: 13,
-		letterSpacing: 0.4,
 	},
 	railCol: {
 		width: RAIL_W,
@@ -243,9 +242,8 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	tag: {
-		fontFamily: 'IBMPlexMono_400Regular',
-		fontSize: 9,
-		letterSpacing: 1.5,
+		fontFamily: 'HankenGrotesk_700Bold',
+		fontSize: 11,
 		marginBottom: 2,
 	},
 	placeRow: {
@@ -257,8 +255,8 @@ const styles = StyleSheet.create({
 		fontSize: 15,
 	},
 	km: {
-		fontFamily: 'IBMPlexMono_400Regular',
-		fontSize: 10,
+		fontFamily: 'HankenGrotesk_400Regular',
+		fontSize: 12,
 		marginLeft: 8,
 	},
 	stamp: {

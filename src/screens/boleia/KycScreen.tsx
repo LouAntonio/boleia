@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
+import { onBand } from '../../store/colors';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../store/appStore';
 import BoleiaButton from '../../components/BoleiaButton';
@@ -29,10 +30,6 @@ import {
 	submitPassengerKyc,
 	uploadPhoto,
 } from '../../lib/api';
-
-const CELU = '#F7F3E7';
-const BAND_LATERITE = '#B4531F';
-const BAND_MATO = '#1F7A5B';
 
 type Mode = 'passenger' | 'driver';
 
@@ -54,7 +51,7 @@ function SectionCard({
 
 	return (
 		<View
-			className="rounded-3xl border overflow-hidden mb-4"
+			className="rounded-xl border overflow-hidden mb-4"
 			style={{
 				borderColor: themeColors.border,
 				backgroundColor: themeColors.card,
@@ -66,20 +63,27 @@ function SectionCard({
 			>
 				<View
 					className="w-7 h-7 rounded-full items-center justify-center"
-					style={{ backgroundColor: `${CELU}26` }}
+					style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
 				>
-					<Ionicons name={icon} size={15} color={CELU} />
+					<Ionicons
+						name={icon}
+						size={15}
+						color={onBand(themeColors, band)}
+					/>
 				</View>
 				<View className="flex-1 ml-2.5">
 					<Text
-						className="font-display text-[15px]"
-						style={{ color: CELU }}
+						className="font-sansExtraBold text-label-small"
+						style={{ color: onBand(themeColors, band) }}
 					>
 						{title}
 					</Text>
 					<Text
-						className="font-mono text-[8px] uppercase tracking-[2px] mt-0.5"
-						style={{ color: CELU, opacity: 0.85 }}
+						className="font-sansMedium text-body-xs mt-0.5"
+						style={{
+							color: onBand(themeColors, band),
+							opacity: 0.85,
+						}}
 					>
 						{subtitle}
 					</Text>
@@ -95,19 +99,17 @@ function Field({
 	value,
 	setter,
 	placeholder,
-	mono = false,
 }: {
 	label: string;
 	value: string;
 	setter: (v: string) => void;
 	placeholder: string;
-	mono?: boolean;
 }) {
 	const { themeColors } = useThemeColors();
 	return (
 		<View className="flex-1 mb-3">
 			<Text
-				className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+				className="font-sansMedium text-body-xs mb-1.5"
 				style={{ color: themeColors.secondary }}
 			>
 				{label}
@@ -125,11 +127,7 @@ function Field({
 					placeholder={placeholder}
 					placeholderTextColor={themeColors.border}
 					autoCapitalize="words"
-					className={
-						mono
-							? 'py-3 font-mono text-[15px] uppercase'
-							: 'py-3 font-sans text-[15px]'
-					}
+					className="py-3 font-sans text-label-small"
 					style={{ color: themeColors.text }}
 				/>
 			</View>
@@ -404,14 +402,14 @@ export default function KycScreen() {
 								color={themeColors.laterite}
 							/>
 							<Text
-								className="font-mono text-[9px] uppercase tracking-[3px] ml-1"
+								className="font-sansMedium text-body-xs ml-1"
 								style={{ color: themeColors.secondary }}
 							>
 								KYC · Identidade
 							</Text>
 						</View>
 						<Text
-							className="font-display text-[22px] leading-6"
+							className="font-sansExtraBold text-title-secondary leading-6"
 							style={{ color: themeColors.text }}
 						>
 							Comprova a tua identidade
@@ -446,7 +444,7 @@ export default function KycScreen() {
 								}}
 							>
 								<Text
-									className="font-sansMedium text-[12px]"
+									className="font-sansMedium text-body-xs"
 									style={{
 										color: active
 											? themeColors.card
@@ -466,7 +464,7 @@ export default function KycScreen() {
 					</View>
 				) : status === 'VERIFIED' ? (
 					<View
-						className="rounded-3xl border overflow-hidden"
+						className="rounded-xl border overflow-hidden"
 						style={{
 							borderColor: themeColors.border,
 							backgroundColor: themeColors.card,
@@ -474,28 +472,33 @@ export default function KycScreen() {
 					>
 						<View
 							className="px-4 py-3 flex-row items-center"
-							style={{ backgroundColor: BAND_MATO }}
+							style={{ backgroundColor: themeColors.success }}
 						>
 							<View
 								className="w-9 h-9 rounded-full items-center justify-center"
-								style={{ backgroundColor: `${CELU}26` }}
+								style={{
+									backgroundColor: 'rgba(255,255,255,0.15)',
+								}}
 							>
 								<Ionicons
 									name="checkmark"
 									size={18}
-									color={CELU}
+									color={themeColors.onSuccess}
 								/>
 							</View>
 							<View className="flex-1 ml-3">
 								<Text
-									className="font-display text-[16px]"
-									style={{ color: CELU }}
+									className="font-sansExtraBold text-label"
+									style={{ color: themeColors.onSuccess }}
 								>
 									Identidade verificada
 								</Text>
 								<Text
-									className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
-									style={{ color: CELU, opacity: 0.85 }}
+									className="font-sansMedium text-body-xs mt-0.5"
+									style={{
+										color: themeColors.onSuccess,
+										opacity: 0.85,
+									}}
 								>
 									{mode === 'driver'
 										? 'Motorista aprovado'
@@ -505,7 +508,7 @@ export default function KycScreen() {
 						</View>
 						<View className="px-4 py-4">
 							<Text
-								className="font-sans text-[13px] leading-5"
+								className="font-sans text-body-small leading-5"
 								style={{ color: themeColors.secondary }}
 							>
 								{mode === 'driver'
@@ -527,7 +530,7 @@ export default function KycScreen() {
 					</View>
 				) : status === 'PENDING' ? (
 					<View
-						className="rounded-3xl border overflow-hidden"
+						className="rounded-xl border overflow-hidden"
 						style={{
 							borderColor: themeColors.border,
 							backgroundColor: themeColors.card,
@@ -535,24 +538,32 @@ export default function KycScreen() {
 					>
 						<View
 							className="px-4 py-3 flex-row items-center"
-							style={{ backgroundColor: BAND_LATERITE }}
+							style={{ backgroundColor: themeColors.laterite }}
 						>
 							<View
 								className="w-9 h-9 rounded-full items-center justify-center"
-								style={{ backgroundColor: `${CELU}26` }}
+								style={{
+									backgroundColor: 'rgba(255,255,255,0.15)',
+								}}
 							>
-								<ActivityIndicator color={CELU} size="small" />
+								<ActivityIndicator
+									color={themeColors.onWarning}
+									size="small"
+								/>
 							</View>
 							<View className="flex-1 ml-3">
 								<Text
-									className="font-display text-[16px]"
-									style={{ color: CELU }}
+									className="font-sansExtraBold text-label"
+									style={{ color: themeColors.onWarning }}
 								>
 									A verificar
 								</Text>
 								<Text
-									className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
-									style={{ color: CELU, opacity: 0.85 }}
+									className="font-sansMedium text-body-xs mt-0.5"
+									style={{
+										color: themeColors.onWarning,
+										opacity: 0.85,
+									}}
 								>
 									Processo em análise
 								</Text>
@@ -560,7 +571,7 @@ export default function KycScreen() {
 						</View>
 						<View className="px-4 py-4">
 							<Text
-								className="font-sans text-[13px] leading-5"
+								className="font-sans text-body-small leading-5"
 								style={{ color: themeColors.secondary }}
 							>
 								Estamos a confirmar os teus documentos. Avisamos
@@ -572,20 +583,20 @@ export default function KycScreen() {
 					<View>
 						{status === 'REJECTED' ? (
 							<View
-								className="rounded-2xl border px-4 py-3 mb-4"
+								className="rounded-xl border px-4 py-3 mb-4"
 								style={{
 									borderColor: themeColors.error,
 									backgroundColor: themeColors.card,
 								}}
 							>
 								<Text
-									className="font-sansBold text-[13px]"
+									className="font-sansBold text-body-small"
 									style={{ color: themeColors.error }}
 								>
 									Submissão recusada
 								</Text>
 								<Text
-									className="font-sans text-[12px] mt-0.5"
+									className="font-sans text-body-xs mt-0.5"
 									style={{ color: themeColors.secondary }}
 								>
 									{state?.rejectionReason ??
@@ -595,7 +606,7 @@ export default function KycScreen() {
 						) : null}
 
 						<SectionCard
-							band={BAND_LATERITE}
+							band={themeColors.laterite}
 							icon="person-outline"
 							title="Dados pessoais"
 							subtitle={
@@ -619,7 +630,6 @@ export default function KycScreen() {
 									)
 								}
 								placeholder="Ex.: 001234567LA040"
-								mono
 							/>
 							{mode === 'driver' ? (
 								<Field
@@ -627,13 +637,12 @@ export default function KycScreen() {
 									value={licenseNumber}
 									setter={setLicenseNumber}
 									placeholder="Ex.: AO123456"
-									mono
 								/>
 							) : null}
 						</SectionCard>
 
 						<SectionCard
-							band={BAND_LATERITE}
+							band={themeColors.laterite}
 							icon="person-outline"
 							title="Rosto"
 							subtitle={
@@ -682,7 +691,7 @@ export default function KycScreen() {
 						</SectionCard>
 
 						<SectionCard
-							band={BAND_LATERITE}
+							band={themeColors.laterite}
 							icon="card-outline"
 							title="Bilhete de Identidade"
 							subtitle="Frente e Verso"
@@ -726,7 +735,7 @@ export default function KycScreen() {
 
 						{mode === 'passenger' ? (
 							<SectionCard
-								band={BAND_LATERITE}
+								band={themeColors.laterite}
 								icon="body-outline"
 								title="Corpo inteiro"
 								subtitle="1 Foto"
@@ -749,7 +758,7 @@ export default function KycScreen() {
 							</SectionCard>
 						) : (
 							<SectionCard
-								band={BAND_LATERITE}
+								band={themeColors.laterite}
 								icon="document-text-outline"
 								title="Carta de condução"
 								subtitle="Documento"
@@ -774,14 +783,14 @@ export default function KycScreen() {
 
 						{submitting && progress ? (
 							<Text
-								className="font-sans text-[12px] mb-3 text-center"
+								className="font-sans text-body-xs mb-3 text-center"
 								style={{ color: themeColors.secondary }}
 							>
 								{progress}
 							</Text>
 						) : (
 							<Text
-								className="font-sans text-[12px] leading-5 mb-4"
+								className="font-sans text-body-xs leading-5 mb-4"
 								style={{ color: themeColors.secondary }}
 							>
 								{mode === 'passenger'

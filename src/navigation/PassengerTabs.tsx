@@ -18,7 +18,7 @@ export default function PassengerTabs() {
 			screenOptions={{
 				headerShown: false,
 				tabBarButton: PillTabBarButton,
-				tabBarActiveTintColor: themeColors.card,
+				tabBarActiveTintColor: themeColors.primary,
 				tabBarInactiveTintColor: themeColors.secondary,
 				tabBarStyle: {
 					backgroundColor: themeColors.card,
@@ -26,7 +26,7 @@ export default function PassengerTabs() {
 				},
 				tabBarLabelStyle: {
 					fontFamily: 'HankenGrotesk_500Medium',
-					fontSize: 11,
+					fontSize: 12,
 				},
 			}}
 		>
@@ -65,7 +65,7 @@ export default function PassengerTabs() {
 					tabBarLabel: 'Reservas',
 					tabBarIcon: ({ color, size }) => (
 						<Ionicons
-							name="ticket-outline"
+							name="car-outline"
 							size={size}
 							color={color}
 						/>

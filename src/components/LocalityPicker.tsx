@@ -113,7 +113,7 @@ export default function LocalityPicker({
 				</View>
 				<View className="flex-1 ml-3">
 					<Text
-						className="font-mono text-[10px] uppercase tracking-[2px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.laterite }}
 					>
 						{label ?? 'Local'}
@@ -121,8 +121,8 @@ export default function LocalityPicker({
 					<Text
 						className={
 							hasValue
-								? 'font-sansBold text-[15px] mt-0.5'
-								: 'font-sans text-[15px] mt-0.5'
+								? 'font-sansBold text-label-small mt-0.5'
+								: 'font-sans text-label-small mt-0.5'
 						}
 						style={{
 							color: hasValue
@@ -154,8 +154,8 @@ export default function LocalityPicker({
 					<Text
 						className={
 							hasValue
-								? 'font-sansBold text-[15px]'
-								: 'font-sans text-[15px]'
+								? 'font-sansBold text-label-small'
+								: 'font-sans text-label-small'
 						}
 						style={{
 							color: hasValue
@@ -167,12 +167,12 @@ export default function LocalityPicker({
 					</Text>
 				) : selected ? (
 					<Text
-						className="font-sansBold text-[15px]"
+						className="font-sansBold text-label-small"
 						style={{ color: themeColors.text }}
 					>
 						{selected.municipality}
 						<Text
-							className="font-sans text-[12px]"
+							className="font-sans text-body-xs"
 							style={{ color: themeColors.secondary }}
 						>
 							{'  ·  '}
@@ -181,7 +181,7 @@ export default function LocalityPicker({
 					</Text>
 				) : (
 					<Text
-						className="font-sans text-[15px]"
+						className="font-sans text-label-small"
 						style={{ color: themeColors.border }}
 					>
 						Escolher local
@@ -222,7 +222,7 @@ export default function LocalityPicker({
 
 						<View className="flex-row items-center justify-between mb-3">
 							<Text
-								className="font-display text-[18px]"
+								className="font-sansExtraBold text-title-tertiary"
 								style={{ color: themeColors.text }}
 							>
 								{label ??
@@ -258,7 +258,7 @@ export default function LocalityPicker({
 								color={themeColors.secondary}
 							/>
 							<TextInput
-								className="flex-1 py-2.5 pl-2 font-sans text-[14px]"
+								className="flex-1 py-2.5 pl-2 font-sans text-body-small"
 								style={{ color: themeColors.text }}
 								placeholder={
 									isProvinceScope
@@ -306,7 +306,7 @@ export default function LocalityPicker({
 											}}
 										>
 											<Text
-												className="font-sansMedium text-[12px]"
+												className="font-sansMedium text-body-xs"
 												style={{
 													color: active
 														? themeColors.card
@@ -330,7 +330,7 @@ export default function LocalityPicker({
 								provinceOptions.length === 0 ? (
 									<View className="py-10 items-center">
 										<Text
-											className="font-sans text-[13px]"
+											className="font-sans text-body-small"
 											style={{
 												color: themeColors.secondary,
 											}}
@@ -356,7 +356,7 @@ export default function LocalityPicker({
 											>
 												<View className="flex-1">
 													<Text
-														className="font-sansMedium text-[15px]"
+														className="font-sansMedium text-label-small"
 														style={{
 															color: themeColors.text,
 														}}
@@ -364,7 +364,7 @@ export default function LocalityPicker({
 														{p}
 													</Text>
 													<Text
-														className="font-sans text-[12px]"
+														className="font-sans text-body-xs"
 														style={{
 															color: themeColors.secondary,
 														}}
@@ -389,7 +389,7 @@ export default function LocalityPicker({
 							) : localityOptions.length === 0 ? (
 								<View className="py-10 items-center">
 									<Text
-										className="font-sans text-[13px]"
+										className="font-sans text-body-small"
 										style={{
 											color: themeColors.secondary,
 										}}
@@ -411,7 +411,7 @@ export default function LocalityPicker({
 										>
 											<View className="flex-1">
 												<Text
-													className="font-sansMedium text-[15px]"
+													className="font-sansMedium text-label-small"
 													style={{
 														color: themeColors.text,
 													}}
@@ -419,7 +419,7 @@ export default function LocalityPicker({
 													{l.municipality}
 												</Text>
 												<Text
-													className="font-sans text-[12px]"
+													className="font-sans text-body-xs"
 													style={{
 														color: themeColors.secondary,
 													}}

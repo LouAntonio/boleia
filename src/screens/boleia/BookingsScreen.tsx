@@ -6,11 +6,11 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { useDbStore } from '../../mock/db';
 import BookingStub from '../../components/BookingStub';
-import HistoryReceipt from '../../components/HistoryReceipt';
 import BoleiaButton from '../../components/BoleiaButton';
 import ScreenHeader from '../../components/ScreenHeader';
 import EmptyState from '../../components/EmptyState';
-import Eyebrow from '../../components/Eyebrow';
+import GroupLabel from '../../components/GroupLabel';
+
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -20,7 +20,6 @@ import {
 } from '../../types/navigation';
 
 // Tinta fixa da banda confirmada — igual ao BookingStub nos dois temas.
-const ASFALTO = '#17141B';
 
 const UPCOMING = ['pedido', 'confirmada', 'em_viagem'];
 const HISTORY = ['concluida', 'recusada', 'cancelada', 'expirada'];
@@ -94,7 +93,6 @@ export default function BookingsScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<ScreenHeader
-				eyebrow="Reservas · bilhetes"
 				title="As tuas reservas"
 				meta={
 					all.length > 0
@@ -106,9 +104,9 @@ export default function BookingsScreen() {
 			{all.length === 0 ? (
 				<View className="flex-1 justify-center pb-10">
 					<EmptyState
-						icon="ticket-outline"
+						icon="car-outline"
 						title="Ainda não tens reservas"
-						copy="Pesquisa uma viagem e pede uma boleia. O bilhete aparece aqui."
+						copy="Pesquisa uma viagem e pede a tua boleia. A reserva aparece aqui."
 						actionTitle="Ver viagens ativas"
 						onAction={() =>
 							tabNavigation.navigate('PassengerExplore')
@@ -121,7 +119,7 @@ export default function BookingsScreen() {
 					contentContainerStyle={{ paddingBottom: 40 }}
 				>
 					<View
-						className="flex-row rounded-2xl p-1 mt-4 mb-4"
+						className="flex-row rounded-xl p-1 mt-4 mb-4"
 						style={{ backgroundColor: themeColors.card }}
 					>
 						{(
@@ -139,7 +137,7 @@ export default function BookingsScreen() {
 								<Pressable
 									key={opt.key}
 									onPress={() => setTab(opt.key)}
-									className="flex-1 rounded-xl py-2.5 items-center"
+									className="flex-1 rounded-xl min-h-[44px] items-center justify-center"
 									style={{
 										backgroundColor: active
 											? themeColors.primary
@@ -147,10 +145,10 @@ export default function BookingsScreen() {
 									}}
 								>
 									<Text
-										className="font-sansBold text-[12px]"
+										className="font-sansBold text-body-small"
 										style={{
 											color: active
-												? ASFALTO
+												? themeColors.onPrimary
 												: themeColors.secondary,
 										}}
 									>
@@ -165,7 +163,7 @@ export default function BookingsScreen() {
 					{tab === 'upcoming' ? (
 						upcoming.length === 0 ? (
 							<EmptyState
-								icon="ticket-outline"
+								icon="car-outline"
 								title="Nenhuma reserva próxima"
 								copy="Vê as viagens ativas em Explorar e pede a tua boleia."
 							/>
@@ -238,10 +236,10 @@ export default function BookingsScreen() {
 							<View key={month} className="mb-5">
 								<View className="flex-row items-center mb-3">
 									<View className="flex-1">
-										<Eyebrow>{month}</Eyebrow>
+										<GroupLabel>{month}</GroupLabel>
 									</View>
 									<Text
-										className="font-mono text-[10px] ml-3"
+										className="font-sansMedium text-body-xs ml-3"
 										style={{ color: themeColors.secondary }}
 									>
 										{items.length}
@@ -252,12 +250,16 @@ export default function BookingsScreen() {
 										key={booking.id}
 										className={i > 0 ? 'mt-3' : ''}
 									>
-										<HistoryReceipt
+										<BookingStub
 											booking={booking}
 											ride={ride}
-											onReview={
-												booking.status === 'concluida'
-													? () =>
+											footer={
+												booking.status ===
+												'concluida' ? (
+													<BoleiaButton
+														title="Avaliar motorista"
+														variant="outline"
+														onPress={() =>
 															navigation.navigate(
 																'Review',
 																{
@@ -268,7 +270,9 @@ export default function BookingsScreen() {
 																		'driver',
 																},
 															)
-													: undefined
+														}
+													/>
+												) : undefined
 											}
 										/>
 									</View>

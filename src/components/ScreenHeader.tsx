@@ -1,32 +1,29 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useThemeColors } from '../hooks/useThemeColors';
-import Eyebrow from './Eyebrow';
 
-// Cabeçalho padrão de ecrã — cílio laterite + título display grande +
-// linha de contexto em texto corrido.
+// Cabeçalho padrão de ecrã — `title/primary` (28/110%, ExtraBold) como
+// hierarquia principal e a meta em `body/small`. Sem cor de destaque no
+// subtítulo: a cor é reservada a estados, não atitles.
 export default function ScreenHeader({
-	eyebrow,
 	title,
 	meta,
 }: {
-	eyebrow: string;
 	title: string;
 	meta?: string | null;
 }) {
 	const { themeColors } = useThemeColors();
 	return (
 		<View className="mt-2">
-			<Eyebrow>{eyebrow}</Eyebrow>
 			<Text
-				className="font-display text-[26px] leading-8 mt-1.5"
+				className="font-sansExtraBold text-title-primary"
 				style={{ color: themeColors.text }}
 			>
 				{title}
 			</Text>
 			{meta ? (
 				<Text
-					className="font-sans text-[13px] mt-1"
+					className="font-sans text-body-small mt-1"
 					style={{ color: themeColors.secondary }}
 				>
 					{meta}

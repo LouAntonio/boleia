@@ -8,7 +8,6 @@ import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
-import Perforation from '../../components/Perforation';
 import { signIn, apiErrorMessage } from '../../lib/api';
 import { useAppStore } from '../../store/appStore';
 import { navigationRef } from '../../lib/navigationRef';
@@ -77,7 +76,7 @@ export default function LoginScreen() {
 						className="items-center py-2"
 					>
 						<Text
-							className="font-sansBold text-[13px] uppercase tracking-wider"
+							className="font-sansBold text-body-small"
 							style={{ color: themeColors.laterite }}
 						>
 							Esqueci-me da senha
@@ -85,7 +84,7 @@ export default function LoginScreen() {
 					</Pressable>
 					<View className="flex-row justify-center pt-6">
 						<Text
-							className="font-sans text-[13px]"
+							className="font-sans text-body-small"
 							style={{ color: themeColors.secondary }}
 						>
 							Ainda não tens conta?{' '}
@@ -94,7 +93,7 @@ export default function LoginScreen() {
 							onPress={() => navigation.navigate('Register')}
 						>
 							<Text
-								className="font-sansBold text-[13px] uppercase tracking-wider"
+								className="font-sansBold text-body-small"
 								style={{ color: themeColors.laterite }}
 							>
 								Criar conta
@@ -132,13 +131,12 @@ export default function LoginScreen() {
 			/>
 			{error ? (
 				<Text
-					className="font-sans text-[13px] mb-5"
+					className="font-sans text-body-small mb-5"
 					style={{ color: themeColors.error }}
 				>
 					{error}
 				</Text>
 			) : null}
-			<Perforation />
 			<BoleiaButton
 				title="Entrar"
 				onPress={submit}

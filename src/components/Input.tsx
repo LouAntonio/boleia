@@ -30,20 +30,17 @@ export default function Input({
 	const [hidden, setHidden] = useState(isPassword);
 	const [isFocused, setIsFocused] = useState(false);
 
-	const labelStyle = useMemo(
-		() => ({
-			color: isFocused ? themeColors.primary : themeColors.text,
-		}),
-		[isFocused, themeColors],
-	);
-
 	const containerDynamicStyle = useMemo(
 		() => ({
-			borderColor: error ? themeColors.error : 'transparent',
-			borderWidth: error ? 1.5 : 0,
-			backgroundColor: themeColors.background,
+			borderColor: error
+				? themeColors.error
+				: isFocused
+					? themeColors.primary
+					: themeColors.border,
+			borderWidth: error || isFocused ? 1.5 : 1,
+			backgroundColor: themeColors.card,
 		}),
-		[error, themeColors],
+		[error, isFocused, themeColors],
 	);
 
 	const textInputStyle = useMemo(
@@ -57,21 +54,17 @@ export default function Input({
 	);
 
 	return (
-		<View className="w-full mb-5">
+		<View className="w-full mb-6">
 			{label && (
 				<Text
-					className="font-mono text-[10px] uppercase tracking-[2px] mb-2"
-					style={[
-						labelStyle,
-						styles.labelOpacity,
-						isFocused && styles.fullOpacity,
-					]}
+					className="font-sansMedium text-label-small mb-2"
+					style={{ color: themeColors.text }}
 				>
 					{label}
 				</Text>
 			)}
 			<View
-				className="flex-row items-center rounded-2xl overflow-hidden px-4"
+				className="flex-row items-center rounded-xl overflow-hidden px-4"
 				style={[
 					styles.inputContainer,
 					containerDynamicStyle,
@@ -104,13 +97,13 @@ export default function Input({
 					/>
 				)}
 				<TextInput
-					className="flex-1 text-base"
+					className="flex-1 font-sans text-body"
 					style={[
 						textInputStyle,
 						// eslint-disable-next-line react-native/no-inline-styles
-						{ height: props.multiline ? 'auto' : 58 },
+						{ height: props.multiline ? 'auto' : 56 },
 					]}
-					placeholderTextColor={isDark ? '#666' : '#999'}
+					placeholderTextColor={themeColors.secondary}
 					secureTextEntry={hidden}
 					onFocus={() => setIsFocused(true)}
 					onBlur={() => setIsFocused(false)}
@@ -137,7 +130,7 @@ export default function Input({
 			</View>
 			{error ? (
 				<Text
-					className="text-xs mt-1.5 ml-2 font-medium"
+					className="text-body-xs mt-1.5 ml-2 font-sans"
 					style={errorTextStyle}
 				>
 					{error}
@@ -148,14 +141,8 @@ export default function Input({
 }
 
 const styles = StyleSheet.create({
-	labelOpacity: {
-		opacity: 0.75,
-	},
-	fullOpacity: {
-		opacity: 1,
-	},
 	inputContainer: {
-		height: 58,
+		height: 56,
 	},
 	leftIcon: {
 		marginRight: 12,

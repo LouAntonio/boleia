@@ -13,7 +13,7 @@ import { fmtDate } from '../../mock/helpers';
 
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 	ride: 'car-outline',
-	booking: 'ticket-outline',
+	booking: 'car-outline',
 	payment: 'wallet-outline',
 	system: 'information-circle-outline',
 };
@@ -81,7 +81,7 @@ export default function NotificationsScreen() {
 					/>
 				</Pressable>
 				<Text
-					className="font-display text-[20px]"
+					className="font-sansExtraBold text-title-secondary"
 					style={{ color: themeColors.text }}
 				>
 					Notificações
@@ -94,7 +94,7 @@ export default function NotificationsScreen() {
 			>
 				{notifications.length === 0 ? (
 					<Text
-						className="font-sans text-[13px]"
+						className="font-sans text-body-small"
 						style={{ color: themeColors.secondary }}
 					>
 						Ainda não há notificações.
@@ -104,7 +104,7 @@ export default function NotificationsScreen() {
 						<Pressable
 							key={n.id}
 							onPress={() => open(n)}
-							className="p-4 rounded-2xl border mb-2 flex-row"
+							className="p-4 rounded-xl border mb-2 flex-row"
 							style={{
 								borderColor: n.read
 									? themeColors.border
@@ -131,20 +131,20 @@ export default function NotificationsScreen() {
 							<View className="flex-1">
 								<View className="flex-row items-center justify-between">
 									<Text
-										className="font-sansBold text-[14px]"
+										className="font-sansBold text-body-small"
 										style={{ color: themeColors.text }}
 									>
 										{n.title}
 									</Text>
 									<Text
-										className="font-mono text-[10px] ml-2"
+										className="font-sansMedium text-body-xs ml-2"
 										style={{ color: themeColors.secondary }}
 									>
 										{fmtDate(n.createdAt)}
 									</Text>
 								</View>
 								<Text
-									className="font-sans text-[13px] mt-0.5 leading-5"
+									className="font-sans text-body-small mt-0.5 leading-5"
 									style={{ color: themeColors.secondary }}
 								>
 									{n.message}

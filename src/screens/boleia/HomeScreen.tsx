@@ -13,12 +13,12 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import TripSearch from '../../components/TripSearch';
-import TicketCard from '../../components/TicketCard';
-import Eyebrow from '../../components/Eyebrow';
+import Card from '../../components/Card';
+import SectionTitle from '../../components/SectionTitle';
+
 import TripListingCard from '../../components/TripListingCard';
 
-// Tinta fixa do avatar — igual às bandas dos bilhetes nos dois temas.
-const ASFALTO = '#17141B';
+// Viagens que o passageiro pode ainda embarcar.
 const UPCOMING_STATUSES = ['pedido', 'confirmada', 'em_viagem'];
 
 function BrandHeader({
@@ -41,20 +41,20 @@ function BrandHeader({
 			<View className="flex-1 mr-3">
 				<View className="flex-row items-baseline">
 					<Text
-						className="font-display text-[28px]"
+						className="font-sansExtraBold text-title-primary"
 						style={{ color: themeColors.text }}
 					>
 						Boleia
 					</Text>
 					<Text
-						className="font-mono text-[11px] ml-2"
+						className="font-sansMedium text-body-xs ml-2"
 						style={{ color: themeColors.laterite }}
 					>
 						{role === 'passenger' ? 'PASSAGEIRO' : 'MOTORISTA'}
 					</Text>
 				</View>
 				<Text
-					className="font-display text-[22px] mt-0.5"
+					className="font-sansExtraBold text-title-secondary mt-0.5"
 					style={{ color: themeColors.text }}
 				>
 					{greeting}, {name ?? 'viajante'}.
@@ -62,16 +62,18 @@ function BrandHeader({
 			</View>
 			<Pressable
 				onPress={onProfile}
+				accessibilityRole="button"
+				accessibilityLabel="Abrir perfil"
 				className="w-12 h-12 rounded-full items-center justify-center"
 				style={{
-					backgroundColor: themeColors.primary,
-					borderWidth: 2,
-					borderColor: themeColors.laterite,
+					backgroundColor: themeColors.accentWeak,
+					borderWidth: 1,
+					borderColor: themeColors.border,
 				}}
 			>
 				<Text
-					className="font-display text-[16px]"
-					style={{ color: ASFALTO }}
+					className="font-sansExtraBold text-label"
+					style={{ color: themeColors.primary }}
 				>
 					{initialsLabel}
 				</Text>
@@ -104,7 +106,7 @@ function CheckRow({
 			})}
 		>
 			<Text
-				className="font-mono text-[12px] w-6"
+				className="font-sansMedium text-body-xs w-6"
 				style={{
 					color: done ? themeColors.mato : themeColors.secondary,
 				}}
@@ -112,7 +114,7 @@ function CheckRow({
 				{index}
 			</Text>
 			<Text
-				className="font-sansMedium text-[14px] flex-1"
+				className="font-sansMedium text-body-small flex-1"
 				style={{
 					color: locked ? themeColors.secondary : themeColors.text,
 				}}
@@ -251,9 +253,9 @@ export default function HomeScreen() {
 
 						{nextUp ? (
 							<View className="mt-6">
-								<Eyebrow>A seguir</Eyebrow>
+								<SectionTitle>A seguir</SectionTitle>
 								<View className="mt-4">
-									<TicketCard accent="laterite">
+									<Card tone="warning">
 										<Pressable
 											onPress={() =>
 												navigation.navigate(
@@ -276,7 +278,7 @@ export default function HomeScreen() {
 											/>
 											<View className="flex-1">
 												<Text
-													className="font-display text-[17px]"
+													className="font-sansExtraBold text-label"
 													style={{
 														color: themeColors.text,
 													}}
@@ -289,7 +291,7 @@ export default function HomeScreen() {
 													}
 												</Text>
 												<Text
-													className="font-mono text-[10px] uppercase tracking-[2px] mt-0.5"
+													className="font-sansMedium text-body-xs mt-0.5"
 													style={{
 														color: themeColors.secondary,
 													}}
@@ -313,7 +315,7 @@ export default function HomeScreen() {
 												color={themeColors.secondary}
 											/>
 										</Pressable>
-									</TicketCard>
+									</Card>
 								</View>
 							</View>
 						) : null}
@@ -321,14 +323,16 @@ export default function HomeScreen() {
 						{nextRides.length > 0 ? (
 							<View className="mt-6">
 								<View className="flex-row items-center justify-between mb-4">
-									<Eyebrow>Embarques próximos</Eyebrow>
+									<SectionTitle>
+										Embarques próximos
+									</SectionTitle>
 									<Pressable
 										onPress={() =>
 											goToTab('PassengerExplore')
 										}
 									>
 										<Text
-											className="font-sansBold text-[12px] uppercase tracking-wider"
+											className="font-sansBold text-body-xs"
 											style={{
 												color: themeColors.laterite,
 											}}
@@ -355,17 +359,17 @@ export default function HomeScreen() {
 					</View>
 				) : (
 					<View>
-						<Eyebrow>Painel de motorista</Eyebrow>
+						<SectionTitle>Painel de motorista</SectionTitle>
 						<View className="mt-4">
-							<TicketCard accent="laterite">
+							<Card tone="warning">
 								<Text
-									className="font-display text-[19px]"
+									className="font-sansExtraBold text-title-secondary"
 									style={{ color: themeColors.text }}
 								>
 									A tua central
 								</Text>
 								<Text
-									className="font-sans text-[13px] mt-1 leading-5"
+									className="font-sans text-body-small mt-1 leading-5"
 									style={{ color: themeColors.secondary }}
 								>
 									Três passos até à estrada. Demora cerca de 5
@@ -417,7 +421,7 @@ export default function HomeScreen() {
 										}
 									/>
 								</View>
-							</TicketCard>
+							</Card>
 						</View>
 					</View>
 				)}

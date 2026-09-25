@@ -4,7 +4,7 @@ import { useThemeColors } from '../hooks/useThemeColors';
 import { Ionicons } from '@expo/vector-icons';
 
 // Slot de foto do dossiê (KYC / viatura) — borda tracejada enquanto vazio,
-// imagem + badge de remover quando preenchido. Rótulo mono em `secondary` (a11y).
+// imagem + badge de remover quando preenchido. Rótulo em `secondary` (a11y).
 // Dimensão explícita (`size`) em vez de aspectRatio + largura percentual:
 // garante quadrados compactos e determinísticos em qualquer plataforma.
 // Toque: card preenchido → `onView` (visualizador); vazio → `onPick` (galeria).
@@ -31,7 +31,7 @@ export default function PhotoSlot({
 		<View className={className} style={{ width: size }}>
 			<Pressable
 				onPress={uri ? (onView ?? onPick) : onPick}
-				className="rounded-2xl border items-center justify-center"
+				className="rounded-xl border items-center justify-center"
 				style={({ pressed }) => ({
 					width: size,
 					height: size,
@@ -69,7 +69,7 @@ export default function PhotoSlot({
 							/>
 						</View>
 						<Text
-							className="font-mono text-[8px] uppercase tracking-[1.5px] mt-1.5"
+							className="font-sansMedium text-body-xs mt-1.5"
 							style={{ color: themeColors.secondary }}
 						>
 							Adicionar
@@ -96,7 +96,7 @@ export default function PhotoSlot({
 			</Pressable>
 			<Text
 				numberOfLines={1}
-				className="font-mono text-[9px] uppercase tracking-[1.5px] mt-1.5 text-center"
+				className="font-sansMedium text-body-xs mt-1.5 text-center"
 				style={{ color: themeColors.secondary }}
 			>
 				{label}
@@ -115,13 +115,13 @@ export function ProgressRail({ done, total }: { done: number; total: number }) {
 		<View>
 			<View className="flex-row items-center justify-between">
 				<Text
-					className="font-mono text-[9px] uppercase tracking-[2px]"
+					className="font-sansMedium text-body-xs"
 					style={{ color: themeColors.secondary }}
 				>
 					{done} de {total} {total === 1 ? 'foto' : 'fotos'}
 				</Text>
 				<Text
-					className="font-mono text-[9px] uppercase tracking-[2px]"
+					className="font-sansMedium text-body-xs"
 					style={{
 						color: complete
 							? themeColors.mato

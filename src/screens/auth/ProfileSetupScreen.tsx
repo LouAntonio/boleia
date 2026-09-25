@@ -6,7 +6,6 @@ import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
-import Perforation from '../../components/Perforation';
 import { updateProfile, apiErrorMessage } from '../../lib/api';
 import { useAppStore } from '../../store/appStore';
 import { navigationRef } from '../../lib/navigationRef';
@@ -83,13 +82,12 @@ export default function ProfileSetupScreen() {
 				multiline
 			/>
 			<Text
-				className="font-sans text-[12px] -mt-2 mb-2"
+				className="font-sans text-body-xs -mt-2 mb-2"
 				style={{ color: themeColors.secondary }}
 			>
 				A seguir: podes verificar o BI e registar a viatura para
 				publicar viagens.
 			</Text>
-			<Perforation />
 			<View className="mt-1">
 				<BoleiaButton
 					title="Começar a viajar"

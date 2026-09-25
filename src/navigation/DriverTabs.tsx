@@ -18,7 +18,7 @@ export default function DriverTabs() {
 			screenOptions={{
 				headerShown: false,
 				tabBarButton: PillTabBarButton,
-				tabBarActiveTintColor: themeColors.card,
+				tabBarActiveTintColor: themeColors.primary,
 				tabBarInactiveTintColor: themeColors.secondary,
 				tabBarStyle: {
 					backgroundColor: themeColors.card,
@@ -26,7 +26,7 @@ export default function DriverTabs() {
 				},
 				tabBarLabelStyle: {
 					fontFamily: 'HankenGrotesk_500Medium',
-					fontSize: 11,
+					fontSize: 12,
 				},
 			}}
 		>

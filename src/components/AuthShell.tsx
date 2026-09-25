@@ -53,7 +53,7 @@ export default function AuthShell({
 								className="mb-4 self-start"
 							>
 								<Text
-									className="font-sansBold text-[13px] uppercase tracking-wider"
+									className="font-sansBold text-body-small"
 									style={{ color: themeColors.laterite }}
 								>
 									← Voltar
@@ -77,25 +77,25 @@ export default function AuthShell({
 							>
 								<Image
 									source={require('../../assets/images/logo.png')}
-									className="w-20 h-20 rounded-3xl"
+									className="w-20 h-20 rounded-xl"
 									resizeMode="contain"
 								/>
 							</View>
 							<Text
-								className="font-mono text-[11px] uppercase tracking-[3px]"
+								className="font-sansMedium text-body-xs"
 								style={{ color: themeColors.laterite }}
 							>
 								{eyebrow}
 							</Text>
 							<Text
-								className="font-display text-[30px] uppercase tracking-tight text-center mt-3"
+								className="font-sansExtraBold text-title-primary tracking-tight text-center mt-3"
 								style={{ color: themeColors.text }}
 							>
 								{title}
 							</Text>
 							{subtitle ? (
 								<Text
-									className="font-sans text-[14px] mt-2 leading-5 text-center"
+									className="font-sans text-body-small mt-2 leading-5 text-center"
 									style={{ color: themeColors.secondary }}
 								>
 									{subtitle}
@@ -104,7 +104,7 @@ export default function AuthShell({
 						</Animated.View>
 						<Animated.View
 							entering={FadeInUp.duration(800).delay(400)}
-							className="mt-7 rounded-3xl px-5 py-6"
+							className="mt-7 rounded-xl px-5 py-6"
 							style={{
 								backgroundColor: themeColors.card,
 								shadowColor: '#000',

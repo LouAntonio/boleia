@@ -24,7 +24,7 @@ export default function ConsentRow({
 		<Pressable
 			onPress={onChange}
 			disabled={disabled}
-			className="flex-row items-center py-2.5"
+			className="flex-row items-center min-h-[44px] py-2"
 			style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
 		>
 			<View
@@ -32,22 +32,30 @@ export default function ConsentRow({
 				style={{
 					backgroundColor: checked
 						? themeColors.primary
-						: themeColors.background,
+						: themeColors.card,
+					borderWidth: 1,
+					borderColor: checked
+						? themeColors.primary
+						: themeColors.border,
 				}}
 			>
 				{checked && (
-					<Ionicons name="checkmark" size={14} color="#17141B" />
+					<Ionicons
+						name="checkmark"
+						size={14}
+						color={themeColors.onPrimary}
+					/>
 				)}
 			</View>
 			<Text
-				className="font-sans text-[13px] flex-1"
+				className="font-sans text-body-small flex-1"
 				style={{ color: themeColors.text }}
 			>
 				{label}
 			</Text>
 			{optional ? (
 				<Text
-					className="font-mono text-[10px] uppercase tracking-[2px] ml-2"
+					className="font-sansMedium text-body-xs ml-2"
 					style={{ color: themeColors.secondary }}
 				>
 					Opcional

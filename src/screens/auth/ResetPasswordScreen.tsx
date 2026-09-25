@@ -7,7 +7,6 @@ import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
-import Perforation from '../../components/Perforation';
 import { resetPassword, apiErrorMessage } from '../../lib/api';
 
 export default function ResetPasswordScreen() {
@@ -87,13 +86,12 @@ export default function ResetPasswordScreen() {
 			/>
 			{error ? (
 				<Text
-					className="font-sans text-[13px] mb-5"
+					className="font-sans text-body-small mb-5"
 					style={{ color: themeColors.error }}
 				>
 					{error}
 				</Text>
 			) : null}
-			<Perforation />
 			<View className="mt-1">
 				<BoleiaButton
 					title="Guardar senha"

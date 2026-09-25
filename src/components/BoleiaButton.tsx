@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text, Pressable, ActivityIndicator } from 'react-native';
 import Animated, {
 	useSharedValue,
 	useAnimatedStyle,
@@ -10,13 +10,22 @@ import { useThemeColors } from '../hooks/useThemeColors';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-// Tinta fixa sobre o ouro — contraste AA nos dois temas.
-const ASFALTO = '#17141B';
+// Variantes do sistema Pixar: `primary` é accent/bg/default com txt/inverted
+// (a tinta do produto, não branco). Os nomes históricos `dark`, `outline` e
+// `ghost` mantêm-se para não quebrar as chamadas existentes.
+type Variant =
+	| 'primary'
+	| 'secondary'
+	| 'tertiary'
+	| 'warning'
+	| 'link'
+	| 'dark'
+	| 'outline'
+	| 'ghost';
 
-type Variant = 'primary' | 'dark' | 'outline' | 'ghost';
-
-// Botão Boleia — ouro cheio com tinta asfalto, animação de press (escala) e
-// sombra curta. `strong` aplica uppercase + tracking. Cantos 14.
+// Botão Boleia — accent cheio, sem brilho colorido, cantos 12, alvo de toque
+// ≥44px, animação de press por escala. Sem: as labels do sistema
+// são `label`/`labelSmall`.
 export default function BoleiaButton({
 	title,
 	onPress,
@@ -41,42 +50,70 @@ export default function BoleiaButton({
 		transform: [{ scale: scale.value }],
 	}));
 
-	const fg: Record<Variant, string> = {
-		primary: disabled ? themeColors.secondary : ASFALTO,
-		dark: disabled ? themeColors.secondary : themeColors.card,
-		outline: disabled ? themeColors.border : themeColors.text,
-		ghost: disabled ? themeColors.border : themeColors.laterite,
-	};
+	const resolved: Variant =
+		variant === 'outline'
+			? 'secondary'
+			: variant === 'ghost'
+				? 'link'
+				: variant;
 
-	const containerStyle = useMemo(() => {
-		const bg: Record<Variant, string | undefined> = {
-			primary: disabled ? themeColors.border : themeColors.primary,
-			dark: disabled ? themeColors.border : themeColors.text,
-			outline: 'transparent',
-			ghost: 'transparent',
-		};
-		return {
-			backgroundColor: bg[variant],
-			borderColor:
-				variant === 'outline'
-					? disabled
-						? themeColors.border
-						: themeColors.text
-					: 'transparent',
-			borderWidth: variant === 'outline' ? 1.5 : 0,
-			shadowColor:
-				variant === 'primary' && !disabled
-					? themeColors.primary
-					: 'transparent',
-			shadowOpacity: variant === 'primary' && !disabled ? 0.2 : 0,
-			shadowOffset: { width: 0, height: 3 },
-			shadowRadius: 8,
-			elevation: variant === 'primary' && !disabled ? 3 : 0,
-		};
-	}, [variant, disabled, themeColors]);
+	const { bg, fg, borderColor, borderWidth } = useMemo(() => {
+		if (disabled) {
+			return {
+				bg: themeColors.border,
+				fg: themeColors.secondary,
+				borderColor: 'transparent',
+				borderWidth: 0,
+			};
+		}
+		switch (resolved) {
+			case 'primary':
+				return {
+					bg: themeColors.primary,
+					fg: themeColors.onPrimary,
+					borderColor: 'transparent',
+					borderWidth: 0,
+				};
+			case 'warning':
+				return {
+					bg: themeColors.laterite,
+					fg: themeColors.onPrimary,
+					borderColor: 'transparent',
+					borderWidth: 0,
+				};
+			case 'dark':
+				return {
+					bg: themeColors.text,
+					fg: themeColors.card,
+					borderColor: 'transparent',
+					borderWidth: 0,
+				};
+			case 'secondary':
+				return {
+					bg: themeColors.card,
+					fg: themeColors.text,
+					borderColor: themeColors.border,
+					borderWidth: 1,
+				};
+			case 'tertiary':
+				return {
+					bg: 'transparent',
+					fg: themeColors.text,
+					borderColor: 'transparent',
+					borderWidth: 0,
+				};
+			default:
+				return {
+					bg: 'transparent',
+					fg: themeColors.primary,
+					borderColor: 'transparent',
+					borderWidth: 0,
+				};
+		}
+	}, [resolved, disabled, themeColors]);
 
 	const handlePressIn = () => {
-		scale.value = withTiming(0.96, { duration: 100 });
+		scale.value = withTiming(0.97, { duration: 100 });
 	};
 
 	const handlePressOut = () => {
@@ -89,23 +126,30 @@ export default function BoleiaButton({
 			onPressIn={handlePressIn}
 			onPressOut={handlePressOut}
 			disabled={disabled || loading}
-			style={[styles.base, containerStyle, animatedStyle]}
-			className={`rounded-2xl items-center justify-center flex-row ${
-				small ? 'px-4 py-2.5' : 'h-[58px]'
+			style={[
+				{
+					backgroundColor: bg,
+					borderColor,
+					borderWidth,
+				},
+				animatedStyle,
+			]}
+			className={`rounded-xl items-center justify-center flex-row ${
+				small ? 'px-4 min-h-[44px]' : 'h-[52px] px-5'
 			}`}
 		>
 			{loading ? (
-				<ActivityIndicator color={fg[variant]} />
+				<ActivityIndicator color={fg} />
 			) : (
 				<Text
 					className={
-						small
-							? 'font-sansBold text-[13px]'
-							: strong
-								? 'font-sansBold text-[15px] uppercase tracking-wider'
-								: 'font-sansBold text-[15px]'
+						strong
+							? 'font-sansExtraBold text-label'
+							: small
+								? 'font-sansBold text-label-small'
+								: 'font-sansBold text-label'
 					}
-					style={{ color: fg[variant] }}
+					style={{ color: fg }}
 				>
 					{title}
 				</Text>
@@ -113,9 +157,3 @@ export default function BoleiaButton({
 		</AnimatedPressable>
 	);
 }
-
-const styles = StyleSheet.create({
-	base: {
-		shadowRadius: 8,
-	},
-});

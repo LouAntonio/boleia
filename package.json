@@ -16,9 +16,7 @@
 		"cipipe": "npm run format:check && npm run lint && npm run typecheck && npm run doctor"
 	},
 	"dependencies": {
-		"@expo-google-fonts/bricolage-grotesque": "^0.4.1",
 		"@expo-google-fonts/hanken-grotesk": "^0.4.3",
-		"@expo-google-fonts/ibm-plex-mono": "^0.4.1",
 		"@expo/vector-icons": "^15.1.1",
 		"@react-native-async-storage/async-storage": "2.2.0",
 		"@react-native-community/datetimepicker": "9.1.0",

@@ -15,7 +15,7 @@ import { rideMode, RideMode } from '../../mock/repos/rideRepo';
 import TripListingCard from '../../components/TripListingCard';
 import ScreenHeader from '../../components/ScreenHeader';
 import EmptyState from '../../components/EmptyState';
-import Eyebrow from '../../components/Eyebrow';
+import GroupLabel from '../../components/GroupLabel';
 
 // Montra de todas as viagens ativas ainda não iniciadas — sem depender da
 // pesquisa. Filtros e ordenação são client-side; cada cartão leva ao detalhe.
@@ -111,7 +111,7 @@ export default function ExploreScreen() {
 			}}
 		>
 			<Text
-				className="font-sansMedium text-[12px]"
+				className="font-sansMedium text-body-xs"
 				style={{
 					color: active ? themeColors.card : themeColors.secondary,
 				}}
@@ -127,7 +127,6 @@ export default function ExploreScreen() {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<ScreenHeader
-				eyebrow="Explorar · viagens ativas"
 				title="Viagens a bater certo"
 				meta={
 					upcoming.length > 0
@@ -149,7 +148,7 @@ export default function ExploreScreen() {
 			</View>
 			<View className="flex-row items-center mb-1">
 				<Text
-					className="font-mono text-[10px] uppercase tracking-[2px] mr-2"
+					className="font-sansMedium text-body-xs mr-2"
 					style={{ color: themeColors.secondary }}
 				>
 					Ordenar
@@ -162,7 +161,7 @@ export default function ExploreScreen() {
 				).map((opt) => (
 					<Pressable key={opt.key} onPress={() => setSort(opt.key)}>
 						<Text
-							className="font-sansBold text-[12px] mr-3"
+							className="font-sansBold text-body-xs mr-3"
 							style={{
 								color:
 									sort === opt.key
@@ -195,10 +194,10 @@ export default function ExploreScreen() {
 						<View key={day}>
 							<View className="flex-row items-center mt-4 mb-3">
 								<View className="flex-1">
-									<Eyebrow>{day}</Eyebrow>
+									<GroupLabel>{day}</GroupLabel>
 								</View>
 								<Text
-									className="font-mono text-[10px] ml-3"
+									className="font-sansMedium text-body-xs ml-3"
 									style={{ color: themeColors.secondary }}
 								>
 									{items.length}

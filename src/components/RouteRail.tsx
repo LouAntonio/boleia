@@ -9,7 +9,7 @@ export type RailEnd = {
 
 // RouteRail — rail horizontal compacto: Origem (hora) —·—·— (hora) Destino.
 // O traço enche até `progress` e, em viagem, um ponto "em movimento" desliza
-// pela pista. Compacto o suficiente para o cupão do bilhete.
+// pela pista. Compacto o suficiente para o cartão de resultado.
 export default function RouteRail({
 	origin,
 	destination,
@@ -58,6 +58,7 @@ export default function RouteRail({
 							styles.car,
 							{
 								backgroundColor: fill,
+								borderColor: themeColors.card,
 								left: `${p * 100}%`,
 							},
 						]}
@@ -93,9 +94,8 @@ const styles = StyleSheet.create({
 		alignItems: 'flex-end',
 	},
 	time: {
-		fontFamily: 'IBMPlexMono_400Regular',
-		fontSize: 11,
-		letterSpacing: 0.3,
+		fontFamily: 'HankenGrotesk_500Medium',
+		fontSize: 12,
 	},
 	place: {
 		fontFamily: 'HankenGrotesk_700Bold',
@@ -128,6 +128,5 @@ const styles = StyleSheet.create({
 		borderRadius: 5,
 		marginLeft: -5,
 		borderWidth: 2,
-		borderColor: '#F7F3E7',
 	},
 });

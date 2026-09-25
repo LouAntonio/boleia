@@ -35,13 +35,13 @@ function Stat({
 			}
 		>
 			<Text
-				className="font-mono text-[16px]"
+				className="font-sansMedium text-label"
 				style={{ color: themeColors.laterite }}
 			>
 				{value}
 			</Text>
 			<Text
-				className="font-mono text-[9px] uppercase tracking-[2px] mt-1"
+				className="font-sansMedium text-body-xs mt-1"
 				style={{ color: themeColors.secondary }}
 			>
 				{label}
@@ -106,13 +106,13 @@ export default function PublicProfileScreen() {
 				</Pressable>
 				<View className="flex-1">
 					<Text
-						className="font-mono text-[10px] uppercase tracking-[3px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.laterite }}
 					>
 						Perfil público
 					</Text>
 					<Text
-						className="font-display text-[20px] -mt-0.5"
+						className="font-sansExtraBold text-title-secondary -mt-0.5"
 						style={{ color: themeColors.text }}
 					>
 						{user.firstName} {user.lastName}
@@ -126,7 +126,7 @@ export default function PublicProfileScreen() {
 			>
 				{/* Ficha de apresentação */}
 				<View
-					className="p-5 rounded-3xl border"
+					className="p-5 rounded-xl border"
 					style={{
 						borderColor: themeColors.border,
 						backgroundColor: themeColors.card,
@@ -142,27 +142,27 @@ export default function PublicProfileScreen() {
 							}}
 						>
 							<Text
-								className="font-display text-[26px]"
+								className="font-sansExtraBold text-title-primary"
 								style={{ color: themeColors.text }}
 							>
 								{initials(user.firstName, user.lastName)}
 							</Text>
 						</View>
 						<Text
-							className="font-sansBold text-[20px] mt-3"
+							className="font-sansBold text-title-secondary mt-3"
 							style={{ color: themeColors.text }}
 						>
 							{user.firstName} {user.lastName}
 						</Text>
 						<View className="flex-row items-center mt-1">
 							<Text
-								className="font-mono text-[15px] mr-1"
+								className="font-sansMedium text-label-small mr-1"
 								style={{ color: themeColors.laterite }}
 							>
 								★
 							</Text>
 							<Text
-								className="font-sansMedium text-[14px]"
+								className="font-sansMedium text-body-small"
 								style={{ color: themeColors.secondary }}
 							>
 								{rating}
@@ -206,7 +206,7 @@ export default function PublicProfileScreen() {
 					<View className="mt-6">
 						<SectionTitle>Viatura</SectionTitle>
 						<View
-							className="p-4 rounded-2xl border"
+							className="p-4 rounded-xl border"
 							style={{
 								borderColor: themeColors.border,
 								backgroundColor: themeColors.card,
@@ -215,19 +215,19 @@ export default function PublicProfileScreen() {
 							<View className="flex-row items-start justify-between">
 								<View className="flex-1 mr-3">
 									<Text
-										className="font-sansBold text-[16px]"
+										className="font-sansBold text-label"
 										style={{ color: themeColors.text }}
 									>
 										{veh.make} {veh.model}
 									</Text>
 									<Text
-										className="font-mono text-[12px] mt-0.5"
+										className="font-sansMedium text-body-xs mt-0.5"
 										style={{ color: themeColors.secondary }}
 									>
 										{veh.color} · {veh.plate}
 									</Text>
 									<Text
-										className="font-sans text-[12px] mt-1"
+										className="font-sans text-body-xs mt-1"
 										style={{ color: themeColors.secondary }}
 									>
 										{veh.seats} lugares de lotação
@@ -238,7 +238,7 @@ export default function PublicProfileScreen() {
 									style={{ borderColor: themeColors.mato }}
 								>
 									<Text
-										className="font-mono text-[9px] uppercase tracking-[1.5px]"
+										className="font-sansMedium text-body-xs"
 										style={{ color: themeColors.mato }}
 									>
 										Registada
@@ -253,7 +253,7 @@ export default function PublicProfileScreen() {
 					<SectionTitle>Avaliações ({reviews.length})</SectionTitle>
 					{reviews.length === 0 ? (
 						<Text
-							className="font-sans text-[13px]"
+							className="font-sans text-body-small"
 							style={{ color: themeColors.secondary }}
 						>
 							Ainda sem avaliações nesta rota.
@@ -262,7 +262,7 @@ export default function PublicProfileScreen() {
 						reviews.map((r) => (
 							<View
 								key={r.id}
-								className="rounded-2xl border mb-2 overflow-hidden"
+								className="rounded-xl border mb-2 overflow-hidden"
 								style={{
 									borderColor: themeColors.border,
 									backgroundColor: themeColors.card,
@@ -279,7 +279,7 @@ export default function PublicProfileScreen() {
 									<View className="flex-1 p-3.5">
 										<View className="flex-row items-center">
 											<Text
-												className="font-mono text-[14px] mr-2"
+												className="font-sansMedium text-body-small mr-2"
 												style={{
 													color: themeColors.laterite,
 												}}
@@ -287,7 +287,7 @@ export default function PublicProfileScreen() {
 												★ {r.rating}
 											</Text>
 											<Text
-												className="font-mono text-[11px]"
+												className="font-sansMedium text-body-xs"
 												style={{
 													color: themeColors.secondary,
 												}}
@@ -302,7 +302,7 @@ export default function PublicProfileScreen() {
 											</Text>
 										</View>
 										<Text
-											className="font-sans text-[13px] mt-1"
+											className="font-sans text-body-small mt-1"
 											style={{
 												color: themeColors.secondary,
 											}}

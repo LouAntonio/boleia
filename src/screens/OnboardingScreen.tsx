@@ -96,7 +96,7 @@ export default function OnboardingScreen() {
 	const flatListRef = useRef<Animated.FlatList<any>>(null);
 	const scrollX = useSharedValue(0);
 
-	const { themeColors, isDark } = useThemeColors();
+	const { themeColors } = useThemeColors();
 
 	const scrollHandler = useAnimatedScrollHandler({
 		onScroll: (event) => {
@@ -131,7 +131,7 @@ export default function OnboardingScreen() {
 				activeOpacity={0.7}
 			>
 				<Text
-					className="font-sansBold text-[13px] uppercase tracking-widest"
+					className="font-sansBold text-body-small"
 					style={{ color: themeColors.laterite }}
 				>
 					Saltar
@@ -171,7 +171,7 @@ export default function OnboardingScreen() {
 						<View className="items-center">
 							<Animated.Text
 								entering={FadeInDown.duration(600).delay(400)}
-								className="font-display text-[26px] text-center"
+								className="font-sansExtraBold text-title-primary text-center"
 								// eslint-disable-next-line react-native/no-inline-styles
 								style={{
 									color: themeColors.text,
@@ -189,10 +189,10 @@ export default function OnboardingScreen() {
 							/>
 							<Animated.Text
 								entering={FadeInDown.duration(600).delay(700)}
-								className="font-sans text-[15px] text-center leading-relaxed"
+								className="font-sans text-label-small text-center leading-relaxed"
 								// eslint-disable-next-line react-native/no-inline-styles
 								style={{
-									color: isDark ? '#C9C4B6' : '#4A4552',
+									color: themeColors.secondary,
 									paddingHorizontal: 20,
 									marginTop: 14,
 								}}
@@ -231,7 +231,7 @@ export default function OnboardingScreen() {
 						activeOpacity={0.8}
 					>
 						<Text
-							className="font-display text-[22px]"
+							className="font-sansExtraBold text-title-secondary"
 							// eslint-disable-next-line react-native/no-inline-styles
 							style={{ color: themeColors.text }}
 						>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { useThemeColors } from '../hooks/useThemeColors';
 import MapView, {
 	Marker,
 	Polyline,
@@ -38,6 +39,7 @@ export default function MapViewWrapper({
 	routeCoords = [],
 }: MapViewWrapperProps) {
 	const [isMapLoaded, setIsMapLoaded] = useState(false);
+	const { themeColors } = useThemeColors();
 
 	const handlePress = (e: MapPressEvent) => {
 		if (onPress) {
@@ -53,7 +55,7 @@ export default function MapViewWrapper({
 			{!isMapLoaded && (
 				<ActivityIndicator
 					size="large"
-					color="#FFD700"
+					color={themeColors.primary}
 					style={StyleSheet.absoluteFill}
 				/>
 			)}
@@ -72,13 +74,13 @@ export default function MapViewWrapper({
 							longitude: m.longitude,
 						}}
 						title={m.title}
-						pinColor="#FFD700"
+						pinColor={themeColors.primary}
 					/>
 				))}
 				{routeCoords.length > 1 && (
 					<Polyline
 						coordinates={routeCoords}
-						strokeColor="#FFD700"
+						strokeColor={themeColors.primary}
 						strokeWidth={4}
 					/>
 				)}

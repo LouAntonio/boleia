@@ -83,7 +83,7 @@ export default function TimePicker({
 				}}
 			>
 				<Text
-					className="font-mono text-[10px]"
+					className="font-sansMedium text-body-xs"
 					style={{
 						color: active
 							? themeColors.card
@@ -108,7 +108,7 @@ export default function TimePicker({
 				</View>
 				<View className="flex-1 ml-3">
 					<Text
-						className="font-mono text-[10px] uppercase tracking-[2px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.laterite }}
 					>
 						{label}
@@ -116,8 +116,8 @@ export default function TimePicker({
 					<Text
 						className={
 							value
-								? 'font-sansBold text-[15px] mt-0.5'
-								: 'font-sans text-[15px] mt-0.5'
+								? 'font-sansBold text-label-small mt-0.5'
+								: 'font-sans text-label-small mt-0.5'
 						}
 						style={{
 							color: value
@@ -165,7 +165,7 @@ export default function TimePicker({
 
 						<View className="flex-row items-center justify-between mb-2">
 							<Text
-								className="font-display text-[18px]"
+								className="font-sansExtraBold text-title-tertiary"
 								style={{ color: themeColors.text }}
 							>
 								Escolhe a hora
@@ -205,7 +205,7 @@ export default function TimePicker({
 										}}
 									>
 										<Text
-											className="font-sansMedium text-[12px] uppercase tracking-wider"
+											className="font-sansMedium text-body-xs"
 											style={{
 												color: active
 													? themeColors.card
@@ -271,7 +271,7 @@ export default function TimePicker({
 								}}
 							>
 								<Text
-									className="font-mono text-[22px]"
+									className="font-sansMedium text-title-secondary"
 									style={{ color: themeColors.text }}
 								>
 									{pad2(dh)}:{pad2(dm)}
@@ -280,7 +280,7 @@ export default function TimePicker({
 						</View>
 
 						<Text
-							className="font-mono text-[10px] uppercase tracking-[2px] text-center mt-3"
+							className="font-sansMedium text-body-xs text-center mt-3"
 							style={{ color: themeColors.secondary }}
 						>
 							{step === 'h'
@@ -298,7 +298,7 @@ export default function TimePicker({
 								style={{ borderColor: themeColors.border }}
 							>
 								<Text
-									className="font-sansMedium text-[12px] uppercase tracking-wider"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.secondary }}
 								>
 									Agora
@@ -310,7 +310,7 @@ export default function TimePicker({
 								style={{ backgroundColor: themeColors.text }}
 							>
 								<Text
-									className="font-sansMedium text-[12px] uppercase tracking-wider"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.card }}
 								>
 									Aplicar {pad2(dh)}:{pad2(dm)}

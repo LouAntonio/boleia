@@ -9,9 +9,9 @@ import {
 } from 'react-native';
 import { useThemeColors } from '../hooks/useThemeColors';
 
-// Botão do tab bar em pílula — o item ativo assenta numa pastilha sólida
-// (tinta do tema) e o inativo fica transparente. Referência estável para
-// `tabBarButton`, sem recriar o componente a cada render.
+// Botão do tab bar em pílula — o item activo assenta em `accent/bg/weak`
+// com o ícone e o rótulo em accent; o inactivo fica neutro. Alvo de toque
+// ≥44px. Referência estável para `tabBarButton`, sem recriar a cada render.
 export default function PillTabBarButton({
 	accessibilityState,
 	style,
@@ -33,7 +33,7 @@ export default function PillTabBarButton({
 				styles.pill,
 				{
 					backgroundColor: selected
-						? themeColors.text
+						? themeColors.accentWeak
 						: 'transparent',
 				},
 			]}

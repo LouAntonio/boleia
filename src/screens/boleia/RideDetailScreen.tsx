@@ -10,7 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import BoleiaButton from '../../components/BoleiaButton';
-import TicketCard from '../../components/TicketCard';
+import Card from '../../components/Card';
 import StickyCta from '../../components/StickyCta';
 import SectionTitle from '../../components/SectionTitle';
 import RouteStrip, { StripStop } from '../../components/RouteStrip';
@@ -21,9 +21,6 @@ import BookingStub from '../../components/BookingStub';
 import RidePeople from '../../components/RidePeople';
 import { useDbStore } from '../../mock/db';
 import { fmtKz, hhmm, durationBetween, initials } from '../../mock/helpers';
-
-// Tinta fixa do avatar — igual às bandas dos bilhetes nos dois temas.
-const ASFALTO = '#17141B';
 
 export default function RideDetailScreen() {
 	const navigation =
@@ -173,14 +170,14 @@ export default function RideDetailScreen() {
 						footer={
 							myBooking.status === 'pedido' ? (
 								<Text
-									className="font-sans text-[12px]"
+									className="font-sans text-body-xs"
 									style={{ color: themeColors.laterite }}
 								>
 									O motorista confirma em ~6s (demo).
 								</Text>
 							) : myBooking.status === 'confirmada' ? (
 								<Text
-									className="font-sans text-[12px]"
+									className="font-sans text-body-xs"
 									style={{ color: themeColors.secondary }}
 								>
 									Apresenta o teu número ao embarcar.
@@ -237,7 +234,7 @@ export default function RideDetailScreen() {
 				className="flex-1 px-5"
 				contentContainerStyle={{ paddingBottom: 48 }}
 			>
-				<TicketCard accent="laterite" padded={false}>
+				<Card tone="warning" padded={false}>
 					<View className="p-4">
 						<View className="flex-row items-center justify-between mb-1">
 							<View
@@ -245,7 +242,7 @@ export default function RideDetailScreen() {
 								style={{ borderColor: themeColors.border }}
 							>
 								<Text
-									className="font-mono text-[9px] uppercase tracking-[1px]"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.laterite }}
 								>
 									{rideMode(ride) === 'interprovincial'
@@ -255,7 +252,7 @@ export default function RideDetailScreen() {
 							</View>
 							<View className="flex-row items-center">
 								<Text
-									className="font-mono text-[10px] uppercase tracking-[1px] mr-2"
+									className="font-sansMedium text-body-xs mr-2"
 									style={{ color: themeColors.secondary }}
 								>
 									{dateLabel} · {hhmm(ride.departure)}
@@ -264,7 +261,7 @@ export default function RideDetailScreen() {
 							</View>
 						</View>
 						<Text
-							className="font-display text-[21px] leading-7"
+							className="font-sansExtraBold text-title-secondary leading-7"
 							style={{ color: themeColors.text }}
 							numberOfLines={1}
 						>
@@ -283,12 +280,12 @@ export default function RideDetailScreen() {
 							style={{ borderColor: themeColors.border }}
 						>
 							<Text
-								className="font-mono text-[14px]"
+								className="font-sansMedium text-body-small"
 								style={{ color: themeColors.text }}
 							>
 								{fmtKz(ride.pricePerSeat)}
 								<Text
-									className="font-sans text-[11px]"
+									className="font-sans text-body-xs"
 									style={{ color: themeColors.secondary }}
 								>
 									{' '}
@@ -296,7 +293,7 @@ export default function RideDetailScreen() {
 								</Text>
 							</Text>
 							<Text
-								className="font-mono text-[12px]"
+								className="font-sansMedium text-body-xs"
 								style={{ color: themeColors.secondary }}
 							>
 								{durationBetween(ride.departure, ride.arrival)}{' '}
@@ -307,23 +304,23 @@ export default function RideDetailScreen() {
 							</Text>
 						</View>
 					</View>
-				</TicketCard>
+				</Card>
 
 				{driver ? (
 					<View className="mt-4">
-						<TicketCard>
+						<Card>
 							<View className="flex-row items-center">
 								<View
 									className="w-11 h-11 rounded-full items-center justify-center"
 									style={{
-										backgroundColor: themeColors.primary,
-										borderWidth: 2,
-										borderColor: themeColors.laterite,
+										backgroundColor: themeColors.accentWeak,
+										borderWidth: 1,
+										borderColor: themeColors.border,
 									}}
 								>
 									<Text
-										className="font-display text-[14px]"
-										style={{ color: ASFALTO }}
+										className="font-sansExtraBold text-body-small"
+										style={{ color: themeColors.primary }}
 									>
 										{initials(
 											driver.firstName,
@@ -333,14 +330,14 @@ export default function RideDetailScreen() {
 								</View>
 								<View className="flex-1 ml-3">
 									<Text
-										className="font-sansBold text-[14px]"
+										className="font-sansBold text-body-small"
 										style={{ color: themeColors.text }}
 										numberOfLines={1}
 									>
 										{driver.firstName} {driver.lastName}
 									</Text>
 									<Text
-										className="font-mono text-[11px] mt-0.5"
+										className="font-sansMedium text-body-xs mt-0.5"
 										style={{
 											color: themeColors.secondary,
 										}}
@@ -363,7 +360,7 @@ export default function RideDetailScreen() {
 									}
 								/>
 							</View>
-						</TicketCard>
+						</Card>
 					</View>
 				) : null}
 
@@ -378,11 +375,11 @@ export default function RideDetailScreen() {
 
 				{/* Reserva */}
 				<View className="mt-6">
-					<TicketCard accent="laterite">
+					<Card tone="warning">
 						<SectionTitle>Pedir boleia</SectionTitle>
 
 						<Text
-							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5"
+							className="font-sansMedium text-body-xs mb-1.5"
 							style={{ color: themeColors.laterite }}
 						>
 							Sobes na origem
@@ -392,7 +389,7 @@ export default function RideDetailScreen() {
 							style={{ backgroundColor: themeColors.background }}
 						>
 							<Text
-								className="font-sansMedium text-[12px]"
+								className="font-sansMedium text-body-xs"
 								style={{ color: themeColors.text }}
 							>
 								↑ {stops[0].name}
@@ -400,7 +397,7 @@ export default function RideDetailScreen() {
 						</View>
 
 						<Text
-							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
+							className="font-sansMedium text-body-xs mb-1.5 mt-3"
 							style={{ color: themeColors.laterite }}
 						>
 							Onde desces
@@ -421,7 +418,7 @@ export default function RideDetailScreen() {
 										}}
 									>
 										<Text
-											className="font-sansMedium text-[12px]"
+											className="font-sansMedium text-body-xs"
 											style={{
 												color: active
 													? themeColors.card
@@ -436,7 +433,7 @@ export default function RideDetailScreen() {
 						</View>
 
 						<Text
-							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
+							className="font-sansMedium text-body-xs mb-1.5 mt-3"
 							style={{ color: themeColors.laterite }}
 						>
 							Lugares ({available} livre
@@ -452,7 +449,7 @@ export default function RideDetailScreen() {
 								/>
 							)}
 							<Text
-								className="font-mono text-[26px] mx-6"
+								className="font-sansMedium text-title-primary mx-6"
 								style={{ color: themeColors.text }}
 							>
 								{seats}
@@ -465,7 +462,7 @@ export default function RideDetailScreen() {
 							/>
 							<View className="flex-1 items-end">
 								<Text
-									className="font-mono text-[18px]"
+									className="font-sansMedium text-title-tertiary"
 									style={{ color: themeColors.text }}
 								>
 									{fmtKz(total)}
@@ -474,7 +471,7 @@ export default function RideDetailScreen() {
 						</View>
 
 						<Text
-							className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5 mt-3"
+							className="font-sansMedium text-body-xs mb-1.5 mt-3"
 							style={{ color: themeColors.laterite }}
 						>
 							Como pagas
@@ -490,7 +487,7 @@ export default function RideDetailScreen() {
 									color={themeColors.text}
 								/>
 								<Text
-									className="font-sansMedium text-[14px] ml-2"
+									className="font-sansMedium text-body-small ml-2"
 									style={{ color: themeColors.text }}
 								>
 									Multicaixa Express
@@ -503,7 +500,7 @@ export default function RideDetailScreen() {
 							/>
 						</View>
 						<Text
-							className="font-sans text-[12px] mt-1.5"
+							className="font-sans text-body-xs mt-1.5"
 							style={{ color: themeColors.secondary }}
 						>
 							Pagas por Multicaixa Express quando confirmares o
@@ -513,7 +510,7 @@ export default function RideDetailScreen() {
 						{result ? (
 							result.ok ? (
 								<View
-									className="mt-4 p-4 rounded-2xl border flex-row items-center"
+									className="mt-4 p-4 rounded-xl border flex-row items-center"
 									style={{
 										borderColor: themeColors.mato,
 										backgroundColor: themeColors.card,
@@ -526,13 +523,13 @@ export default function RideDetailScreen() {
 									/>
 									<View className="flex-1 ml-3">
 										<Text
-											className="font-sansBold text-[15px]"
+											className="font-sansBold text-label-small"
 											style={{ color: themeColors.mato }}
 										>
 											Pedido enviado
 										</Text>
 										<Text
-											className="font-sans text-[13px] mt-0.5"
+											className="font-sans text-body-small mt-0.5"
 											style={{
 												color: themeColors.secondary,
 											}}
@@ -544,7 +541,7 @@ export default function RideDetailScreen() {
 								</View>
 							) : (
 								<Text
-									className="font-sans text-[13px] mt-4"
+									className="font-sans text-body-small mt-4"
 									style={{ color: themeColors.error }}
 								>
 									{result.error}
@@ -555,20 +552,20 @@ export default function RideDetailScreen() {
 						{!result && passengerBlocked ? (
 							<View className="mt-5">
 								<View
-									className="rounded-2xl border p-4"
+									className="rounded-xl border p-4"
 									style={{
 										borderColor: themeColors.laterite,
 										backgroundColor: themeColors.card,
 									}}
 								>
 									<Text
-										className="font-sansBold text-[14px]"
+										className="font-sansBold text-body-small"
 										style={{ color: themeColors.text }}
 									>
 										Verifica a tua identidade
 									</Text>
 									<Text
-										className="font-sans text-[12px] mt-1 leading-5"
+										className="font-sans text-body-xs mt-1 leading-5"
 										style={{
 											color: themeColors.secondary,
 										}}
@@ -587,7 +584,7 @@ export default function RideDetailScreen() {
 								</View>
 							</View>
 						) : null}
-					</TicketCard>
+					</Card>
 				</View>
 			</ScrollView>
 			{!result ? (
@@ -595,7 +592,7 @@ export default function RideDetailScreen() {
 					<View className="flex-row items-center">
 						<View className="flex-1 mr-3">
 							<Text
-								className="font-mono text-[9px] uppercase tracking-[2px]"
+								className="font-sansMedium text-body-xs"
 								style={{
 									color: themeColors.card,
 									opacity: 0.7,
@@ -604,13 +601,13 @@ export default function RideDetailScreen() {
 								Total
 							</Text>
 							<Text
-								className="font-mono text-[18px] mt-0.5"
+								className="font-sansMedium text-title-tertiary mt-0.5"
 								style={{ color: themeColors.card }}
 							>
 								{fmtKz(total)}
 							</Text>
 							<Text
-								className="font-mono text-[10px] mt-0.5"
+								className="font-sansMedium text-body-xs mt-0.5"
 								style={{
 									color: themeColors.card,
 									opacity: 0.7,
@@ -660,13 +657,13 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 			</Pressable>
 			<View className="flex-1">
 				<Text
-					className="font-mono text-[10px] uppercase tracking-[3px]"
+					className="font-sansMedium text-body-xs"
 					style={{ color: themeColors.laterite }}
 				>
 					Detalhe da viagem
 				</Text>
 				<Text
-					className="font-display text-[20px] -mt-0.5"
+					className="font-sansExtraBold text-title-secondary -mt-0.5"
 					style={{ color: themeColors.text }}
 				>
 					{title}
@@ -685,7 +682,7 @@ function Stepper({ label, onPress }: { label: string; onPress: () => void }) {
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<Text
-				className="font-display text-[18px]"
+				className="font-sansExtraBold text-title-tertiary"
 				style={{ color: themeColors.text }}
 			>
 				{label}

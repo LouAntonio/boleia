@@ -3,14 +3,11 @@ import { View, Text, Pressable } from 'react-native';
 import { Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { hhmm, fmtKz, durationBetween } from '../mock/helpers';
-import { rideMode } from '../mock/repos/rideRepo';
 import RouteStrip, { StripStop } from './RouteStrip';
 import StatusStamp from './StatusStamp';
 
-const ASFALTO = '#17141B';
-
-// Cartão de viagem compacto Boleia viva — superfície cheia com sombra,
-// selo de modo em pastilha, rail de paragens e linha de preço.
+// Cartão de viagem com rail de paragens — mesma gramática do ResultCard/Trip,
+// com o itinerário detalhado. Estados via `StatusStamp` (sempre com rótulo).
 export default function TripStripCard({
 	ride,
 	progress,
@@ -46,11 +43,11 @@ export default function TripStripCard({
 	return (
 		<Pressable
 			onPress={onPress}
-			className="rounded-2xl overflow-hidden"
+			accessibilityRole="button"
+			className="rounded-xl overflow-hidden"
 			style={({ pressed }) => ({
 				backgroundColor: themeColors.card,
 				opacity: pressed ? 0.9 : 1,
-				transform: [{ scale: pressed ? 0.99 : 1 }],
 				shadowColor: '#000',
 				shadowOpacity: 0.08,
 				shadowOffset: { width: 0, height: 4 },
@@ -61,34 +58,17 @@ export default function TripStripCard({
 			<View className="p-4">
 				<View className="flex-row items-center justify-between mb-1">
 					<Text
-						className="font-display text-[17px] flex-1 mr-2"
+						className="font-sansBold text-label flex-1 mr-2"
 						style={{ color: themeColors.text }}
 						numberOfLines={1}
 					>
 						{ride.routeName}
 					</Text>
-					<View className="flex-row items-center">
-						<View
-							className="rounded-full px-2.5 py-1 mr-2"
-							style={{
-								backgroundColor: themeColors.background,
-							}}
-						>
-							<Text
-								className="font-mono text-[9px] uppercase tracking-[1px]"
-								style={{ color: themeColors.laterite }}
-							>
-								{rideMode(ride) === 'interprovincial'
-									? 'Interprovincial'
-									: 'Intermunicipal'}
-							</Text>
-						</View>
-						<StatusStamp status={ride.status} />
-					</View>
+					<StatusStamp status={ride.status} />
 				</View>
 				<View className="flex-row items-center justify-between mb-3">
 					<Text
-						className="font-sans text-[12px]"
+						className="font-sans text-body-small"
 						style={{ color: themeColors.secondary }}
 					>
 						Saída{' '}
@@ -99,17 +79,7 @@ export default function TripStripCard({
 						})}
 					</Text>
 					{reserved ? (
-						<View
-							className="rounded-full px-2.5 py-1"
-							style={{ backgroundColor: themeColors.primary }}
-						>
-							<Text
-								className="font-mono text-[9px] uppercase tracking-[1px]"
-								style={{ color: ASFALTO }}
-							>
-								Já tens reserva
-							</Text>
-						</View>
+						<StatusStamp status="confirmada" label="Reservado" />
 					) : null}
 				</View>
 
@@ -125,12 +95,12 @@ export default function TripStripCard({
 					style={{ borderColor: themeColors.border }}
 				>
 					<Text
-						className="font-display text-[17px]"
+						className="font-sansBold text-label"
 						style={{ color: themeColors.text }}
 					>
 						{fmtKz(ride.pricePerSeat)}
 						<Text
-							className="font-sans text-[11px]"
+							className="font-sans text-body-xs"
 							style={{ color: themeColors.secondary }}
 						>
 							{' '}
@@ -139,13 +109,13 @@ export default function TripStripCard({
 					</Text>
 					<View className="flex-row items-center">
 						<Text
-							className="font-mono text-[12px] mr-3"
+							className="font-sans text-body-small mr-3"
 							style={{ color: themeColors.secondary }}
 						>
 							{durationBetween(ride.departure, ride.arrival)}
 						</Text>
 						<Text
-							className="font-sansMedium text-[11px]"
+							className="font-sansMedium text-body-small"
 							style={{
 								color:
 									seatsLeft > 0

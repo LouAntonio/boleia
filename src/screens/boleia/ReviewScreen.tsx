@@ -77,13 +77,13 @@ export default function ReviewScreen() {
 				</Pressable>
 				<View className="flex-1">
 					<Text
-						className="font-mono text-[10px] uppercase tracking-[3px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.laterite }}
 					>
 						{subjectLabel}
 					</Text>
 					<Text
-						className="font-display text-[20px] -mt-0.5"
+						className="font-sansExtraBold text-title-secondary -mt-0.5"
 						style={{ color: themeColors.text }}
 					>
 						Como correu a viagem?
@@ -102,7 +102,7 @@ export default function ReviewScreen() {
 						}}
 					>
 						<Text
-							className="font-display text-[20px]"
+							className="font-sansExtraBold text-title-secondary"
 							style={{ color: themeColors.text }}
 						>
 							{target
@@ -111,7 +111,7 @@ export default function ReviewScreen() {
 						</Text>
 					</View>
 					<Text
-						className="font-sansBold text-[18px] mt-3"
+						className="font-sansBold text-title-tertiary mt-3"
 						style={{ color: themeColors.text }}
 					>
 						{target
@@ -119,7 +119,7 @@ export default function ReviewScreen() {
 							: '—'}
 					</Text>
 					<Text
-						className="font-mono text-[12px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.secondary }}
 					>
 						{ride?.routeName ?? ''}
@@ -128,7 +128,7 @@ export default function ReviewScreen() {
 
 				{already || done ? (
 					<View
-						className="mt-10 items-center p-5 rounded-3xl border"
+						className="mt-10 items-center p-5 rounded-xl border"
 						style={{
 							borderColor: themeColors.mato,
 							backgroundColor: themeColors.card,
@@ -140,19 +140,19 @@ export default function ReviewScreen() {
 							color={themeColors.mato}
 						/>
 						<Text
-							className="font-mono text-[10px] uppercase tracking-[3px] mt-2"
+							className="font-sansMedium text-body-xs mt-2"
 							style={{ color: themeColors.mato }}
 						>
 							Recibo
 						</Text>
 						<Text
-							className="font-sansBold text-[16px] mt-0.5"
+							className="font-sansBold text-label mt-0.5"
 							style={{ color: themeColors.mato }}
 						>
 							Avaliação guardada
 						</Text>
 						<Text
-							className="font-sans text-[13px] text-center mt-1"
+							className="font-sans text-body-small text-center mt-1"
 							style={{ color: themeColors.secondary }}
 						>
 							Obrigado por ajudar a comunidade a viajar com gente
@@ -162,14 +162,14 @@ export default function ReviewScreen() {
 				) : (
 					<View className="mt-8">
 						<View
-							className="p-5 rounded-3xl border"
+							className="p-5 rounded-xl border"
 							style={{
 								borderColor: themeColors.border,
 								backgroundColor: themeColors.card,
 							}}
 						>
 							<Text
-								className="font-mono text-[10px] uppercase tracking-[3px]"
+								className="font-sansMedium text-body-xs"
 								style={{ color: themeColors.laterite }}
 							>
 								A tua nota
@@ -208,7 +208,7 @@ export default function ReviewScreen() {
 								))}
 							</View>
 							<Text
-								className="font-mono text-[11px] text-center mt-2"
+								className="font-sansMedium text-body-xs text-center mt-2"
 								style={{ color: themeColors.secondary }}
 							>
 								{rating} de 5{' '}
@@ -226,13 +226,13 @@ export default function ReviewScreen() {
 
 							<View className="flex-row items-center justify-between mt-5">
 								<Text
-									className="font-mono text-[10px] uppercase tracking-[3px]"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.secondary }}
 								>
 									Comentário · opcional
 								</Text>
 								<Text
-									className="font-mono text-[10px]"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.border }}
 								>
 									{comment.length}/{MAX_COMMENT}
@@ -253,7 +253,7 @@ export default function ReviewScreen() {
 									multiline
 									placeholder="O que te marcou na viagem?"
 									placeholderTextColor={themeColors.border}
-									className="py-3 font-sans text-[14px]"
+									className="py-3 font-sans text-body-small"
 									style={{
 										color: themeColors.text,
 										minHeight: 96,

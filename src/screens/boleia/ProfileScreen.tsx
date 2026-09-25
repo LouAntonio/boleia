@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { onBand } from '../../store/colors';
 import { useSessionUser, useSessionUserId } from '../../hooks/useSessionUser';
 import { useAppStore } from '../../store/appStore';
 import { useThemeStore, ThemeMode } from '../../store/themeStore';
@@ -22,9 +23,7 @@ import { statusMeta, StatusTone } from '../../utils/status';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
-import Perforation from '../../components/Perforation';
-import Eyebrow from '../../components/Eyebrow';
-import QRStamp from '../../components/QRStamp';
+import SectionTitle from '../../components/SectionTitle';
 import { Ionicons } from '@expo/vector-icons';
 import { navigationRef } from '../../lib/navigationRef';
 import { clearAuthToken } from '../../lib/api';
@@ -37,11 +36,6 @@ import { Eligibility, fetchEligibility } from '../../lib/eligibility';
 import BoleiaButton from '../../components/BoleiaButton';
 
 // Tinta de leitura sobre as bandas tingidas — mesmos fixos do BookingStub.
-// As bandas ativas usam os tons claros nos DOIS temas: texto CELU passa AA.
-const CELU = '#F7F3E7';
-const ASFALTO = '#17141B';
-const BAND_LATERITE = '#B4531F';
-const BAND_MATO = '#1F7A5B';
 
 const THEMES: { mode: ThemeMode; label: string }[] = [
 	{ mode: 'light', label: 'Claro' },
@@ -72,13 +66,13 @@ function PanelStat({
 			}
 		>
 			<Text
-				className="font-mono text-[14px]"
+				className="font-sansMedium text-body-small"
 				style={{ color: themeColors.text }}
 			>
 				{value}
 			</Text>
 			<Text
-				className="font-mono text-[9px] uppercase tracking-[2px] mt-1"
+				className="font-sansMedium text-body-xs mt-1"
 				style={{ color: themeColors.secondary }}
 			>
 				{label}
@@ -109,7 +103,7 @@ function VerificationStamp({ status }: { status: string }) {
 				style={{ backgroundColor: tint }}
 			/>
 			<Text
-				className="font-mono text-[9px] uppercase tracking-[1.5px]"
+				className="font-sansMedium text-body-xs"
 				style={{ color: themeColors.secondary }}
 			>
 				{meta.label}
@@ -141,7 +135,7 @@ function RolePanel({
 }) {
 	const { themeColors } = useThemeColors();
 	const bandBg = active ? band : themeColors.border;
-	const bandFg = active ? CELU : themeColors.secondary;
+	const bandFg = active ? onBand(themeColors, band) : themeColors.secondary;
 
 	return (
 		<Animated.View
@@ -149,7 +143,7 @@ function RolePanel({
 			className="mb-4"
 		>
 			<View
-				className="rounded-3xl overflow-hidden"
+				className="rounded-xl overflow-hidden"
 				style={{
 					backgroundColor: themeColors.card,
 					shadowColor: '#000',
@@ -175,13 +169,13 @@ function RolePanel({
 					</View>
 					<View className="flex-1 ml-3">
 						<Text
-							className="font-display text-[17px]"
+							className="font-sansExtraBold text-label"
 							style={{ color: bandFg }}
 						>
 							{title}
 						</Text>
 						<Text
-							className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
+							className="font-sansMedium text-body-xs mt-0.5"
 							style={{ color: bandFg, opacity: 0.85 }}
 						>
 							{subtitle}
@@ -196,7 +190,7 @@ function RolePanel({
 							}}
 						>
 							<Text
-								className="font-mono text-[10px] uppercase tracking-[2px]"
+								className="font-sansMedium text-body-xs"
 								style={{ color: bandFg }}
 							>
 								Ativo
@@ -204,7 +198,7 @@ function RolePanel({
 						</View>
 					) : (
 						<Text
-							className="font-mono text-[9px] uppercase tracking-[1.5px]"
+							className="font-sansMedium text-body-xs"
 							style={{ color: themeColors.secondary }}
 						>
 							Toca para ativar
@@ -245,7 +239,7 @@ function ReciboRow({
 	return (
 		<View className="flex-row items-center justify-between py-1.5">
 			<Text
-				className="font-sans text-[13px]"
+				className="font-sans text-body-small"
 				style={{
 					color: muted ? themeColors.secondary : themeColors.text,
 				}}
@@ -253,7 +247,7 @@ function ReciboRow({
 				{label}
 			</Text>
 			<Text
-				className="font-mono text-[13px]"
+				className="font-sansMedium text-body-small"
 				style={{
 					color: muted ? themeColors.secondary : themeColors.text,
 				}}
@@ -409,21 +403,21 @@ export default function ProfileScreen() {
 							}}
 						>
 							<Text
-								className="font-display text-[20px]"
-								style={{ color: ASFALTO }}
+								className="font-sansExtraBold text-title-secondary"
+								style={{ color: themeColors.onPrimary }}
 							>
 								{me ? initials(me.firstName, me.lastName) : '?'}
 							</Text>
 						</View>
 						<View className="flex-1 ml-3">
 							<Text
-								className="font-mono text-[10px] uppercase tracking-[3px]"
+								className="font-sansMedium text-body-xs"
 								style={{ color: themeColors.card }}
 							>
 								Sócio Boleia
 							</Text>
 							<Text
-								className="font-display text-[22px] -mt-0.5"
+								className="font-sansExtraBold text-title-secondary -mt-0.5"
 								style={{ color: themeColors.card }}
 								numberOfLines={1}
 							>
@@ -433,13 +427,13 @@ export default function ProfileScreen() {
 					</View>
 					<View className="flex-row items-center mt-3">
 						<Text
-							className="font-mono text-[15px] mr-1.5"
+							className="font-sansMedium text-label-small mr-1.5"
 							style={{ color: themeColors.primary }}
 						>
 							★
 						</Text>
 						<Text
-							className="font-sansMedium text-[13px]"
+							className="font-sansMedium text-body-small"
 							style={{ color: themeColors.card }}
 						>
 							{rating}
@@ -448,7 +442,7 @@ export default function ProfileScreen() {
 								: ''}
 						</Text>
 						<Text
-							className="font-mono text-[10px] uppercase tracking-[2px] ml-3"
+							className="font-sansMedium text-body-xs ml-3"
 							style={{ color: themeColors.card, opacity: 0.7 }}
 						>
 							desde {since}
@@ -456,10 +450,10 @@ export default function ProfileScreen() {
 					</View>
 				</View>
 
-				{/* Bilhete de sócio */}
+				{/* Cartão de sócio */}
 				<Animated.View entering={FadeInDown.duration(260)}>
 					<View
-						className="rounded-3xl overflow-hidden -mt-7"
+						className="rounded-xl overflow-hidden -mt-7"
 						style={{
 							backgroundColor: themeColors.card,
 							shadowColor: '#000',
@@ -471,16 +465,27 @@ export default function ProfileScreen() {
 					>
 						<View className="px-4 py-4">
 							<View className="flex-row items-center">
-								<QRStamp seed={sessionUserId} size={34} />
+								<View
+									className="w-9 h-9 rounded-full items-center justify-center"
+									style={{
+										backgroundColor: themeColors.accentWeak,
+									}}
+								>
+									<Ionicons
+										name="shield-checkmark-outline"
+										size={18}
+										color={themeColors.primary}
+									/>
+								</View>
 								<View className="flex-1 ml-3">
 									<Text
-										className="font-mono text-[9px] uppercase tracking-[2px]"
+										className="font-sansMedium text-body-xs"
 										style={{ color: themeColors.secondary }}
 									>
 										Sócio desde
 									</Text>
 									<Text
-										className="font-mono text-[11px] mt-0.5"
+										className="font-sansMedium text-body-xs mt-0.5"
 										style={{ color: themeColors.text }}
 									>
 										{since}
@@ -488,13 +493,13 @@ export default function ProfileScreen() {
 								</View>
 								<View className="items-end">
 									<Text
-										className="font-mono text-[9px] uppercase tracking-[2px]"
+										className="font-sansMedium text-body-xs"
 										style={{ color: themeColors.secondary }}
 									>
 										Nº
 									</Text>
 									<Text
-										className="font-mono text-[11px] mt-0.5"
+										className="font-sansMedium text-body-xs mt-0.5"
 										style={{ color: themeColors.text }}
 									>
 										{me ? maskPhone(me.phone) : '—'}
@@ -507,13 +512,13 @@ export default function ProfileScreen() {
 
 				{/* Papéis */}
 				<View className="mt-6 mb-4">
-					<Eyebrow>Uma conta · dois papéis</Eyebrow>
+					<SectionTitle>Uma conta · dois papéis</SectionTitle>
 				</View>
 
 				{/* Passageiro */}
 				<RolePanel
 					active={currentRole === 'passenger'}
-					band={BAND_LATERITE}
+					band={themeColors.laterite}
 					icon="person"
 					title="Passageiro"
 					subtitle="Viagens e reservas"
@@ -534,12 +539,12 @@ export default function ProfileScreen() {
 						})}
 					>
 						<Ionicons
-							name="ticket-outline"
+							name="card-outline"
 							size={15}
 							color={themeColors.text}
 						/>
 						<Text
-							className="font-sansMedium text-[12px] flex-1 ml-2"
+							className="font-sansMedium text-body-xs flex-1 ml-2"
 							style={{ color: themeColors.text }}
 						>
 							Ver reservas
@@ -555,7 +560,7 @@ export default function ProfileScreen() {
 				{/* Motorista */}
 				<RolePanel
 					active={currentRole === 'driver'}
-					band={BAND_MATO}
+					band={themeColors.success}
 					icon="car"
 					title="Motorista"
 					subtitle="Documentos e viatura"
@@ -580,7 +585,7 @@ export default function ProfileScreen() {
 							})}
 						>
 							<Text
-								className="font-sansMedium text-[13px]"
+								className="font-sansMedium text-body-small"
 								style={{ color: themeColors.text }}
 							>
 								BI e carta de condução
@@ -595,7 +600,7 @@ export default function ProfileScreen() {
 							})}
 						>
 							<Text
-								className="font-sansMedium text-[13px]"
+								className="font-sansMedium text-body-small"
 								style={{ color: themeColors.text }}
 							>
 								Viatura
@@ -606,7 +611,7 @@ export default function ProfileScreen() {
 					{me?.vehicle?.status !== 'verificado' &&
 					vehicleStamp !== 'verificado' ? (
 						<Text
-							className="font-sans text-[12px] mt-2"
+							className="font-sans text-body-xs mt-2"
 							style={{ color: themeColors.secondary }}
 						>
 							Regista a viatura para publicar viagens.
@@ -619,9 +624,9 @@ export default function ProfileScreen() {
 					<Animated.View
 						entering={FadeInDown.delay(200).duration(260)}
 					>
-						<Eyebrow>Recibo de ganhos</Eyebrow>
+						<SectionTitle>Recibo de ganhos</SectionTitle>
 						<View
-							className="rounded-3xl overflow-hidden mt-4"
+							className="rounded-xl overflow-hidden mt-4"
 							style={{
 								backgroundColor: themeColors.card,
 								shadowColor: '#000',
@@ -636,25 +641,34 @@ export default function ProfileScreen() {
 								style={{ backgroundColor: themeColors.primary }}
 							>
 								<Text
-									className="font-mono text-[9px] uppercase tracking-[2px]"
-									style={{ color: ASFALTO, opacity: 0.75 }}
+									className="font-sansMedium text-body-xs"
+									style={{
+										color: themeColors.onPrimary,
+										opacity: 0.75,
+									}}
 								>
 									Carteira do motorista
 								</Text>
 								<Text
-									className="font-display text-[26px] mt-1"
-									style={{ color: ASFALTO }}
+									className="font-sansExtraBold text-title-primary mt-1"
+									style={{ color: themeColors.onPrimary }}
 								>
 									{fmtKz(aReceber)}
 								</Text>
 								<Text
-									className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
-									style={{ color: ASFALTO, opacity: 0.75 }}
+									className="font-sansMedium text-body-xs mt-0.5"
+									style={{
+										color: themeColors.onPrimary,
+										opacity: 0.75,
+									}}
 								>
 									Por receber
 								</Text>
 							</View>
-							<Perforation flush />
+							<View
+								className="border-t"
+								style={{ borderColor: themeColors.border }}
+							/>
 							{totalViagens > 0 ? (
 								<View className="px-4 pt-3 pb-4">
 									<ReciboRow
@@ -673,13 +687,13 @@ export default function ProfileScreen() {
 										}}
 									>
 										<Text
-											className="font-sansBold text-[13px]"
+											className="font-sansBold text-body-small"
 											style={{ color: themeColors.text }}
 										>
 											A receber
 										</Text>
 										<Text
-											className="font-mono text-[14px]"
+											className="font-sansMedium text-body-small"
 											style={{ color: themeColors.text }}
 										>
 											{fmtKz(aReceber)}
@@ -689,7 +703,7 @@ export default function ProfileScreen() {
 							) : (
 								<View className="px-4 pt-3 pb-4">
 									<Text
-										className="font-sans text-[12px] leading-4"
+										className="font-sans text-body-xs leading-4"
 										style={{ color: themeColors.secondary }}
 									>
 										Ainda sem valores por receber. Publica a
@@ -703,9 +717,9 @@ export default function ProfileScreen() {
 
 				{/* Pessoa de confiança — usada pelo SOS */}
 				<View className="mt-6">
-					<Eyebrow>Segurança</Eyebrow>
+					<SectionTitle>Segurança</SectionTitle>
 					<View
-						className="rounded-3xl overflow-hidden mt-4"
+						className="rounded-xl overflow-hidden mt-4"
 						style={{
 							backgroundColor: themeColors.card,
 							shadowColor: '#000',
@@ -730,13 +744,13 @@ export default function ProfileScreen() {
 							</View>
 							<View className="flex-1 ml-3">
 								<Text
-									className="font-sansMedium text-[14px]"
+									className="font-sansMedium text-body-small"
 									style={{ color: themeColors.text }}
 								>
 									Pessoa de confiança
 								</Text>
 								<Text
-									className="font-sans text-[12px] mt-0.5"
+									className="font-sans text-body-xs mt-0.5"
 									style={{ color: themeColors.secondary }}
 								>
 									A central Boleia liga a esta pessoa numa
@@ -746,7 +760,7 @@ export default function ProfileScreen() {
 						</View>
 						<View className="px-4 pb-4">
 							<Text
-								className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+								className="font-sansMedium text-body-xs mb-1.5"
 								style={{ color: themeColors.secondary }}
 							>
 								Nome
@@ -765,12 +779,12 @@ export default function ProfileScreen() {
 									}}
 									placeholder="Ex.: Marta António"
 									placeholderTextColor={themeColors.border}
-									className="py-3 font-sans text-[15px]"
+									className="py-3 font-sans text-label-small"
 									style={{ color: themeColors.text }}
 								/>
 							</View>
 							<Text
-								className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+								className="font-sansMedium text-body-xs mb-1.5"
 								style={{ color: themeColors.secondary }}
 							>
 								Telefone
@@ -790,7 +804,7 @@ export default function ProfileScreen() {
 									placeholder="Ex.: 923000111"
 									placeholderTextColor={themeColors.border}
 									keyboardType="phone-pad"
-									className="py-3 font-mono text-[15px]"
+									className="py-3 font-sansMedium text-label-small"
 									style={{ color: themeColors.text }}
 								/>
 							</View>
@@ -817,7 +831,7 @@ export default function ProfileScreen() {
 
 				{/* Definições */}
 				<View className="mt-6">
-					<Eyebrow>Definições</Eyebrow>
+					<SectionTitle>Definições</SectionTitle>
 					<View
 						className="flex-row rounded-full p-1 mt-4"
 						style={{ backgroundColor: themeColors.card }}
@@ -836,7 +850,7 @@ export default function ProfileScreen() {
 									}}
 								>
 									<Text
-										className="font-sansMedium text-[12px]"
+										className="font-sansMedium text-body-xs"
 										style={{
 											color: active
 												? themeColors.card
@@ -851,7 +865,7 @@ export default function ProfileScreen() {
 					</View>
 
 					<View
-						className="mt-4 rounded-2xl overflow-hidden"
+						className="mt-4 rounded-xl overflow-hidden"
 						style={{
 							backgroundColor: themeColors.card,
 							shadowColor: '#000',
@@ -884,7 +898,7 @@ export default function ProfileScreen() {
 									/>
 								</View>
 								<Text
-									className="font-sansMedium text-[14px] ml-3"
+									className="font-sansMedium text-body-small ml-3"
 									style={{ color: themeColors.text }}
 								>
 									Central de segurança
@@ -950,7 +964,7 @@ export default function ProfileScreen() {
 									/>
 								</View>
 								<Text
-									className="font-sansBold text-[14px] ml-3"
+									className="font-sansBold text-body-small ml-3"
 									style={{ color: themeColors.text }}
 								>
 									Terminar sessão

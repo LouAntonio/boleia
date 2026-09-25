@@ -9,7 +9,7 @@ import LocalityPicker from './LocalityPicker';
 import DateRangePicker from './DateRangePicker';
 import TripListingCard from './TripListingCard';
 import BoleiaButton from './BoleiaButton';
-import Eyebrow from './Eyebrow';
+import Card from './Card';
 import { searchRides, RideMode } from '../mock/repos/rideRepo';
 import { Ride } from '../types/boleia';
 import { localityById, LOCALITIES } from '../mock/locale';
@@ -193,27 +193,17 @@ export default function TripSearch() {
 
 	return (
 		<View>
-			<View
-				className="rounded-3xl overflow-hidden p-5"
-				style={{
-					backgroundColor: themeColors.card,
-					shadowColor: '#000',
-					shadowOpacity: 0.1,
-					shadowOffset: { width: 0, height: 6 },
-					shadowRadius: 16,
-					elevation: 4,
-				}}
-			>
+			<Card>
 				<View className="flex-row items-center justify-between">
 					<View className="flex-1 mr-3">
 						<Text
-							className="font-display text-[24px] leading-7"
+							className="font-sansExtraBold text-title-secondary"
 							style={{ color: themeColors.text }}
 						>
 							Aonde vamos?
 						</Text>
 						<Text
-							className="font-sans text-[13px] mt-0.5"
+							className="font-sans text-body-small mt-1"
 							style={{ color: themeColors.secondary }}
 						>
 							Escolhe a rota e o dia — nós tratamos do resto.
@@ -221,12 +211,12 @@ export default function TripSearch() {
 					</View>
 					<View
 						className="w-11 h-11 rounded-full items-center justify-center"
-						style={{ backgroundColor: themeColors.background }}
+						style={{ backgroundColor: themeColors.accentWeak }}
 					>
 						<Ionicons
 							name="navigate"
 							size={20}
-							color={themeColors.laterite}
+							color={themeColors.primary}
 						/>
 					</View>
 				</View>
@@ -258,10 +248,10 @@ export default function TripSearch() {
 							<Pressable
 								key={opt.mode}
 								onPress={() => changeMode(opt.mode)}
-								className="flex-1 rounded-full py-2.5 flex-row items-center justify-center"
+								className="flex-1 rounded-full min-h-[44px] flex-row items-center justify-center"
 								style={{
 									backgroundColor: active
-										? themeColors.text
+										? themeColors.primary
 										: 'transparent',
 								}}
 							>
@@ -270,15 +260,15 @@ export default function TripSearch() {
 									size={14}
 									color={
 										active
-											? themeColors.card
+											? themeColors.onPrimary
 											: themeColors.secondary
 									}
 								/>
 								<Text
-									className="font-sansBold text-[12px] ml-1.5"
+									className="font-sansBold text-body-small ml-1.5"
 									style={{
 										color: active
-											? themeColors.card
+											? themeColors.onPrimary
 											: themeColors.secondary,
 									}}
 								>
@@ -309,7 +299,7 @@ export default function TripSearch() {
 						<Pressable
 							onPress={swapEnds}
 							disabled={!from && !to}
-							className="w-9 h-9 rounded-full items-center justify-center my-0.5"
+							className="w-11 h-11 rounded-full items-center justify-center"
 							style={{
 								backgroundColor: themeColors.background,
 								opacity: !from && !to ? 0.4 : 1,
@@ -318,7 +308,7 @@ export default function TripSearch() {
 							<Ionicons
 								name="swap-vertical"
 								size={18}
-								color={themeColors.laterite}
+								color={themeColors.primary}
 							/>
 						</Pressable>
 					</View>
@@ -344,52 +334,55 @@ export default function TripSearch() {
 						disabled={!canSearch}
 					/>
 				</View>
-			</View>
+			</Card>
 
 			{/* Recentes */}
 			{!results && recents.length > 0 ? (
-				<View className="mt-5">
-					<Eyebrow>Recentes</Eyebrow>
-					<View className="mt-3">
-						{recents.map((r) => (
-							<Pressable
-								key={`${r.mode}|${r.from}|${r.to}|${r.dateFrom}|${r.dateTo}`}
-								onPress={() => applyRecent(r)}
-								className="rounded-2xl px-4 py-3 mb-2 flex-row items-center"
-								style={({ pressed }) => ({
-									backgroundColor: themeColors.background,
-									opacity: pressed ? 0.8 : 1,
-								})}
-							>
-								<View className="flex-1">
-									<Text
-										numberOfLines={1}
-										className="font-sansBold text-[14px]"
-										style={{ color: themeColors.text }}
-									>
-										{placeName(r.from, r.mode)} →{' '}
-										{placeName(r.to, r.mode)}
-									</Text>
-									<Text
-										className="font-mono text-[10px] mt-0.5"
-										style={{
-											color: themeColors.secondary,
-										}}
-									>
-										{r.mode === 'interprovincial'
-											? 'Interprovincial'
-											: 'Intermunicipal'}{' '}
-										· {recentDateLabel(r)}
-									</Text>
-								</View>
-								<Ionicons
-									name="chevron-forward"
-									size={18}
-									color={themeColors.secondary}
-								/>
-							</Pressable>
-						))}
-					</View>
+				<View className="mt-6">
+					<Text
+						className="font-sansMedium text-title-tertiary mb-2"
+						style={{ color: themeColors.text }}
+					>
+						Recentes
+					</Text>
+					{recents.map((r) => (
+						<Pressable
+							key={`${r.mode}|${r.from}|${r.to}|${r.dateFrom}|${r.dateTo}`}
+							onPress={() => applyRecent(r)}
+							className="rounded-xl px-4 py-3 mb-2 flex-row items-center min-h-[44px]"
+							style={({ pressed }) => ({
+								backgroundColor: themeColors.card,
+								opacity: pressed ? 0.8 : 1,
+								borderWidth: 1,
+								borderColor: themeColors.border,
+							})}
+						>
+							<View className="flex-1">
+								<Text
+									numberOfLines={1}
+									className="font-sansBold text-label-small"
+									style={{ color: themeColors.text }}
+								>
+									{placeName(r.from, r.mode)} →{' '}
+									{placeName(r.to, r.mode)}
+								</Text>
+								<Text
+									className="font-sans text-body-xs mt-0.5"
+									style={{ color: themeColors.secondary }}
+								>
+									{r.mode === 'interprovincial'
+										? 'Interprovincial'
+										: 'Intermunicipal'}{' '}
+									· {recentDateLabel(r)}
+								</Text>
+							</View>
+							<Ionicons
+								name="chevron-forward"
+								size={18}
+								color={themeColors.secondary}
+							/>
+						</Pressable>
+					))}
 				</View>
 			) : null}
 
@@ -397,20 +390,15 @@ export default function TripSearch() {
 			{results ? (
 				<View className="mt-6">
 					<Text
-						className="font-display text-[20px] mb-4"
+						className="font-sansMedium text-title-tertiary mb-3"
 						style={{ color: themeColors.text }}
 					>
 						{`${results.length} viagem${results.length === 1 ? '' : 'ens'} a bater certo`}
 					</Text>
 					{results.length === 0 ? (
-						<View
-							className="rounded-3xl p-5"
-							style={{
-								backgroundColor: themeColors.background,
-							}}
-						>
+						<Card>
 							<Text
-								className="font-sans text-[13px] leading-5"
+								className="font-sans text-body-small"
 								style={{ color: themeColors.secondary }}
 							>
 								Sem viagens a bater certo nesta rota.
@@ -420,10 +408,10 @@ export default function TripSearch() {
 									: 'outra rota entre províncias'}{' '}
 								ou outro intervalo de dias.
 							</Text>
-						</View>
+						</Card>
 					) : (
 						results.map((ride) => (
-							<View key={ride.id} className="mb-4">
+							<View key={ride.id} className="mb-3">
 								<TripListingCard
 									ride={ride}
 									onPress={() =>

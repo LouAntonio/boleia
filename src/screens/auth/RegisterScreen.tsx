@@ -6,7 +6,8 @@ import { useNavigation } from '@react-navigation/native';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
-import Eyebrow from '../../components/Eyebrow';
+import GroupLabel from '../../components/GroupLabel';
+
 import ConsentRow from '../../components/ConsentRow';
 import Input from '../../components/Input';
 import { signUp, apiErrorMessage } from '../../lib/api';
@@ -83,14 +84,14 @@ export default function RegisterScreen() {
 			footer={
 				<View className="flex-row justify-center">
 					<Text
-						className="font-sans text-[13px]"
+						className="font-sans text-body-small"
 						style={{ color: themeColors.secondary }}
 					>
 						Já tens conta?{' '}
 					</Text>
 					<Pressable onPress={() => navigation.goBack()}>
 						<Text
-							className="font-sansBold text-[13px] uppercase tracking-wider"
+							className="font-sansBold text-body-small"
 							style={{ color: themeColors.laterite }}
 						>
 							Entrar
@@ -100,7 +101,7 @@ export default function RegisterScreen() {
 			}
 		>
 			<View className="mb-4">
-				<Eyebrow>1 · Os teus dados</Eyebrow>
+				<GroupLabel>1 · Os teus dados</GroupLabel>
 			</View>
 			<View className="flex-row">
 				<View className="flex-1 mr-2">
@@ -131,7 +132,7 @@ export default function RegisterScreen() {
 				</View>
 			</View>
 			<View className="mb-4 mt-5">
-				<Eyebrow>2 · Contacto</Eyebrow>
+				<GroupLabel>2 · Contacto</GroupLabel>
 			</View>
 			<Input
 				label="Número de telefone"
@@ -158,7 +159,7 @@ export default function RegisterScreen() {
 				autoCapitalize="none"
 			/>
 			<View className="mb-4 mt-5">
-				<Eyebrow>3 · Segurança</Eyebrow>
+				<GroupLabel>3 · Segurança</GroupLabel>
 			</View>
 			<Input
 				label="Senha"
@@ -193,14 +194,14 @@ export default function RegisterScreen() {
 			/>
 			{error ? (
 				<Text
-					className="font-sans text-[13px] mb-5"
+					className="font-sans text-body-small mb-5"
 					style={{ color: themeColors.error }}
 				>
 					{error}
 				</Text>
 			) : null}
 			<View className="mb-3 mt-6">
-				<Eyebrow>4 · Termos e privacidade</Eyebrow>
+				<GroupLabel>4 · Termos e privacidade</GroupLabel>
 			</View>
 			<ConsentRow
 				label="Aceito os Termos de Serviço"

@@ -60,7 +60,7 @@ export default function PhotoLightbox({
 
 				{label ? (
 					<Text
-						className="font-mono text-[11px] uppercase tracking-[2px]"
+						className="font-sansMedium text-body-xs"
 						style={{
 							position: 'absolute',
 							bottom: insets.bottom + 28,

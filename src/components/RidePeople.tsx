@@ -21,13 +21,13 @@ export default function RidePeople({
 	return (
 		<View className="mt-6">
 			<Text
-				className="font-sansMedium text-[12px] uppercase tracking-wider mb-1.5"
+				className="font-sansMedium text-body-xs mb-1.5"
 				style={{ color: themeColors.laterite }}
 			>
 				Quem vai contigo
 			</Text>
 			<View
-				className="rounded-2xl border overflow-hidden"
+				className="rounded-xl border overflow-hidden"
 				style={{
 					borderColor: themeColors.border,
 					backgroundColor: themeColors.card,
@@ -49,7 +49,7 @@ export default function RidePeople({
 						}}
 					>
 						<Text
-							className="font-display text-[15px]"
+							className="font-sansExtraBold text-label-small"
 							style={{ color: themeColors.text }}
 						>
 							{driver
@@ -59,7 +59,7 @@ export default function RidePeople({
 					</View>
 					<View className="flex-1 ml-3">
 						<Text
-							className="font-sansBold text-[14px]"
+							className="font-sansBold text-body-small"
 							style={{ color: themeColors.text }}
 						>
 							{driver
@@ -68,13 +68,13 @@ export default function RidePeople({
 						</Text>
 						<View className="flex-row items-center mt-0.5">
 							<Text
-								className="font-mono text-[12px]"
+								className="font-sansMedium text-body-xs"
 								style={{ color: themeColors.laterite }}
 							>
 								★ {driver?.rating?.toFixed(1) ?? 'novo'}
 							</Text>
 							<Text
-								className="font-mono text-[12px] ml-1"
+								className="font-sansMedium text-body-xs ml-1"
 								style={{ color: themeColors.secondary }}
 							>
 								·{' '}
@@ -89,7 +89,7 @@ export default function RidePeople({
 						style={{ backgroundColor: themeColors.primary }}
 					>
 						<Text
-							className="font-mono text-[9px] uppercase tracking-[1.5px]"
+							className="font-sansMedium text-body-xs"
 							style={{ color: themeColors.text }}
 						>
 							Motorista
@@ -110,14 +110,14 @@ export default function RidePeople({
 
 				<View className="px-4 py-3">
 					<Text
-						className="font-mono text-[9px] uppercase tracking-[2px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.secondary }}
 					>
 						A bordo contigo · {passengers.length}
 					</Text>
 					{passengers.length === 0 ? (
 						<Text
-							className="font-sans text-[12px] mt-1"
+							className="font-sans text-body-xs mt-1"
 							style={{ color: themeColors.secondary }}
 						>
 							Só tu a bordo por agora.
@@ -139,20 +139,20 @@ export default function RidePeople({
 									}}
 								>
 									<Text
-										className="font-sansBold text-[11px]"
+										className="font-sansBold text-body-xs"
 										style={{ color: themeColors.text }}
 									>
 										{initials(u.firstName, u.lastName)}
 									</Text>
 								</View>
 								<Text
-									className="font-sansMedium text-[13px] flex-1 ml-3"
+									className="font-sansMedium text-body-small flex-1 ml-3"
 									style={{ color: themeColors.text }}
 								>
 									{u.firstName} {u.lastName}
 								</Text>
 								<Text
-									className="font-mono text-[11px]"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.laterite }}
 								>
 									★ {u.rating?.toFixed(1) ?? 'novo'}

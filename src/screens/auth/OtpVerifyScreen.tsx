@@ -6,7 +6,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
-import Perforation from '../../components/Perforation';
 import { sendOtp, verifyOtpCode, apiErrorMessage } from '../../lib/api';
 
 export default function OtpVerifyScreen() {
@@ -76,7 +75,7 @@ export default function OtpVerifyScreen() {
 				<>
 					Enviámos um código de 6 dígitos por WhatsApp para{' '}
 					<Text
-						className="font-mono"
+						className="font-sans"
 						style={{ color: themeColors.text }}
 					>
 						+244 {phone}
@@ -90,14 +89,14 @@ export default function OtpVerifyScreen() {
 			footer={
 				<View className="flex-row items-center justify-center">
 					<Text
-						className="font-sans text-[13px]"
+						className="font-sans text-body-small"
 						style={{ color: themeColors.secondary }}
 					>
 						Não recebeste?{' '}
 					</Text>
 					<Pressable onPress={resend}>
 						<Text
-							className="font-sansBold text-[13px] uppercase tracking-wider"
+							className="font-sansBold text-body-small"
 							style={{ color: themeColors.laterite }}
 						>
 							{resent ? 'Reenviado ✓' : 'Reenviar código'}
@@ -107,7 +106,7 @@ export default function OtpVerifyScreen() {
 			}
 		>
 			<View
-				className="rounded-2xl border-2 border-dashed px-4"
+				className="rounded-xl border-2 border-dashed px-4"
 				style={{
 					borderColor: error ? themeColors.error : themeColors.border,
 					backgroundColor: themeColors.card,
@@ -122,7 +121,7 @@ export default function OtpVerifyScreen() {
 					keyboardType="number-pad"
 					placeholder="000000"
 					placeholderTextColor={themeColors.border}
-					className="py-4 font-mono text-[22px] text-center"
+					className="py-4 font-sansMedium text-title-secondary text-center"
 					style={{ color: themeColors.text, letterSpacing: 8 }}
 					maxLength={6}
 					autoFocus
@@ -130,13 +129,12 @@ export default function OtpVerifyScreen() {
 			</View>
 			{error ? (
 				<Text
-					className="font-sans text-[13px] mt-3"
+					className="font-sans text-body-small mt-3"
 					style={{ color: themeColors.error }}
 				>
 					{error}
 				</Text>
 			) : null}
-			<Perforation />
 			<View className="mt-1">
 				<BoleiaButton
 					title="Continuar"

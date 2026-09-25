@@ -2,10 +2,11 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
-import TicketCard from './TicketCard';
+import Card from './Card';
 import BoleiaButton from './BoleiaButton';
 
-// Estado vazio padrão — cartão neutro com selo, título display e CTA ouro.
+// Estado vazio padrão — cartão neutro, selo em `accentWeak`, título
+// `title/secondary` e CTA primário. Nunca cor sozinha: sempre selo + texto.
 export default function EmptyState({
 	icon,
 	title,
@@ -21,22 +22,26 @@ export default function EmptyState({
 }) {
 	const { themeColors } = useThemeColors();
 	return (
-		<TicketCard>
+		<Card>
 			<View className="items-center py-2">
 				<View
 					className="w-14 h-14 rounded-full items-center justify-center mb-4"
-					style={{ backgroundColor: themeColors.primary }}
+					style={{ backgroundColor: themeColors.accentWeak }}
 				>
-					<Ionicons name={icon} size={26} color="#17141B" />
+					<Ionicons
+						name={icon}
+						size={26}
+						color={themeColors.primary}
+					/>
 				</View>
 				<Text
-					className="font-display text-[20px] text-center"
+					className="font-sansMedium text-title-secondary text-center"
 					style={{ color: themeColors.text }}
 				>
 					{title}
 				</Text>
 				<Text
-					className="font-sans text-[13px] text-center mt-1.5 leading-5"
+					className="font-sans text-body-small text-center mt-1.5"
 					style={{ color: themeColors.secondary }}
 				>
 					{copy}
@@ -47,6 +52,6 @@ export default function EmptyState({
 					</View>
 				) : null}
 			</View>
-		</TicketCard>
+		</Card>
 	);
 }

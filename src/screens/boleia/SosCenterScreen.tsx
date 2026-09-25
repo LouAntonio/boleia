@@ -51,7 +51,7 @@ export default function SosCenterScreen() {
 					/>
 				</Pressable>
 				<Text
-					className="font-display text-[20px]"
+					className="font-sansExtraBold text-title-secondary"
 					style={{ color: themeColors.text }}
 				>
 					Central de segurança
@@ -63,7 +63,7 @@ export default function SosCenterScreen() {
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
 				<Text
-					className="font-sans text-[13px] mb-4 leading-5"
+					className="font-sans text-body-small mb-4 leading-5"
 					style={{ color: themeColors.secondary }}
 				>
 					Eventos SOS desta conta. Quando um alerta está ativo, a
@@ -73,7 +73,7 @@ export default function SosCenterScreen() {
 
 				{events.length === 0 ? (
 					<View
-						className="p-5 rounded-2xl border items-center"
+						className="p-5 rounded-xl border items-center"
 						style={{
 							borderColor: themeColors.border,
 							backgroundColor: themeColors.card,
@@ -85,13 +85,13 @@ export default function SosCenterScreen() {
 							color={themeColors.mato}
 						/>
 						<Text
-							className="font-sansMedium text-[14px] mt-2"
+							className="font-sansMedium text-body-small mt-2"
 							style={{ color: themeColors.text }}
 						>
 							Sem alerts por agora
 						</Text>
 						<Text
-							className="font-sans text-[12px] text-center mt-1"
+							className="font-sans text-body-xs text-center mt-1"
 							style={{ color: themeColors.secondary }}
 						>
 							Os pedidos SOS que fizeres durante uma viagem
@@ -104,7 +104,7 @@ export default function SosCenterScreen() {
 						return (
 							<View
 								key={e.id}
-								className="p-4 rounded-2xl border mb-3"
+								className="p-4 rounded-xl border mb-3"
 								style={{
 									borderColor: active
 										? themeColors.error
@@ -128,13 +128,13 @@ export default function SosCenterScreen() {
 										/>
 									</View>
 									<Text
-										className="font-sansBold text-[15px] flex-1"
+										className="font-sansBold text-label-small flex-1"
 										style={{ color: themeColors.text }}
 									>
 										{name(e.fromUserId)}
 									</Text>
 									<Text
-										className="font-mono text-[10px]"
+										className="font-sansMedium text-body-xs"
 										style={{
 											color: themeColors.secondary,
 										}}
@@ -143,13 +143,13 @@ export default function SosCenterScreen() {
 									</Text>
 								</View>
 								<Text
-									className="font-sans text-[13px] mt-2 leading-5"
+									className="font-sans text-body-small mt-2 leading-5"
 									style={{ color: themeColors.secondary }}
 								>
 									{e.message}
 								</Text>
 								<Text
-									className="font-mono text-[11px] mt-1"
+									className="font-sansMedium text-body-xs mt-1"
 									style={{ color: themeColors.laterite }}
 								>
 									{route(e.rideId)}
@@ -171,7 +171,7 @@ export default function SosCenterScreen() {
 											color={themeColors.mato}
 										/>
 										<Text
-											className="font-sans text-[12px] ml-1.5"
+											className="font-sans text-body-xs ml-1.5"
 											style={{ color: themeColors.mato }}
 										>
 											Assistência confirmada

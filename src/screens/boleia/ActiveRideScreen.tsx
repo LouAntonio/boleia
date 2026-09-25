@@ -107,13 +107,13 @@ export default function ActiveRideScreen() {
 				</Pressable>
 				<View className="flex-1">
 					<Text
-						className="font-mono text-[10px] uppercase tracking-[3px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.laterite }}
 					>
 						Viagem ao vivo
 					</Text>
 					<Text
-						className="font-display text-[18px] -mt-0.5"
+						className="font-sansExtraBold text-title-tertiary -mt-0.5"
 						style={{ color: themeColors.text }}
 					>
 						{ride.routeName}
@@ -129,14 +129,14 @@ export default function ActiveRideScreen() {
 							}}
 						/>
 						<Text
-							className="font-mono text-[9px] uppercase tracking-[2px]"
+							className="font-sansMedium text-body-xs"
 							style={{ color: themeColors.mato }}
 						>
 							Ao vivo
 						</Text>
 					</View>
 					<Text
-						className="font-mono text-[12px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.text }}
 					>
 						{hhmm(new Date().toISOString())}
@@ -150,14 +150,14 @@ export default function ActiveRideScreen() {
 			>
 				{ride.status === 'em_curso' && (
 					<Text
-						className="font-sans text-[13px] mb-3"
+						className="font-sans text-body-small mb-3"
 						style={{ color: themeColors.mato }}
 					>
 						Em movimento — a pista enche à medida que avanças.
 					</Text>
 				)}
 				<View
-					className="p-4 rounded-2xl border"
+					className="p-4 rounded-xl border"
 					style={{
 						borderColor: themeColors.border,
 						backgroundColor: themeColors.card,
@@ -177,7 +177,7 @@ export default function ActiveRideScreen() {
 						{passengers.map((p) => (
 							<View
 								key={p.id}
-								className="p-3 rounded-2xl border mb-2 flex-row items-center"
+								className="p-3 rounded-xl border mb-2 flex-row items-center"
 								style={{
 									borderColor: themeColors.border,
 									backgroundColor: themeColors.card,
@@ -190,7 +190,7 @@ export default function ActiveRideScreen() {
 									}}
 								>
 									<Text
-										className="font-display text-[12px]"
+										className="font-sansExtraBold text-body-xs"
 										style={{ color: themeColors.text }}
 									>
 										{p.firstName.charAt(0)}
@@ -198,13 +198,13 @@ export default function ActiveRideScreen() {
 									</Text>
 								</View>
 								<Text
-									className="font-sansBold text-[14px] ml-3"
+									className="font-sansBold text-body-small ml-3"
 									style={{ color: themeColors.text }}
 								>
 									{p.firstName} {p.lastName}
 								</Text>
 								<Text
-									className="font-mono text-[11px] ml-auto"
+									className="font-sansMedium text-body-xs ml-auto"
 									style={{ color: themeColors.secondary }}
 								>
 									{p.phone}
@@ -216,7 +216,7 @@ export default function ActiveRideScreen() {
 
 				{/* Segurança */}
 				<View className="mt-6">
-					<SectionTitle tone="laterite">Segurança</SectionTitle>
+					<SectionTitle>Segurança</SectionTitle>
 					<View className="flex-row">
 						<Pressable
 							onPress={async () => {
@@ -238,7 +238,7 @@ export default function ActiveRideScreen() {
 								color={themeColors.text}
 							/>
 							<Text
-								className="font-sansMedium text-[12px] mt-1"
+								className="font-sansMedium text-body-xs mt-1"
 								style={{ color: themeColors.text }}
 							>
 								Partilhar viagem
@@ -266,7 +266,7 @@ export default function ActiveRideScreen() {
 								color={themeColors.card}
 							/>
 							<Text
-								className="font-sansMedium text-[12px] mt-1"
+								className="font-sansMedium text-body-xs mt-1"
 								style={{ color: themeColors.card }}
 							>
 								{sosSent ? 'SOS enviado ✓' : 'Ligar SOS'}
@@ -275,7 +275,7 @@ export default function ActiveRideScreen() {
 					</View>
 					{sosSent && (
 						<Text
-							className="font-sans text-[12px] mt-2"
+							className="font-sans text-body-xs mt-2"
 							style={{ color: themeColors.mato }}
 						>
 							Notificação enviada à central Boleia. Fica perto de

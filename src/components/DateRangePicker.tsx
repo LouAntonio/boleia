@@ -112,7 +112,7 @@ export default function DateRangePicker({
 						}}
 					>
 						<Text
-							className="font-sansBold text-[14px]"
+							className="font-sansBold text-body-small"
 							style={{ color: themeColors.card }}
 						>
 							{day}
@@ -137,8 +137,8 @@ export default function DateRangePicker({
 				<Text
 					className={
 						isRange
-							? 'font-sansBold text-[14px]'
-							: 'font-sansMedium text-[14px]'
+							? 'font-sansBold text-body-small'
+							: 'font-sansMedium text-body-small'
 					}
 					style={{
 						color: disabled
@@ -166,7 +166,7 @@ export default function DateRangePicker({
 				</View>
 				<View className="flex-1 ml-3">
 					<Text
-						className="font-mono text-[10px] uppercase tracking-[2px]"
+						className="font-sansMedium text-body-xs"
 						style={{ color: themeColors.laterite }}
 					>
 						{label}
@@ -174,8 +174,8 @@ export default function DateRangePicker({
 					<Text
 						className={
 							hasRange
-								? 'font-sansBold text-[15px] mt-0.5'
-								: 'font-sans text-[15px] mt-0.5'
+								? 'font-sansBold text-label-small mt-0.5'
+								: 'font-sans text-label-small mt-0.5'
 						}
 						style={{
 							color: hasRange
@@ -223,7 +223,7 @@ export default function DateRangePicker({
 
 						<View className="flex-row items-center justify-between mb-3">
 							<Text
-								className="font-display text-[18px]"
+								className="font-sansExtraBold text-title-tertiary"
 								style={{ color: themeColors.text }}
 							>
 								Escolhe o intervalo
@@ -260,7 +260,7 @@ export default function DateRangePicker({
 								/>
 							</Pressable>
 							<Text
-								className="font-display text-[16px]"
+								className="font-sansExtraBold text-label"
 								style={{ color: themeColors.text }}
 							>
 								{MONTHS_PT[month]} {year}
@@ -282,7 +282,7 @@ export default function DateRangePicker({
 							{WEEKDAY_PT.map((w, i) => (
 								<View key={i} className="flex-1 items-center">
 									<Text
-										className="font-mono text-[10px]"
+										className="font-sansMedium text-body-xs"
 										style={{ color: themeColors.secondary }}
 									>
 										{w}
@@ -303,7 +303,7 @@ export default function DateRangePicker({
 						>
 							<View className="flex-1">
 								<Text
-									className="font-mono text-[10px] uppercase tracking-[2px]"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.laterite }}
 								>
 									Intervalo
@@ -311,8 +311,8 @@ export default function DateRangePicker({
 								<Text
 									className={
 										draftFrom
-											? 'font-sansBold text-[15px] mt-0.5'
-											: 'font-sans text-[15px] mt-0.5'
+											? 'font-sansBold text-label-small mt-0.5'
+											: 'font-sans text-label-small mt-0.5'
 									}
 									style={{
 										color: draftFrom
@@ -329,7 +329,7 @@ export default function DateRangePicker({
 								style={{ borderColor: themeColors.border }}
 							>
 								<Text
-									className="font-sansMedium text-[12px] uppercase tracking-wider"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.secondary }}
 								>
 									Limpar
@@ -341,7 +341,7 @@ export default function DateRangePicker({
 								style={{ backgroundColor: themeColors.text }}
 							>
 								<Text
-									className="font-sansMedium text-[12px] uppercase tracking-wider"
+									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.card }}
 								>
 									Aplicar

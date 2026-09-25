@@ -1,32 +1,21 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { Text } from 'react-native';
 import { useThemeColors } from '../hooks/useThemeColors';
 
+// Título de secção — `title/secondary` (22/110%, Medium), alinhado à
+// esquerda, sem filete colorido: no sistema a hierarquia é tipográfica.
 export default function SectionTitle({
 	children,
-	tone = 'text',
 }: {
 	children: React.ReactNode;
-	tone?: 'text' | 'laterite';
 }) {
 	const { themeColors } = useThemeColors();
 	return (
-		<View className="flex-row items-center mb-2.5">
-			<View
-				className="w-[4px] h-4 rounded-full mr-2"
-				style={{
-					backgroundColor:
-						tone === 'laterite'
-							? themeColors.laterite
-							: themeColors.primary,
-				}}
-			/>
-			<Text
-				className="font-sansBold text-[15px]"
-				style={{ color: themeColors.text }}
-			>
-				{children}
-			</Text>
-		</View>
+		<Text
+			className="font-sansMedium text-title-secondary mb-2.5"
+			style={{ color: themeColors.text }}
+		>
+			{children}
+		</Text>
 	);
 }

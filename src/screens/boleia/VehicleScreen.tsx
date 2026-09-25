@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
+import { onBand } from '../../store/colors';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import BoleiaButton from '../../components/BoleiaButton';
 import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
@@ -30,9 +31,6 @@ import {
 	uploadPhoto,
 } from '../../lib/api';
 
-const CELU = '#F7F3E7';
-const BAND_MATO = '#1F7A5B';
-const BAND_LATERITE = '#B4531F';
 const MAX_PHOTOS = 6;
 
 // Card com banda tingida (viatura/motorista = mato).
@@ -53,7 +51,7 @@ function SectionCard({
 
 	return (
 		<View
-			className="rounded-3xl border overflow-hidden mb-4"
+			className="rounded-xl border overflow-hidden mb-4"
 			style={{
 				borderColor: themeColors.border,
 				backgroundColor: themeColors.card,
@@ -65,20 +63,27 @@ function SectionCard({
 			>
 				<View
 					className="w-7 h-7 rounded-full items-center justify-center"
-					style={{ backgroundColor: `${CELU}26` }}
+					style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
 				>
-					<Ionicons name={icon} size={15} color={CELU} />
+					<Ionicons
+						name={icon}
+						size={15}
+						color={onBand(themeColors, band)}
+					/>
 				</View>
 				<View className="flex-1 ml-2.5">
 					<Text
-						className="font-display text-[15px]"
-						style={{ color: CELU }}
+						className="font-sansExtraBold text-label-small"
+						style={{ color: onBand(themeColors, band) }}
 					>
 						{title}
 					</Text>
 					<Text
-						className="font-mono text-[8px] uppercase tracking-[2px] mt-0.5"
-						style={{ color: CELU, opacity: 0.85 }}
+						className="font-sansMedium text-body-xs mt-0.5"
+						style={{
+							color: onBand(themeColors, band),
+							opacity: 0.85,
+						}}
 					>
 						{subtitle}
 					</Text>
@@ -89,7 +94,7 @@ function SectionCard({
 	);
 }
 
-// Campo de formulário — rótulo mono em `secondary` (a11y), caixa em `background`.
+// Campo de formulário — rótulo em `secondary`, caixa em `background`.
 function Field({
 	label,
 	value,
@@ -97,7 +102,6 @@ function Field({
 	placeholder,
 	autoCapitalize = 'words',
 	keyboardType = 'default',
-	mono = false,
 	className = '',
 }: {
 	label: string;
@@ -106,7 +110,6 @@ function Field({
 	placeholder: string;
 	autoCapitalize?: 'none' | 'words' | 'characters';
 	keyboardType?: KeyboardTypeOptions;
-	mono?: boolean;
 	className?: string;
 }) {
 	const { themeColors } = useThemeColors();
@@ -114,7 +117,7 @@ function Field({
 	return (
 		<View className={`flex-1 ${className}`}>
 			<Text
-				className="font-mono text-[9px] uppercase tracking-[2px] mb-1.5"
+				className="font-sansMedium text-body-xs mb-1.5"
 				style={{ color: themeColors.secondary }}
 			>
 				{label}
@@ -133,11 +136,7 @@ function Field({
 					placeholderTextColor={themeColors.border}
 					autoCapitalize={autoCapitalize}
 					keyboardType={keyboardType}
-					className={
-						mono
-							? 'py-3 font-mono text-[15px] uppercase'
-							: 'py-3 font-sans text-[15px]'
-					}
+					className="py-3 font-sans text-label-small"
 					style={{ color: themeColors.text }}
 				/>
 			</View>
@@ -334,14 +333,14 @@ export default function VehicleScreen() {
 								color={themeColors.laterite}
 							/>
 							<Text
-								className="font-mono text-[9px] uppercase tracking-[3px] ml-1"
+								className="font-sansMedium text-body-xs ml-1"
 								style={{ color: themeColors.secondary }}
 							>
 								Viaturas · Registo
 							</Text>
 						</View>
 						<Text
-							className="font-display text-[22px] leading-6"
+							className="font-sansExtraBold text-title-secondary leading-6"
 							style={{ color: themeColors.text }}
 						>
 							As tuas viaturas
@@ -360,7 +359,7 @@ export default function VehicleScreen() {
 							return (
 								<View
 									key={v.id}
-									className="rounded-3xl border overflow-hidden mb-4"
+									className="rounded-xl border overflow-hidden mb-4"
 									style={{
 										borderColor: themeColors.border,
 										backgroundColor: themeColors.card,
@@ -370,14 +369,15 @@ export default function VehicleScreen() {
 										className="px-4 py-3 flex-row items-center"
 										style={{
 											backgroundColor: verified
-												? BAND_MATO
-												: BAND_LATERITE,
+												? themeColors.success
+												: themeColors.laterite,
 										}}
 									>
 										<View
 											className="w-9 h-9 rounded-full items-center justify-center"
 											style={{
-												backgroundColor: `${CELU}26`,
+												backgroundColor:
+													'rgba(255,255,255,0.15)',
 											}}
 										>
 											<Ionicons
@@ -387,20 +387,30 @@ export default function VehicleScreen() {
 														: 'time-outline'
 												}
 												size={18}
-												color={CELU}
+												color={
+													verified
+														? themeColors.onSuccess
+														: themeColors.onWarning
+												}
 											/>
 										</View>
 										<View className="flex-1 ml-3">
 											<Text
-												className="font-display text-[16px]"
-												style={{ color: CELU }}
+												className="font-sansExtraBold text-label"
+												style={{
+													color: verified
+														? themeColors.onSuccess
+														: themeColors.onWarning,
+												}}
 											>
 												{v.make} {v.model} · {v.plate}
 											</Text>
 											<Text
-												className="font-mono text-[9px] uppercase tracking-[2px] mt-0.5"
+												className="font-sansMedium text-body-xs mt-0.5"
 												style={{
-													color: CELU,
+													color: verified
+														? themeColors.onSuccess
+														: themeColors.onWarning,
 													opacity: 0.85,
 												}}
 											>
@@ -420,13 +430,17 @@ export default function VehicleScreen() {
 											<Ionicons
 												name="trash-outline"
 												size={18}
-												color={CELU}
+												color={
+													verified
+														? themeColors.onSuccess
+														: themeColors.onWarning
+												}
 											/>
 										</Pressable>
 									</View>
 									<View className="px-4 py-3">
 										<Text
-											className="font-sans text-[13px]"
+											className="font-sans text-body-small"
 											style={{
 												color: themeColors.secondary,
 											}}
@@ -444,7 +458,7 @@ export default function VehicleScreen() {
 						{adding ? (
 							<View>
 								<SectionCard
-									band={BAND_MATO}
+									band={themeColors.success}
 									icon="car-sport-outline"
 									title="Nova viatura"
 									subtitle="Características"
@@ -484,7 +498,6 @@ export default function VehicleScreen() {
 											}
 											placeholder="ex.: 12"
 											keyboardType="numeric"
-											mono
 										/>
 									</View>
 									<Field
@@ -493,12 +506,11 @@ export default function VehicleScreen() {
 										setter={setPlate}
 										placeholder="ex.: LD-12-34-AB"
 										autoCapitalize="characters"
-										mono
 									/>
 								</SectionCard>
 
 								<SectionCard
-									band={BAND_MATO}
+									band={themeColors.success}
 									icon="images-outline"
 									title="Fotos da viatura"
 									subtitle="Mínimo 3 Fotos"
@@ -620,7 +632,7 @@ export default function VehicleScreen() {
 													),
 												)
 											}
-											className="rounded-2xl border py-3.5 mt-2"
+											className="rounded-xl border py-3.5 mt-2"
 											style={({ pressed }) => ({
 												width: slotsWidth,
 												alignSelf: 'center',
@@ -640,7 +652,7 @@ export default function VehicleScreen() {
 												color={themeColors.laterite}
 											/>
 											<Text
-												className="font-mono text-[10px] uppercase tracking-[2px] ml-2"
+												className="font-sansMedium text-body-xs ml-2"
 												style={{
 													color: themeColors.secondary,
 												}}
@@ -650,7 +662,7 @@ export default function VehicleScreen() {
 										</Pressable>
 									) : (
 										<Text
-											className="font-sans text-[11px] mt-2 text-center self-center"
+											className="font-sans text-body-xs mt-2 text-center self-center"
 											style={{
 												color: themeColors.secondary,
 												width: slotsWidth,
@@ -664,7 +676,7 @@ export default function VehicleScreen() {
 
 								{submitting && progress ? (
 									<Text
-										className="font-sans text-[12px] mb-3 text-center"
+										className="font-sans text-body-xs mb-3 text-center"
 										style={{
 											color: themeColors.secondary,
 										}}

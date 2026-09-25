@@ -15,10 +15,6 @@ import { hhmm, fmtKz } from '../mock/helpers';
 import { rideProgress, rideMode } from '../mock/repos/rideRepo';
 import { statusMeta } from '../utils/status';
 import RouteRail from './RouteRail';
-import QRStamp from './QRStamp';
-
-const CELU = '#F7F3E7';
-const ASFALTO = '#17141B';
 
 function LiveDot({ color }: { color: string }) {
 	const reduced = useReducedMotion();
@@ -55,44 +51,45 @@ function bandOf(status: string, themeColors: Record<string, string>) {
 	switch (status) {
 		case 'pedido':
 			return {
-				bg: themeColors.laterite,
-				fg: CELU,
+				bg: themeColors.caution,
+				fg: themeColors.cautionText,
 				icon: 'time-outline' as const,
 				label: 'A aguardar confirmação',
 			};
 		case 'confirmada':
 			return {
 				bg: themeColors.primary,
-				fg: ASFALTO,
+				fg: themeColors.onPrimary,
 				icon: 'checkmark-circle' as const,
 				label: 'Confirmada',
 			};
 		case 'em_viagem':
 			return {
-				bg: themeColors.mato,
-				fg: CELU,
+				bg: themeColors.success,
+				fg: themeColors.onPrimary,
 				icon: 'navigate' as const,
 				label: 'Ao vivo',
 			};
 		case 'concluida':
 			return {
-				bg: themeColors.mato,
-				fg: CELU,
+				bg: themeColors.success,
+				fg: themeColors.onPrimary,
 				icon: 'checkmark-circle' as const,
 				label: 'Concluída',
 			};
 		default:
 			return {
-				bg: themeColors.error,
-				fg: CELU,
+				bg: themeColors.dangerWeak,
+				fg: themeColors.error,
 				icon: 'close-circle' as const,
 				label: statusMeta(status).label,
 			};
 	}
 }
 
-// Bilhete vivo Boleia viva — banda sólida de estado com rota em display,
-// rail de progresso e talão com QR + total. Sem perfuração, sem contorno.
+// Cartão de reserva — banda de estado com a cor da semântica, itinerário
+// completo em rail e o total em coluna própria. O estado aparece sempre com
+// ícone + rótulo (nunca só cor).
 export default function BookingStub({
 	booking,
 	ride,
@@ -127,11 +124,11 @@ export default function BookingStub({
 	return (
 		<Pressable
 			onPress={onPress}
-			className="rounded-3xl overflow-hidden"
+			accessibilityRole="button"
+			className="rounded-xl overflow-hidden"
 			style={({ pressed }) => ({
 				backgroundColor: themeColors.card,
 				opacity: pressed ? 0.94 : 1,
-				transform: [{ scale: pressed ? 0.99 : 1 }],
 				shadowColor: '#000',
 				shadowOpacity: 0.08,
 				shadowOffset: { width: 0, height: 4 },
@@ -140,14 +137,14 @@ export default function BookingStub({
 			})}
 		>
 			<View
-				className="px-5 pt-4 pb-3.5"
+				className="px-4 pt-3.5 pb-3"
 				style={{ backgroundColor: band.bg }}
 			>
 				<View className="flex-row items-center justify-between">
 					<View className="flex-row items-center">
 						<Ionicons name={band.icon} size={15} color={band.fg} />
 						<Text
-							className="font-mono text-[10px] uppercase tracking-[2px] ml-1.5"
+							className="font-sansBold text-body-small ml-1.5"
 							style={{ color: band.fg }}
 						>
 							{band.label}
@@ -160,8 +157,8 @@ export default function BookingStub({
 							</View>
 						)}
 						<Text
-							className="font-mono text-[10px] uppercase tracking-[2px]"
-							style={{ color: band.fg, opacity: 0.85 }}
+							className="font-sansMedium text-body-small"
+							style={{ color: band.fg }}
 						>
 							{dateLabel} · {hhmm(ride.departure)}
 						</Text>
@@ -169,14 +166,14 @@ export default function BookingStub({
 				</View>
 				<Text
 					numberOfLines={1}
-					className="font-display text-[23px] leading-8 mt-1.5"
+					className="font-sansExtraBold text-title-secondary mt-1.5"
 					style={{ color: band.fg }}
 				>
 					{ride.origin.name} → {ride.destination.name}
 				</Text>
 			</View>
 
-			<View className="px-5 py-4">
+			<View className="px-4 py-4">
 				<RouteRail
 					origin={{
 						place: ride.origin.name,
@@ -188,18 +185,18 @@ export default function BookingStub({
 					}}
 					progress={live ? rideProgress(ride) : 0}
 					live={live}
-					railColor={live ? themeColors.mato : themeColors.primary}
+					railColor={live ? themeColors.success : themeColors.primary}
 				/>
 				<View className="flex-row items-center justify-between mt-3">
 					<Text
-						className="font-sans text-[12px] flex-1"
+						className="font-sans text-body-small flex-1"
 						style={{ color: themeColors.secondary }}
 					>
 						{modeLabel} · {stopsLabel}
 					</Text>
 					<Text
-						className="font-mono text-[11px] uppercase tracking-[2px] ml-3"
-						style={{ color: themeColors.laterite }}
+						className="font-sansMedium text-body-small ml-3"
+						style={{ color: themeColors.secondary }}
 					>
 						{code}
 					</Text>
@@ -207,7 +204,7 @@ export default function BookingStub({
 				{note ? (
 					<Text
 						numberOfLines={1}
-						className="font-sans text-[12px] mt-1.5"
+						className="font-sans text-body-small mt-1.5"
 						style={{ color: themeColors.secondary }}
 					>
 						{note}
@@ -215,7 +212,7 @@ export default function BookingStub({
 				) : null}
 				{booking.reason ? (
 					<Text
-						className="font-sans text-[12px] mt-1"
+						className="font-sans text-body-small mt-1"
 						style={{ color: themeColors.error }}
 					>
 						{booking.reason}
@@ -224,29 +221,25 @@ export default function BookingStub({
 			</View>
 
 			<View
-				className="px-5 py-4 border-t"
+				className="px-4 py-3.5 border-t"
 				style={{
 					borderColor: themeColors.border,
 					backgroundColor: themeColors.background,
 				}}
 			>
-				<View className="flex-row items-center">
-					<QRStamp seed={booking.id} size={52} />
-					<View className="flex-1 ml-3">
-						<Text
-							className="font-display text-[22px]"
-							style={{ color: themeColors.text }}
-						>
-							{fmtKz(booking.amount)}
-						</Text>
-						<Text
-							className="font-mono text-[10px] uppercase tracking-wider mt-0.5"
-							style={{ color: themeColors.secondary }}
-						>
-							{booking.seats} lugar
-							{booking.seats > 1 ? 'es' : ''}
-						</Text>
-					</View>
+				<View className="flex-row items-center justify-between">
+					<Text
+						className="font-sans text-body-small"
+						style={{ color: themeColors.secondary }}
+					>
+						{booking.seats} lugar{booking.seats > 1 ? 'es' : ''}
+					</Text>
+					<Text
+						className="font-sansBold text-title-tertiary"
+						style={{ color: themeColors.text }}
+					>
+						{fmtKz(booking.amount)}
+					</Text>
 				</View>
 				{footer ? <View className="mt-4">{footer}</View> : null}
 			</View>
