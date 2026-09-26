@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useNavigation } from '@react-navigation/native';
@@ -10,9 +10,9 @@ import DateRangePicker from './DateRangePicker';
 import TripListingCard from './TripListingCard';
 import BoleiaButton from './BoleiaButton';
 import Card from './Card';
-import { searchRides, RideMode } from '../mock/repos/rideRepo';
-import { Ride } from '../types/boleia';
-import { localityById, LOCALITIES } from '../mock/locale';
+import { listRides, apiErrorMessage, type ApiRide } from '../lib/api';
+import { toRide } from '../lib/rideMapper';
+import { useAllLocalities, useProvinces } from '../hooks/useLocalities';
 import {
 	loadRecentSearches,
 	saveRecentSearch,
@@ -26,44 +26,66 @@ export default function TripSearch() {
 		>();
 	const { themeColors } = useThemeColors();
 
-	const [mode, setMode] = useState<RideMode>('interprovincial');
-	const [province, setProvince] = useState('');
+	const [mode, setMode] = useState<'intermunicipal' | 'interprovincial'>(
+		'interprovincial',
+	);
+	const [provinceId, setProvinceId] = useState('');
 	const [from, setFrom] = useState('');
 	const [to, setTo] = useState('');
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
-	const [results, setResults] = useState<Ride[] | null>(null);
+	const [results, setResults] = useState<ApiRide[] | null>(null);
+	const [total, setTotal] = useState(0);
+	const [searching, setSearching] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 	const [recents, setRecents] = useState<RecentSearch[]>([]);
+
+	const provinces = useProvinces();
+	const localities = useAllLocalities();
+
 	useEffect(() => {
 		loadRecentSearches()
 			.then(setRecents)
 			.catch(() => undefined);
 	}, []);
 
-	const changeMode = (m: RideMode) => {
+	const localityName = useCallback(
+		(id: string): string => {
+			if (!id) return '—';
+			const found = localities.find((l) => l.id === id);
+			return found ? found.municipality : '—';
+		},
+		[localities],
+	);
+
+	const changeMode = (m: 'intermunicipal' | 'interprovincial') => {
 		if (m === mode) return;
 		setMode(m);
-		setProvince('');
+		setProvinceId('');
 		setFrom('');
 		setTo('');
 		setResults(null);
+		setError(null);
 	};
 
-	const selectProvince = (p: string) => {
-		setProvince(p);
+	const selectProvince = (id: string) => {
+		setProvinceId(id);
 		setFrom('');
 		setTo('');
 		setResults(null);
+		setError(null);
 	};
 
 	const selectFrom = (v: string) => {
 		setFrom(v);
 		setResults(null);
+		setError(null);
 	};
 
 	const selectTo = (v: string) => {
 		setTo(v);
 		setResults(null);
+		setError(null);
 	};
 
 	const swapEnds = () => {
@@ -71,58 +93,80 @@ export default function TripSearch() {
 		setFrom(to);
 		setTo(f);
 		setResults(null);
+		setError(null);
 	};
 
-	type SearchParams = {
-		mode: RideMode;
-		province: string;
-		from: string;
-		to: string;
-		dateFrom: string;
-		dateTo: string;
-	};
-
-	const runSearch = (p: SearchParams): Ride[] => {
-		const base = {
-			dateFrom: p.dateFrom || undefined,
-			dateTo: p.dateTo || undefined,
-			mode: p.mode,
-		};
-		return p.mode === 'interprovincial'
-			? searchRides({ from: p.from, to: p.to, ...base })
-			: searchRides({
-					from: localityById(p.from).municipality,
-					to: localityById(p.to).municipality,
-					...base,
+	/**
+	 * Pesquisa no backend.
+	 *
+	 * O filtro é sempre por localidade, nos dois modos: `GET /api/rides`
+	 * compara o `localityId` da paragem de origem e de destino. O modo só muda
+	 * se a picker de origem fica restringida a uma província, que é a diferença
+	 * real entre uma viagem intermunicipal e uma interprovincial.
+	 */
+	const runSearch = useCallback(
+		async (p: {
+			provinceId: string;
+			from: string;
+			to: string;
+			dateFrom: string;
+			dateTo: string;
+		}) => {
+			setSearching(true);
+			setError(null);
+			try {
+				const res = await listRides({
+					origin: p.from,
+					destination: p.to,
+					dateFrom: p.dateFrom || undefined,
+					dateTo: p.dateTo || undefined,
 				});
-	};
+				setResults(res.rows);
+				setTotal(res.total);
+			} catch (err) {
+				setResults(null);
+				setError(
+					apiErrorMessage(err, 'Não foi possível procurar viagens.'),
+				);
+			} finally {
+				setSearching(false);
+			}
+		},
+		[],
+	);
 
 	const search = () => {
-		const params = { mode, province, from, to, dateFrom, dateTo };
-		setResults(runSearch(params));
-		saveRecentSearch(params)
+		void runSearch({ provinceId, from, to, dateFrom, dateTo });
+		saveRecentSearch({ mode, provinceId, from, to, dateFrom, dateTo })
 			.then(setRecents)
 			.catch(() => undefined);
 	};
 
 	const applyRecent = (r: RecentSearch) => {
 		setMode(r.mode);
-		setProvince(r.province);
+		setProvinceId(r.provinceId ?? '');
 		setFrom(r.from);
 		setTo(r.to);
 		setDateFrom(r.dateFrom);
 		setDateTo(r.dateTo);
-		setResults(runSearch(r));
+		void runSearch({
+			provinceId: r.provinceId ?? '',
+			from: r.from,
+			to: r.to,
+			dateFrom: r.dateFrom,
+			dateTo: r.dateTo,
+		});
 	};
 
-	const placeName = (value: string, m: RideMode): string => {
+	const placeName = (
+		value: string,
+		m: 'intermunicipal' | 'interprovincial',
+	) => {
 		if (!value) return '—';
 		if (m === 'intermunicipal') {
-			return (
-				LOCALITIES.find((l) => l.id === value)?.municipality ?? value
-			);
+			return localityName(value);
 		}
-		return value;
+		return localityName(value);
 	};
 
 	const recentDateLabel = (r: RecentSearch): string => {
@@ -137,10 +181,7 @@ export default function TripSearch() {
 			: fmt(r.dateFrom);
 	};
 
-	const canSearch =
-		mode === 'interprovincial'
-			? !!from && !!to
-			: !!province && !!from && !!to;
+	const canSearch = !!from && !!to && !searching;
 
 	const connector = (
 		<View
@@ -153,39 +194,24 @@ export default function TripSearch() {
 		/>
 	);
 
-	const provRow = (kind: 'from' | 'to', label: string, value: string) => (
-		<LocalityPicker
-			variant="row"
-			scope="province"
-			label={label}
-			dotColor={kind === 'from' ? themeColors.text : themeColors.primary}
-			value={value}
-			onChange={kind === 'from' ? selectFrom : selectTo}
-			exclude={kind === 'from' ? to : from}
-		/>
-	);
-
 	const munRow = (kind: 'from' | 'to', label: string, value: string) => (
 		<LocalityPicker
 			variant="row"
-			scope="municipality"
 			label={label}
 			dotColor={kind === 'from' ? themeColors.text : themeColors.primary}
 			value={value}
 			onChange={kind === 'from' ? selectFrom : selectTo}
 			exclude={kind === 'from' ? to : from}
-			filter={(l) => l.province === province}
+			// No modo intermunicipal só faz sentido escolher dentro da província
+			// escolhida, senão a pesquisa devolveria rotas que a UI promete não ter.
+			restrictToProvinceId={mode === 'intermunicipal' ? provinceId : null}
 		/>
 	);
 
-	const fromRow =
-		mode === 'interprovincial'
-			? provRow('from', 'De onde sais', from)
-			: munRow('from', 'De onde sais', from);
-	const toRow =
-		mode === 'interprovincial'
-			? provRow('to', 'Para onde vais', to)
-			: munRow('to', 'Para onde vais', to);
+	// Nos dois modos a escolha é por município; o modo intermunicipal apenas
+	// restringe a picker a uma província.
+	const fromRow = munRow('from', 'De onde sais', from);
+	const toRow = munRow('to', 'Para onde vais', to);
 
 	return (
 		<View>
@@ -221,24 +247,18 @@ export default function TripSearch() {
 					className="flex-row rounded-full p-1 mt-4"
 					style={{ backgroundColor: themeColors.background }}
 				>
-					{(
-						[
-							{
-								mode: 'intermunicipal',
-								label: 'Intermunicipal',
-								icon: 'navigate',
-							},
-							{
-								mode: 'interprovincial',
-								label: 'Interprovincial',
-								icon: 'map',
-							},
-						] as {
-							mode: RideMode;
-							label: string;
-							icon: 'navigate' | 'map';
-						}[]
-					).map((opt) => {
+					{[
+						{
+							mode: 'intermunicipal' as const,
+							label: 'Intermunicipal',
+							icon: 'navigate' as const,
+						},
+						{
+							mode: 'interprovincial' as const,
+							label: 'Interprovincial',
+							icon: 'map' as const,
+						},
+					].map((opt) => {
 						const active = mode === opt.mode;
 						return (
 							<Pressable
@@ -278,14 +298,64 @@ export default function TripSearch() {
 				<View className="mt-4">
 					{mode === 'intermunicipal' ? (
 						<>
-							<LocalityPicker
-								variant="row"
-								scope="province"
-								label="Província"
-								dotColor={themeColors.primary}
-								value={province}
-								onChange={selectProvince}
-							/>
+							<View className="flex-row items-center py-3">
+								<View className="w-6 items-center">
+									<View
+										className="w-3 h-3 rounded-full"
+										style={{
+											backgroundColor:
+												themeColors.primary,
+										}}
+									/>
+								</View>
+								<View className="flex-1 ml-3">
+									<Text
+										className="font-sansMedium text-body-xs"
+										style={{ color: themeColors.secondary }}
+									>
+										Província
+									</Text>
+									<ScrollView
+										horizontal
+										showsHorizontalScrollIndicator={false}
+										className="mt-1"
+									>
+										{(provinces.data ?? []).map((p) => {
+											const active = provinceId === p.id;
+											return (
+												<Pressable
+													key={p.id}
+													onPress={() =>
+														selectProvince(
+															active ? '' : p.id,
+														)
+													}
+													className="rounded-full px-3 py-1 border mr-2 min-h-[32px] justify-center"
+													style={{
+														borderColor: active
+															? themeColors.primary
+															: themeColors.border,
+														backgroundColor: active
+															? themeColors.primary
+															: themeColors.card,
+													}}
+												>
+													<Text
+														className="font-sansMedium text-body-xs"
+														style={{
+															color: active
+																? themeColors.onPrimary
+																: themeColors.secondary,
+														}}
+													>
+														{p.name}
+													</Text>
+												</Pressable>
+											);
+										})}
+									</ScrollView>
+								</View>
+							</View>
 							{connector}
 						</>
 					) : null}
@@ -325,7 +395,7 @@ export default function TripSearch() {
 
 				<View className="mt-5">
 					<BoleiaButton
-						title="Procurar viagens"
+						title={searching ? 'A procurar…' : 'Procurar viagens'}
 						onPress={search}
 						disabled={!canSearch}
 					/>
@@ -382,6 +452,20 @@ export default function TripSearch() {
 				</View>
 			) : null}
 
+			{/* Erro */}
+			{error ? (
+				<View className="mt-6">
+					<Card>
+						<Text
+							className="font-sans text-body-small"
+							style={{ color: themeColors.secondary }}
+						>
+							{error}
+						</Text>
+					</Card>
+				</View>
+			) : null}
+
 			{/* Resultados */}
 			{results ? (
 				<View className="mt-6">
@@ -389,7 +473,7 @@ export default function TripSearch() {
 						className="font-sansMedium text-title-tertiary mb-3"
 						style={{ color: themeColors.text }}
 					>
-						{`${results.length} viagem${results.length === 1 ? '' : 'ens'} a bater certo`}
+						{`${total} viagem${total === 1 ? '' : 'ens'} a bater certo`}
 					</Text>
 					{results.length === 0 ? (
 						<Card>
@@ -409,7 +493,7 @@ export default function TripSearch() {
 						results.map((ride) => (
 							<View key={ride.id} className="mb-3">
 								<TripListingCard
-									ride={ride}
+									ride={toRide(ride)}
 									onPress={() =>
 										navigation.navigate('RideDetail', {
 											rideId: ride.id,

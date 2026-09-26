@@ -2,13 +2,19 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { useSessionUser, useSessionUserId } from '../../hooks/useSessionUser';
+import { useSessionUser, useSessionInitials } from '../../hooks/useSessionUser';
+import {
+	getRide,
+	listMyBookings,
+	listRides,
+	type ApiBooking,
+} from '../../lib/api';
+import { toBooking, toRide } from '../../lib/rideMapper';
 import { Eligibility, fetchEligibility } from '../../lib/eligibility';
 import { useAppStore } from '../../store/appStore';
-import { useDbStore } from '../../mock/db';
-import { initials } from '../../mock/helpers';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
@@ -19,7 +25,6 @@ import SectionTitle from '../../components/SectionTitle';
 import TripListingCard from '../../components/TripListingCard';
 
 // Viagens que o passageiro pode ainda embarcar.
-const UPCOMING_STATUSES = ['pedido', 'confirmada', 'em_viagem'];
 
 function BrandHeader({
 	role,
@@ -150,10 +155,20 @@ export default function HomeScreen() {
 		>();
 	const currentRole = useAppStore((s) => s.currentRole);
 	const me = useSessionUser();
-	const sessionUserId = useSessionUserId();
-	const rides = useDbStore((s) => s.db.rides);
-	const bookings = useDbStore((s) => s.db.bookings);
+	const initialsLabel = useSessionInitials();
 	const [elig, setElig] = useState<Eligibility | null>(null);
+
+	// Reservas e próximos embarques vêm do backend. A cache do React Query
+	// evita repetir os pedidos a cada visita à Home.
+	const { data: apiBookings } = useQuery({
+		queryKey: ['myBookings'],
+		queryFn: listMyBookings,
+	});
+	const { data: ridesPage } = useQuery({
+		queryKey: ['rides'],
+		queryFn: () => listRides({ limit: 3 }),
+	});
+
 	useFocusEffect(
 		useCallback(() => {
 			let alive = true;
@@ -165,12 +180,11 @@ export default function HomeScreen() {
 			};
 		}, []),
 	);
-	const kycOk = elig?.loaded
-		? elig.kycDriver?.status === 'VERIFIED'
-		: me?.kyc?.status === 'verificado';
-	const vehicleOk = elig?.loaded
-		? elig.verifiedVehicles.length > 0
-		: me?.vehicle?.status === 'verificado';
+	// A elegibilidade vem sempre da API. Antes havia um fallback para o KYC do
+	// mock, que chegava a dizer "pronto a publicar" a quem ainda não tinha
+	// viatura verificada.
+	const kycOk = elig?.loaded ? elig.kycDriver?.status === 'VERIFIED' : false;
+	const vehicleOk = elig?.loaded ? elig.verifiedVehicles.length > 0 : false;
 	const ready = !!(kycOk && vehicleOk);
 
 	const goToTab = (name: string) =>
@@ -179,31 +193,29 @@ export default function HomeScreen() {
 		);
 
 	// Próxima reserva do passageiro — faixa "A seguir".
-	const nextUp = bookings
+	const nextUpBooking = (apiBookings ?? [])
 		.filter(
 			(b) =>
-				b.passengerId === sessionUserId &&
-				UPCOMING_STATUSES.includes(b.status),
+				b.status === 'REQUESTED' ||
+				b.status === 'CONFIRMED' ||
+				b.status === 'IN_PROGRESS',
 		)
-		.flatMap((b) => {
-			const ride = rides.find((r) => r.id === b.rideId);
-			return ride ? [{ booking: b, ride }] : [];
-		})
-		.sort(
-			(a, b) =>
-				Date.parse(a.ride.departure) - Date.parse(b.ride.departure),
-		)[0];
+		.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))[0];
+	const { data: nextUpRide } = useQuery({
+		queryKey: ['ride', nextUpBooking?.rideId],
+		queryFn: () => getRide(nextUpBooking?.rideId as string),
+		enabled: !!nextUpBooking,
+	});
+	const nextUp = nextUpRide
+		? {
+				booking: toBooking(nextUpBooking as ApiBooking),
+				ride: toRide(nextUpRide),
+			}
+		: undefined;
 
-	// Próximos embarques — mesma montra do Explorar, só os 3 primeiros.
-	const nextRides = rides
-		.filter(
-			(r) =>
-				r.status === 'programada' &&
-				r.seatsTaken < r.seatsTotal &&
-				Date.parse(r.departure) > Date.now(),
-		)
-		.sort((a, b) => Date.parse(a.departure) - Date.parse(b.departure))
-		.slice(0, 3);
+	// Próximos embarques: o backend já devolve as corridas agendadas com
+	// lugares livres, ordenadas por partida.
+	const nextRides = (ridesPage?.rows ?? []).slice(0, 3).map(toRide);
 
 	// O ponto é reforço visual; o significado real está em `statusLabel` (regra
 	// do design system: nunca só cor). "A aguardar" é pendente, não um aviso —
@@ -236,12 +248,11 @@ export default function HomeScreen() {
 					role={currentRole}
 					name={
 						me
-							? `${me.firstName}${me.lastName ? ` ${me.lastName}` : ''}`
+							? [me.name, me.surname].filter(Boolean).join(' ') ||
+								undefined
 							: undefined
 					}
-					initialsLabel={
-						me ? initials(me.firstName, me.lastName) : '?'
-					}
+					initialsLabel={initialsLabel}
 					onProfile={() =>
 						goToTab(
 							currentRole === 'passenger'

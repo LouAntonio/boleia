@@ -48,7 +48,6 @@ export default function RouteStrip({
 						style={{ height: rowHeight, justifyContent: 'center' }}
 					>
 						<Text
-							// eslint-disable-next-line react-native/no-inline-styles
 							style={[
 								styles.time,
 								{
@@ -162,7 +161,6 @@ export default function RouteStrip({
 						) : (
 							<View style={styles.placeRow}>
 								<Text
-									// eslint-disable-next-line react-native/no-inline-styles
 									style={[
 										styles.place,
 										{

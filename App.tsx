@@ -15,16 +15,35 @@ import {
 	HankenGrotesk_800ExtraBold,
 } from '@expo-google-fonts/hanken-grotesk';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { useThemeStore } from './src/store/themeStore';
 import { useThemeColors } from './src/hooks/useThemeColors';
+import {
+	usePushRegistration,
+	ensureAndroidChannel,
+} from './src/hooks/usePushRegistration';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Notificação mostrada em primeiro plano: sem isto, o sistema entrega o push
+// mas a app aberta não mostra nada, e o utilizador acha que não recebeu.
+Notifications.setNotificationHandler({
+	handleNotification: async () => ({
+		shouldShowBanner: true,
+		shouldShowList: true,
+		shouldPlaySound: true,
+		shouldSetBadge: true,
+	}),
+});
+
+void ensureAndroidChannel();
+
 export default function App() {
 	const { theme } = useThemeStore();
 	const { isDark } = useThemeColors();
+	usePushRegistration();
 
 	const [fontsLoaded] = useHanken({
 		HankenGrotesk_400Regular,

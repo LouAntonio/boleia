@@ -232,7 +232,7 @@ export default function OnboardingScreen() {
 					>
 						<Text
 							className="font-sansExtraBold text-title-secondary"
-							// eslint-disable-next-line react-native/no-inline-styles
+
 							style={{ color: themeColors.text }}
 						>
 							{currentIndex === SLIDES.length - 1 ? '✓' : '→'}

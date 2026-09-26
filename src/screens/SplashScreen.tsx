@@ -232,7 +232,7 @@ export default function SplashScreen({
 			>
 				<Text
 					className="font-sansMedium text-body-small"
-					// eslint-disable-next-line react-native/no-inline-styles
+
 					style={{ color: themeColors.secondary }}
 				>
 					Mobilidade interprovincial

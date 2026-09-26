@@ -3,7 +3,6 @@ import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { useSessionUser } from '../../hooks/useSessionUser';
 import { Eligibility, fetchEligibility } from '../../lib/eligibility';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,7 +20,6 @@ export default function PublishScreen() {
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
-	const me = useSessionUser();
 	const [elig, setElig] = useState<Eligibility | null>(null);
 	useFocusEffect(
 		useCallback(() => {
@@ -34,15 +32,14 @@ export default function PublishScreen() {
 			};
 		}, []),
 	);
-	const kycOk = elig?.loaded
-		? elig.kycDriver?.status === 'VERIFIED'
-		: me?.kyc?.status === 'verificado';
-	const vehicleOk = elig?.loaded
-		? elig.verifiedVehicles.length > 0
-		: me?.vehicle?.status === 'verificado';
+	// Elegibilidade sempre pela API: o `me` do mock não é fonte de verdade
+	// para KYC nem para viaturas, e um fallback local diria "verificado" a quem
+	// foi recusado no servidor.
+	const kycOk = elig?.loaded ? elig.kycDriver?.status === 'VERIFIED' : false;
+	const vehicleOk = elig?.loaded ? elig.verifiedVehicles.length > 0 : false;
 	const ready = !!(kycOk && vehicleOk);
 	const kycStamp = !elig?.loaded
-		? (me?.kyc?.status ?? 'nao_submetido')
+		? 'nao_submetido'
 		: !elig.kycDriver
 			? 'nao_submetido'
 			: elig.kycDriver.status === 'VERIFIED'
@@ -51,7 +48,7 @@ export default function PublishScreen() {
 					? 'pendente'
 					: 'recusado';
 	const vehicleStamp = !elig?.loaded
-		? (me?.vehicle?.status ?? 'nao_submetido')
+		? 'nao_submetido'
 		: elig.verifiedVehicles.length > 0
 			? 'verificado'
 			: elig.vehicles.length > 0

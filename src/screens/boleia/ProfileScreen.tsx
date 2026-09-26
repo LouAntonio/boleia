@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
 	View,
 	Text,
@@ -13,11 +13,17 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { onBand } from '../../store/colors';
-import { useSessionUser, useSessionUserId } from '../../hooks/useSessionUser';
+import {
+	useSessionUser,
+	useSessionUserId,
+	useSessionInitials,
+} from '../../hooks/useSessionUser';
 import { useAppStore } from '../../store/appStore';
 import { useThemeStore, ThemeMode } from '../../store/themeStore';
-import { useDbStore } from '../../mock/db';
-import { initials, fmtKz } from '../../mock/helpers';
+import { useQuery } from '@tanstack/react-query';
+import { listMyBookings, listMyRides } from '../../lib/api';
+import { toBooking, toRide } from '../../lib/rideMapper';
+import { fmtKz } from '../../lib/format';
 import { maskPhone } from '../../utils/phone';
 import { statusMeta, StatusTone } from '../../utils/status';
 import { useNavigation } from '@react-navigation/native';
@@ -267,9 +273,29 @@ export default function ProfileScreen() {
 	const theme = useThemeStore((s) => s.theme);
 	const setTheme = useThemeStore((s) => s.setTheme);
 	const me = useSessionUser();
-	const bookings = useDbStore((s) => s.db.bookings);
-	const rides = useDbStore((s) => s.db.rides);
+	const initialsLabel = useSessionInitials();
 	const sessionUserId = useSessionUserId();
+
+	// Reservas e corridas vêm da API: o perfil conta as viagens reais do
+	// utilizador, não as de uma base local.
+	const { data: apiBookings } = useQuery({
+		queryKey: ['myBookings'],
+		queryFn: listMyBookings,
+		enabled: !!sessionUserId,
+	});
+	const { data: myRidesPage } = useQuery({
+		queryKey: ['myRides'],
+		queryFn: () => listMyRides({ limit: 100 }),
+		enabled: !!sessionUserId,
+	});
+	const bookings = useMemo(
+		() => (apiBookings ?? []).map(toBooking),
+		[apiBookings],
+	);
+	const rides = useMemo(
+		() => (myRidesPage?.rows ?? []).map(toRide),
+		[myRidesPage],
+	);
 
 	// Estado real (API) de KYC/viaturas — os gates de pedir/registar
 	// corrida leem daqui, não do mock.
@@ -320,8 +346,11 @@ export default function ProfileScreen() {
 		}
 	};
 
+	// KYC e viaturas vêm da API. O `me` do mock já não é fonte de verdade: um
+	// estado guardado localmente diria "verificado" a quem foi recusado no
+	// servidor.
 	const kycStamp = !elig?.loaded
-		? (me?.kyc?.status ?? 'nao_submetido')
+		? 'nao_submetido'
 		: !elig.kycDriver
 			? 'nao_submetido'
 			: elig.kycDriver.status === 'VERIFIED'
@@ -332,7 +361,7 @@ export default function ProfileScreen() {
 						? 'recusado'
 						: 'nao_submetido';
 	const vehicleStamp = !elig?.loaded
-		? (me?.vehicle?.status ?? 'nao_submetido')
+		? 'nao_submetido'
 		: elig.verifiedVehicles.length > 0
 			? 'verificado'
 			: elig.vehicles.length > 0
@@ -359,8 +388,10 @@ export default function ProfileScreen() {
 	const comissao = Math.round(totalViagens * 0.1);
 	const aReceber = totalViagens - comissao;
 
-	const rating = me?.rating ? me.rating.toFixed(1) : 'novo';
-	const since = me
+	// Não há backend de reviews, por isso não há classificação a mostrar. Exibir
+	// "novo" ou uma nota do mock seria inventar reputação de alguém.
+	const rating = '—';
+	const since = me?.createdAt
 		? new Date(me.createdAt)
 				.toLocaleDateString('pt-PT', {
 					month: 'short',
@@ -404,7 +435,7 @@ export default function ProfileScreen() {
 								className="font-sansExtraBold text-title-secondary"
 								style={{ color: themeColors.onPrimary }}
 							>
-								{me ? initials(me.firstName, me.lastName) : '?'}
+								{initialsLabel}
 							</Text>
 						</View>
 						<View className="flex-1 ml-3">
@@ -419,7 +450,11 @@ export default function ProfileScreen() {
 								style={{ color: themeColors.card }}
 								numberOfLines={1}
 							>
-								{me ? `${me.firstName} ${me.lastName}` : '—'}
+								{me
+									? [me.name, me.surname]
+											.filter(Boolean)
+											.join(' ')
+									: '—'}
 							</Text>
 						</View>
 					</View>
@@ -435,9 +470,6 @@ export default function ProfileScreen() {
 							style={{ color: themeColors.card }}
 						>
 							{rating}
-							{me && me.ratingsCount > 0
-								? ` · ${me.ratingsCount} avaliaçõe${me.ratingsCount > 1 ? 's' : ''}`
-								: ''}
 						</Text>
 						<Text
 							className="font-sansMedium text-body-xs ml-3"
@@ -500,7 +532,7 @@ export default function ProfileScreen() {
 										className="font-sansMedium text-body-xs mt-0.5"
 										style={{ color: themeColors.text }}
 									>
-										{me ? maskPhone(me.phone) : '—'}
+										{me?.phone ? maskPhone(me.phone) : '—'}
 									</Text>
 								</View>
 							</View>
@@ -606,8 +638,7 @@ export default function ProfileScreen() {
 							<VerificationStamp status={vehicleStamp} />
 						</Pressable>
 					</View>
-					{me?.vehicle?.status !== 'verificado' &&
-					vehicleStamp !== 'verificado' ? (
+					{vehicleStamp !== 'verificado' ? (
 						<Text
 							className="font-sans text-body-xs mt-2"
 							style={{ color: themeColors.secondary }}

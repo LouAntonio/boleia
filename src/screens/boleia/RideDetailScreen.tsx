@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { Eligibility, fetchEligibility } from '../../lib/eligibility';
@@ -15,12 +16,20 @@ import StickyCta from '../../components/StickyCta';
 import SectionTitle from '../../components/SectionTitle';
 import RouteStrip, { StripStop } from '../../components/RouteStrip';
 import StatusStamp from '../../components/StatusStamp';
-import { rideMode, rideProgress } from '../../mock/repos/rideRepo';
-import { requestBooking } from '../../mock/repos/bookingRepo';
 import BookingStub from '../../components/BookingStub';
-import RidePeople from '../../components/RidePeople';
-import { useDbStore } from '../../mock/db';
-import { fmtKz, hhmm, durationBetween, initials } from '../../mock/helpers';
+import {
+	apiErrorMessage,
+	bookRide,
+	getRide,
+	listMyBookings,
+} from '../../lib/api';
+import {
+	toRide,
+	toBooking,
+	seatsLeft,
+	rideProgressFraction,
+} from '../../lib/rideMapper';
+import { hhmm, durationBetween, fmtKz, initials } from '../../lib/format';
 
 export default function RideDetailScreen() {
 	const navigation =
@@ -29,27 +38,40 @@ export default function RideDetailScreen() {
 		>();
 	const route = useRoute<RouteProp<BoleiaMainStackParamList, 'RideDetail'>>();
 	const { themeColors } = useThemeColors();
-
-	const ride = useDbStore((s) =>
-		s.db.rides.find((r) => r.id === route.params.rideId),
-	);
-	const driver = useDbStore((s) =>
-		s.db.users.find((u) => u.id === ride?.driverId),
-	);
-	const bookings = useDbStore((s) => s.db.bookings);
-	const users = useDbStore((s) => s.db.users);
+	const queryClient = useQueryClient();
 	const sessionUserId = useSessionUserId();
-	const myBooking = useDbStore((s) =>
-		s.db.bookings.find(
-			(b) =>
-				b.rideId === route.params.rideId &&
-				b.passengerId === sessionUserId &&
-				b.status !== 'cancelada',
-		),
+
+	// A corrida vem do backend. Um `useQuery` em vez de estado local para que
+	// o detalhe reflecta logo um lugar que o passageiro acabou de perder, sem
+	// ter de recarregar o ecrã.
+	const { data: apiRide, isLoading } = useQuery({
+		queryKey: ['ride', route.params.rideId],
+		queryFn: () => getRide(route.params.rideId),
+	});
+
+	// Só as reservas do próprio passageiro interessam aqui: o ecrã mostra o
+	// estado do pedido dele, não o livro de reservas da corrida (que é do
+	// motorista e exige KYC verificado).
+	const { data: myBookings } = useQuery({
+		queryKey: ['myBookings'],
+		queryFn: listMyBookings,
+		enabled: !!sessionUserId,
+	});
+
+	const ride = apiRide ? toRide(apiRide) : undefined;
+	// O backend envia o motorista com o nome e o id, que é tudo o que este
+	// ecrã precisa. Não há dados inventados.
+	const driver = apiRide?.driver;
+	const myBookingApi = myBookings?.find(
+		(b) =>
+			b.rideId === route.params.rideId &&
+			b.passengerId === sessionUserId &&
+			b.status !== 'CANCELLED',
 	);
+	const myBooking = myBookingApi ? toBooking(myBookingApi) : undefined;
 
 	const pick = 0; // recolha sempre na origem
-	const [drop, setDrop] = useState(ride ? ride.stops.length + 1 : 1);
+	const [drop, setDrop] = useState(1);
 	const [seats, setSeats] = useState(1);
 	const [result, setResult] = useState<
 		{ ok: true; bookingId: string } | { ok: false; error: string } | null
@@ -73,28 +95,30 @@ export default function RideDetailScreen() {
 	if (!ride) {
 		return (
 			<SafeAreaView
-				className="flex-1 items-center justify-center"
+				className="flex-1 items-center justify-center px-8"
 				style={{ backgroundColor: themeColors.background }}
 			>
-				<Text style={{ color: themeColors.secondary }}>
-					Viagem não encontrada.
+				<Text
+					style={{
+						color: themeColors.secondary,
+						textAlign: 'center',
+					}}
+				>
+					{isLoading
+						? 'A carregar a viagem…'
+						: 'Viagem não encontrada.'}
 				</Text>
 			</SafeAreaView>
 		);
 	}
 
-	const available = ride.seatsTotal - ride.seatsTaken;
+	const available = seatsLeft(ride);
 	const total = seats * ride.pricePerSeat;
 	const stops = [ride.origin, ...ride.stops, ride.destination];
-	const onBoard = bookings
-		.filter(
-			(b) =>
-				b.rideId === ride.id &&
-				b.passengerId !== sessionUserId &&
-				(b.status === 'confirmada' || b.status === 'em_viagem'),
-		)
-		.map((b) => users.find((u) => u.id === b.passengerId))
-		.filter((u): u is NonNullable<typeof u> => !!u);
+	// Quantas pessoas já reservaram lugar, sem dizer quem. Os dados de outros
+	// utilizadores não são públicos: só o próprio passageiro e o motorista
+	// devem ver a identidade de quem embarca.
+	const onBoardCount = Math.max(0, ride.seatsTaken);
 
 	const stripOrigin: StripStop = {
 		place: ride.origin.name,
@@ -114,42 +138,47 @@ export default function RideDetailScreen() {
 		km: `${ride.destination.km} km`,
 		kind: 'destination',
 	};
-	const seatsLeft = available;
 	const dateLabel = new Date(ride.departure).toLocaleDateString('pt-PT', {
 		day: 'numeric',
 		month: 'short',
 	});
 
-	// Mesma lógica do botão inline anterior — agora na barra fixa.
-	const submitRequest = () => {
-		if (drop <= 0) return;
+	/**
+	 * Pede um lugar à corrida.
+	 *
+	 * A v1 só aceita pagamento em dinheiro: o backend tem `WALLET` e
+	 * `MULTICAIXA`, mas sem carteira nem integração Multicaixa o pagamento não
+	 * concluiria, e o passageiro ficaria com uma reserva que nunca é paga.
+	 */
+	const submitRequest = async () => {
+		if (drop <= 0 || pending) return;
 		if (passengerBlocked) {
 			navigation.navigate('Kyc');
 			return;
 		}
 		setPending(true);
-		setTimeout(() => {
-			const res = requestBooking({
-				rideId: ride.id,
-				passengerId: sessionUserId,
+		setResult(null);
+		try {
+			const booking = await bookRide(ride.id, {
 				seats,
-				paymentMethod: 'multicaixa',
+				paymentMethod: 'CASH',
 				pickStopIndex: pick,
 				dropStopIndex: drop,
 			});
+			setResult({ ok: true, bookingId: booking.id });
+			// A lista de reservas do passageiro passou a ter uma entrada nova.
+			await queryClient.invalidateQueries({ queryKey: ['myBookings'] });
+		} catch (error) {
+			setResult({
+				ok: false,
+				error: apiErrorMessage(
+					error,
+					'Não foi possível pedir o lugar.',
+				),
+			});
+		} finally {
 			setPending(false);
-			setResult(
-				res.ok
-					? res
-					: {
-							ok: false,
-							error:
-								res.error === 'cheia'
-									? 'Já não há lugares suficientes nesta viagem.'
-									: 'Pedido inválido.',
-						},
-			);
-		}, 400);
+		}
 	};
 
 	if (myBooking) {
@@ -206,14 +235,6 @@ export default function RideDetailScreen() {
 							) : undefined
 						}
 					/>
-					<RidePeople
-						ride={ride}
-						driver={driver}
-						passengers={onBoard}
-						onPressUser={(userId) =>
-							navigation.navigate('PublicProfile', { userId })
-						}
-					/>
 				</ScrollView>
 			</SafeAreaView>
 		);
@@ -245,9 +266,14 @@ export default function RideDetailScreen() {
 									className="font-sansMedium text-body-xs"
 									style={{ color: themeColors.secondary }}
 								>
-									{rideMode(ride) === 'interprovincial'
-										? 'Interprovincial'
-										: 'Intermunicipal'}
+									{/*
+									 * A interprovincialidade deixou de ser um
+									 * rótulo: o número de paragens intermédias é
+									 * o que o passageiro reconhece.
+									 */}
+									{ride.stops.length > 0
+										? `${ride.stops.length} paragem${ride.stops.length === 1 ? '' : 'ens'} pelo caminho`
+										: 'Direto, sem paragens'}
 								</Text>
 							</View>
 							<View className="flex-row items-center">
@@ -272,7 +298,7 @@ export default function RideDetailScreen() {
 								origin={stripOrigin}
 								stops={stripStops}
 								destination={stripDestination}
-								progress={rideProgress(ride)}
+								progress={rideProgressFraction(ride)}
 							/>
 						</View>
 						<View
@@ -298,8 +324,8 @@ export default function RideDetailScreen() {
 							>
 								{durationBetween(ride.departure, ride.arrival)}{' '}
 								·{' '}
-								{seatsLeft > 0
-									? `${seatsLeft} livre${seatsLeft === 1 ? '' : 's'}`
+								{available > 0
+									? `${available} livre${available === 1 ? '' : 's'}`
 									: 'Lotada'}
 							</Text>
 						</View>
@@ -322,10 +348,7 @@ export default function RideDetailScreen() {
 										className="font-sansExtraBold text-body-small"
 										style={{ color: themeColors.primary }}
 									>
-										{initials(
-											driver.firstName,
-											driver.lastName,
-										)}
+										{initials(driver.name, '')}
 									</Text>
 								</View>
 								<View className="flex-1 ml-3">
@@ -334,7 +357,7 @@ export default function RideDetailScreen() {
 										style={{ color: themeColors.text }}
 										numberOfLines={1}
 									>
-										{driver.firstName} {driver.lastName}
+										{driver.name}
 									</Text>
 									<Text
 										className="font-sansMedium text-body-xs mt-0.5"
@@ -342,11 +365,13 @@ export default function RideDetailScreen() {
 											color: themeColors.secondary,
 										}}
 									>
-										★{' '}
-										{driver.rating
-											? driver.rating.toFixed(1)
-											: 'novo'}{' '}
-										· motorista verificado
+										{/*
+										 * Não há backend de avaliações, por isso não
+										 * há nota a mostrar. Só se afirma o que o
+										 * servidor garante: só quem tem KYC e
+										 * viatura verificadas publica corridas.
+										 */}
+										Motorista verificado
 									</Text>
 								</View>
 								<BoleiaButton
@@ -364,14 +389,28 @@ export default function RideDetailScreen() {
 					</View>
 				) : null}
 
-				<RidePeople
-					ride={ride}
-					driver={driver}
-					passengers={onBoard}
-					onPressUser={(userId) =>
-						navigation.navigate('PublicProfile', { userId })
-					}
-				/>
+				{/* Quantas pessoas já reservaram. A identidade de quem vai
+				    embarcar não é pública: só o passageiro e o motorista a
+				    devem ver. */}
+				<View className="mt-4">
+					<Card>
+						<View className="flex-row items-center">
+							<Ionicons
+								name="people-outline"
+								size={20}
+								color={themeColors.secondary}
+							/>
+							<Text
+								className="font-sans text-body-small ml-2 flex-1"
+								style={{ color: themeColors.secondary }}
+							>
+								{onBoardCount === 0
+									? 'Ainda ninguém reservou lugar.'
+									: `${onBoardCount} pessoa${onBoardCount === 1 ? '' : 's'} já reservou${onBoardCount === 1 ? '' : 'am'}.`}
+							</Text>
+						</View>
+					</Card>
+				</View>
 
 				{/* Reserva */}
 				<View className="mt-6">

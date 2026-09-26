@@ -1,35 +1,30 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import BackButton from '../../components/BackButton';
+import Card from '../../components/Card';
+import BoleiaButton from '../../components/BoleiaButton';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
-import { Ionicons } from '@expo/vector-icons';
-import BoleiaButton from '../../components/BoleiaButton';
-import { useDbStore } from '../../mock/db';
-import { resolveSos } from '../../mock/repos/liveRepo';
-import { fmtDate } from '../../mock/helpers';
 
-// Central de segurança — eventos SOS registados (mock) e respetivo estado.
-// No demo basta um botão para "confirmar assistência" (sinal que alguém cuidou).
+/**
+ * Central de segurança — ainda não disponível.
+ *
+ * Não existe endpoint de SOS no backend, e o ecrã já oferecia um botão que
+ * confirmava alertas que não chegavam a lado nenhum. Numa emergência, dizer
+ * "alerta enviado" sem ter enviado nada é o pior erro que uma app de
+ * mobilidade pode cometer, por isso o ecrã explica o que fazer enquanto a
+ * functionality não existe.
+ */
 export default function SosCenterScreen() {
 	const navigation =
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'SosCenter'>
 		>();
 	const { themeColors } = useThemeColors();
-	const events = useDbStore((s) => s.db.sos);
-	const users = useDbStore((s) => s.db.users);
-	const rides = useDbStore((s) => s.db.rides);
-
-	const name = (id: string) => {
-		const u = users.find((x) => x.id === id);
-		return u ? `${u.firstName} ${u.lastName}`.trim() : id;
-	};
-	const route = (id: string) =>
-		rides.find((r) => r.id === id)?.routeName ?? 'Rota desconhecida';
 
 	return (
 		<SafeAreaView
@@ -50,128 +45,64 @@ export default function SosCenterScreen() {
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
 			>
-				<Text
-					className="font-sans text-body-small mb-4 leading-5"
-					style={{ color: themeColors.secondary }}
-				>
-					Eventos SOS desta conta. Quando um alerta está ativo, a
-					central Boleia liga-te e à pessoa de confiança que
-					indicaste.
-				</Text>
-
-				{events.length === 0 ? (
-					<View
-						className="p-5 rounded-xl border items-center"
-						style={{
-							borderColor: themeColors.border,
-							backgroundColor: themeColors.card,
-						}}
-					>
-						<Ionicons
-							name="shield-checkmark-outline"
-							size={30}
-							color={themeColors.success}
-						/>
+				<Card>
+					<View className="items-center py-4">
+						<View
+							className="w-14 h-14 rounded-full items-center justify-center"
+							style={{ backgroundColor: themeColors.accentWeak }}
+						>
+							<Ionicons
+								name="shield-outline"
+								size={26}
+								color={themeColors.primary}
+							/>
+						</View>
 						<Text
-							className="font-sansMedium text-body-small mt-2"
+							className="font-sansBold text-label mt-3"
 							style={{ color: themeColors.text }}
 						>
-							Sem alerts por agora
+							A central Boleia ainda não está activa
 						</Text>
 						<Text
-							className="font-sans text-body-xs text-center mt-1"
+							className="font-sans text-body-small text-center mt-1.5"
 							style={{ color: themeColors.secondary }}
 						>
-							Os pedidos SOS que fizeres durante uma viagem
-							aparecem aqui.
+							Quando estiver, um alerta SOS avisa a tua pessoa de
+							confiança e a central em poucos minutos.
 						</Text>
 					</View>
-				) : (
-					events.map((e) => {
-						const active = e.status === 'ativa';
-						return (
-							<View
-								key={e.id}
-								className="p-4 rounded-xl border mb-3"
-								style={{
-									borderColor: active
-										? themeColors.error
-										: themeColors.border,
-									backgroundColor: themeColors.card,
-								}}
-							>
-								<View className="flex-row items-center">
-									<View
-										className="w-9 h-9 rounded-full items-center justify-center mr-3"
-										style={{
-											backgroundColor: active
-												? themeColors.error
-												: themeColors.success,
-										}}
-									>
-										<Ionicons
-											name="alert-circle"
-											size={18}
-											color={themeColors.card}
-										/>
-									</View>
-									<Text
-										className="font-sansBold text-label-small flex-1"
-										style={{ color: themeColors.text }}
-									>
-										{name(e.fromUserId)}
-									</Text>
-									<Text
-										className="font-sansMedium text-body-xs"
-										style={{
-											color: themeColors.secondary,
-										}}
-									>
-										{fmtDate(e.createdAt)}
-									</Text>
-								</View>
-								<Text
-									className="font-sans text-body-small mt-2 leading-5"
-									style={{ color: themeColors.secondary }}
-								>
-									{e.message}
-								</Text>
-								<Text
-									className="font-sansMedium text-body-xs mt-1"
-									style={{ color: themeColors.secondary }}
-								>
-									{route(e.rideId)}
-								</Text>
+				</Card>
 
-								{active ? (
-									<View className="mt-3">
-										<BoleiaButton
-											title="Confirmar assistência"
-											variant="outline"
-											onPress={() => resolveSos(e.id)}
-										/>
-									</View>
-								) : (
-									<View className="flex-row items-center mt-3">
-										<Ionicons
-											name="checkmark-circle"
-											size={16}
-											color={themeColors.success}
-										/>
-										<Text
-											className="font-sans text-body-xs ml-1.5"
-											style={{
-												color: themeColors.success,
-											}}
-										>
-											Assistência confirmada
-										</Text>
-									</View>
-								)}
-							</View>
-						);
-					})
-				)}
+				<View
+					className="mt-4 p-4 rounded-xl border"
+					style={{
+						borderColor: themeColors.border,
+						backgroundColor: themeColors.card,
+					}}
+				>
+					<Text
+						className="font-sansBold text-body-small"
+						style={{ color: themeColors.text }}
+					>
+						Enquanto isso, em emergência
+					</Text>
+					<Text
+						className="font-sans text-body-xs mt-1.5 leading-5"
+						style={{ color: themeColors.secondary }}
+					>
+						Liga directamente para os serviços de emergência locais.
+						Diz onde estás, para que caminho fazes e o nome de quem
+						viaja contigo.
+					</Text>
+				</View>
+
+				<View className="w-full mt-6">
+					<BoleiaButton
+						title="Voltar"
+						variant="secondary"
+						onPress={() => navigation.goBack()}
+					/>
+				</View>
 			</ScrollView>
 		</SafeAreaView>
 	);

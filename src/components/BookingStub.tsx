@@ -11,8 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Booking, Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { hhmm, fmtKz } from '../mock/helpers';
-import { rideProgress, rideMode } from '../mock/repos/rideRepo';
+import { hhmm, fmtKz } from '../lib/format';
+import { rideProgressFraction } from '../lib/rideMapper';
 import { statusMeta } from '../utils/status';
 import RouteRail from './RouteRail';
 
@@ -112,14 +112,12 @@ export default function BookingStub({
 		day: 'numeric',
 		month: 'short',
 	});
-	const modeLabel =
-		rideMode(ride) === 'interprovincial'
-			? 'Interprovincial'
-			: 'Intermunicipal';
+	// A interprovincialidade já não se deduz do nome: o backend diz quantas
+	// paragens intermédias a corrida tem, e é isso que o utilizador reconhece.
 	const stopsLabel =
 		ride.stops.length === 0
-			? 'sem paragens'
-			: `${ride.stops.length} paragem${ride.stops.length === 1 ? '' : 'ens'}`;
+			? 'direto, sem paragens'
+			: `${ride.stops.length} paragem${ride.stops.length === 1 ? '' : 'ens'} pelo caminho`;
 
 	return (
 		<Pressable
@@ -183,7 +181,7 @@ export default function BookingStub({
 						place: ride.destination.name,
 						time: hhmm(ride.arrival),
 					}}
-					progress={live ? rideProgress(ride) : 0}
+					progress={live ? rideProgressFraction(ride) : 0}
 					live={live}
 					railColor={live ? themeColors.success : themeColors.primary}
 				/>
@@ -192,7 +190,7 @@ export default function BookingStub({
 						className="font-sans text-body-small flex-1"
 						style={{ color: themeColors.secondary }}
 					>
-						{modeLabel} · {stopsLabel}
+						{stopsLabel}
 					</Text>
 					<Text
 						className="font-sansMedium text-body-small ml-3"

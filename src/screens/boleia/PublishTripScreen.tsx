@@ -22,55 +22,22 @@ import StickyCta from '../../components/StickyCta';
 import LocalityPicker from '../../components/LocalityPicker';
 import DatePicker from '../../components/DatePicker';
 import TimePicker from '../../components/TimePicker';
-import { useSessionUserId } from '../../hooks/useSessionUser';
-import { useDbStore } from '../../mock/db';
+import { useSessionUser } from '../../hooks/useSessionUser';
 import { useFocusEffect } from '@react-navigation/native';
 import {
 	ApiVehicle,
 	apiErrorMessage,
 	createRide as createRideApi,
-	listLocalities,
 	listMyVehicles,
-	listProvinces,
+	type CreateRideStopInput,
 } from '../../lib/api';
-import {
-	createRide,
-	estimateRoute,
-	RideMode,
-	RouteStopInput,
-} from '../../mock/repos/rideRepo';
-import { localityById } from '../../mock/locale';
-import { fmtKz, formatKzInput, parseKzInput } from '../../mock/helpers';
+import { useAllLocalities } from '../../hooks/useLocalities';
+import type { SearchMode } from '../../lib/recentSearches';
+import { fmtKz, formatKzInput, parseKzInput } from '../../lib/format';
 import { toDateKey } from '../../utils/date';
 
 const PRICE_SUGGEST = [12000, 15000, 18000, 22000];
 const MAX_STOPS = 4;
-
-// Resolve o id UUID da API a partir de (província, município) do mock —
-// os nomes são os mesmos do seed (21 províncias / 306 municípios reais).
-let provincesCache: { id: string; name: string }[] | null = null;
-const localitiesCache = new Map<string, { id: string; name: string }[]>();
-
-async function resolveApiLocalityId(
-	province: string,
-	municipality: string,
-): Promise<string | null> {
-	try {
-		if (!provincesCache) {
-			provincesCache = await listProvinces();
-		}
-		const prov = provincesCache.find((p) => p.name === province);
-		if (!prov) return null;
-		let locals = localitiesCache.get(prov.id);
-		if (!locals) {
-			locals = await listLocalities(prov.id);
-			localitiesCache.set(prov.id, locals);
-		}
-		return locals.find((l) => l.name === municipality)?.id ?? null;
-	} catch {
-		return null;
-	}
-}
 
 type StopDraft = {
 	kind: 'locality' | 'free';
@@ -104,9 +71,11 @@ export default function PublishTripScreen() {
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'PublishTrip'>
 		>();
 	const { themeColors } = useThemeColors();
-	const driverId = useSessionUserId();
-	const me = useDbStore((s) => s.db.users.find((u) => u.id === driverId));
-	const mockVehicle = me?.vehicle;
+	// O nome vem da sessão real, que o backend devolveu no login.
+	const sessionUser = useSessionUser();
+	const driverName =
+		[sessionUser?.name, sessionUser?.surname].filter(Boolean).join(' ') ||
+		undefined;
 
 	// Viaturas reais verificadas (gate server-side exige >=1).
 	const [apiVehicles, setApiVehicles] = useState<ApiVehicle[]>([]);
@@ -134,9 +103,12 @@ export default function PublishTripScreen() {
 	);
 
 	const selectedVehicle = apiVehicles.find((v) => v.id === vehicleId);
-	const maxSeats = selectedVehicle?.seats ?? mockVehicle?.seats ?? 4;
+	// O teto de lugares vem da lotação real da viatura. O valor de recurso só
+	// entra se a lista ainda não carregou, para o formulário não ficar sem
+	// limite antes de a resposta chegar.
+	const maxSeats = selectedVehicle?.seats ?? 4;
 
-	const [mode, setMode] = useState<RideMode>('interprovincial');
+	const [mode, setMode] = useState<SearchMode>('interprovincial');
 	const [province, setProvince] = useState('');
 	const [from, setFrom] = useState('');
 	const [to, setTo] = useState('');
@@ -152,7 +124,7 @@ export default function PublishTripScreen() {
 	const [stops, setStops] = useState<StopDraft[]>([]);
 	const [published, setPublished] = useState<string | null>(null);
 
-	const changeMode = (m: RideMode) => {
+	const changeMode = (m: SearchMode) => {
 		if (m === mode) return;
 		setMode(m);
 		setProvince('');
@@ -173,7 +145,19 @@ export default function PublishTripScreen() {
 	const removeStop = (i: number) =>
 		setStops((prev) => prev.filter((_, j) => j !== i));
 
-	const stopsInput: RouteStopInput[] = stops
+	/**
+	 * Localidades escolhidas, para o resumo e para validar as paragens.
+	 *
+	 * O `LocalityPicker` já devolve UUIDs reais, por isso não há conversão de
+	 * nome para id: o que o formulário escolhe é o que vai para o backend.
+	 */
+	const localities = useAllLocalities();
+	const localityById = useCallback(
+		(id: string) => localities.find((l) => l.id === id),
+		[localities],
+	);
+
+	const stopsInput: CreateRideStopInput[] = stops
 		.map((s) => ({
 			localityId:
 				s.kind === 'locality' && s.localityId
@@ -183,57 +167,46 @@ export default function PublishTripScreen() {
 		}))
 		.filter(
 			(s) =>
-				(s.localityId && localityById(s.localityId).name) ||
+				(s.localityId && localityById(s.localityId)) ||
 				s.name.length > 0,
 		);
 
 	const price = parseKzInput(priceStr);
+	// O tipo de viagem é deduzido das províncias reais das localidades escolhidas.
 	const fromLoc = from ? localityById(from) : null;
 	const toLoc = to ? localityById(to) : null;
-	const derived: RideMode | null =
+	const derived: SearchMode | null =
 		fromLoc && toLoc
-			? fromLoc.province === toLoc.province
+			? fromLoc.provinceId === toLoc.provinceId
 				? 'intermunicipal'
 				: 'interprovincial'
 			: null;
 
-	const previewISO = date
-		? `${date}T${hour}:00`
-		: `${toDateKey(new Date())}T${hour}:00`;
-	const route =
-		from && to && derived
-			? estimateRoute({
-					originLocalityId: from,
-					destinationLocalityId: to,
-					departureISO: new Date(previewISO).toISOString(),
-					stops: stopsInput,
-				})
-			: null;
-
 	const departureDate = date && hour ? new Date(`${date}T${hour}:00`) : null;
 
-	const autoArrival =
-		route && departureDate
-			? new Date(
-					departureDate.getTime() + route.distanceKm * 1.22 * 60000,
-				)
-			: null;
-
+	/**
+	 * Hora de chegada.
+	 *
+	 * Só é mostrada quando o motorista a define. A estimativa automática
+	 * anterior/media a distância entre localidades num mock e produzia uma ETA
+	 * que o passageiro acreditava; o backend é que reparte a viagem pelas
+	 * paragens, e é essa estimativa que vale.
+	 */
 	const arrival =
 		arrivalOverride && date
 			? new Date(`${arrivalOverride.date}T${arrivalOverride.time}:00`)
-			: autoArrival;
+			: null;
 
 	const arrivalAfterDeparture =
 		!departureDate ||
 		!arrival ||
 		arrival.getTime() > departureDate.getTime();
 
-	const overrideActive =
-		!!arrivalOverride &&
-		!!autoArrival &&
-		!!arrival &&
-		Math.abs(arrival.getTime() - autoArrival.getTime()) >= 60000;
+	// O horário de chegada só aparece quando o motorista o define. Não há
+	// estimativa automática no cliente: a distância real entre localidades é do
+	// backend, e uma ETA inventada no formulário seria a mesma que o passageiro
+	// veria.
+	const overrideActive = !!arrival;
 
 	const openArrivalEditor = () => {
 		if (!arrival) return;
@@ -268,37 +241,34 @@ export default function PublishTripScreen() {
 
 	const publish = async () => {
 		if (!canPublish || !from || !to || publishing) return;
+		if (!vehicleId) {
+			setPublishError('Escolhe uma viatura para publicar.');
+			return;
+		}
 		setPublishing(true);
 		setPublishError(null);
-		const dep = new Date(`${date}T${hour}:00`);
+
+		const departure = new Date(`${date}T${hour}:00`);
+		// Sem hora de chegada explícita, o backend estima-a a repartir a viagem
+		// pelas paragens. Sem `arrivalAt`, a corrida fica sem hora de chegada
+		// calculada, que é melhor do que mostrar ao passageiro uma ETA
+		// inventada a partir de uma distância que não conhecemos.
 		const arrivalISO = arrival ? arrival.toISOString() : undefined;
+
 		try {
-			// 1) Publicar na API real (gates de KYC/viatura no servidor).
-			if (vehicleId && fromLoc && toLoc) {
-				const originId = await resolveApiLocalityId(
-					fromLoc.province,
-					fromLoc.municipality,
-				);
-				const destId = await resolveApiLocalityId(
-					toLoc.province,
-					toLoc.municipality,
-				);
-				if (originId && destId) {
-					await createRideApi({
-						vehicleId,
-						originLocalityId: originId,
-						destinationLocalityId: destId,
-						departureAt: dep.toISOString(),
-						arrivalAt:
-							arrivalISO ??
-							new Date(
-								dep.getTime() + 4 * 60 * 60000,
-							).toISOString(),
-						pricePerSeat: price,
-						seatsTotal: seats,
-					});
-				}
-			}
+			const ride = await createRideApi({
+				vehicleId,
+				originLocalityId: from,
+				destinationLocalityId: to,
+				departureAt: departure.toISOString(),
+				arrivalAt:
+					arrivalISO ??
+					new Date(departure.getTime() + 4 * 60000).toISOString(),
+				pricePerSeat: price,
+				seatsTotal: seats,
+				stops: stopsInput,
+			});
+			setPublished(ride.id);
 		} catch (error) {
 			setPublishing(false);
 			setPublishError(
@@ -306,19 +276,8 @@ export default function PublishTripScreen() {
 			);
 			return;
 		}
-		// 2) Espelho no mock para o demo continuar a listar a viagem.
-		const ride = createRide({
-			driverId,
-			originLocalityId: from,
-			destinationLocalityId: to,
-			departureISO: dep.toISOString(),
-			arrivalISO,
-			seatsTotal: seats,
-			pricePerSeat: price,
-			stops: stopsInput,
-		});
+
 		setPublishing(false);
-		setPublished(ride.id);
 		setTimeout(() => {
 			navigation.goBack();
 		}, 1800);
@@ -336,7 +295,7 @@ export default function PublishTripScreen() {
 	);
 
 	const modeOpts: {
-		mode: RideMode;
+		mode: SearchMode;
 		label: string;
 		icon: 'navigate' | 'map';
 	}[] = [
@@ -420,12 +379,10 @@ export default function PublishTripScreen() {
 					className="font-sansMedium text-body-xs mt-3"
 					style={{ color: themeColors.secondary }}
 				>
-					{me ? `${me.firstName} ${me.lastName}` : 'Motorista'}
+					{driverName ?? 'Motorista'}
 					{selectedVehicle
 						? ` · ${selectedVehicle.make} ${selectedVehicle.model} · lotação ${maxSeats}`
-						: mockVehicle
-							? ` · ${mockVehicle.make} ${mockVehicle.model} · lotação ${maxSeats}`
-							: ''}
+						: ''}
 				</Text>
 
 				{/* Conte — conteúdo por passo */}
@@ -512,7 +469,6 @@ export default function PublishTripScreen() {
 										<>
 											<LocalityPicker
 												variant="row"
-												scope="province"
 												label="Província"
 												dotColor={themeColors.primary}
 												value={province}
@@ -527,31 +483,29 @@ export default function PublishTripScreen() {
 									) : null}
 									<LocalityPicker
 										variant="row"
-										scope="municipality"
 										label="De onde sais"
 										dotColor={themeColors.primary}
 										value={from}
 										onChange={setFrom}
 										exclude={to}
-										filter={
+										restrictToProvinceId={
 											mode === 'intermunicipal'
-												? (l) => l.province === province
-												: undefined
+												? province
+												: null
 										}
 									/>
 									{connector}
 									<LocalityPicker
 										variant="row"
-										scope="municipality"
 										label="Para onde vais"
 										dotColor={themeColors.primary}
 										value={to}
 										onChange={setTo}
 										exclude={from}
-										filter={
+										restrictToProvinceId={
 											mode === 'intermunicipal'
-												? (l) => l.province === province
-												: undefined
+												? province
+												: null
 										}
 									/>
 								</View>

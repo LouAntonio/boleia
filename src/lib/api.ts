@@ -265,6 +265,8 @@ export interface ApiLocality {
 	id: string;
 	municipality: string;
 	name: string;
+	/** Necessário para agrupar as localidades por província no selector. */
+	provinceId: string;
 }
 
 export async function listProvinces(): Promise<ApiProvince[]> {
@@ -309,11 +311,40 @@ export async function saveEmergencyContact(input: {
 
 // ---------- Corridas / reservas ----------
 
+/** Estados de uma corrida, exactamente como o backend os guarda. */
+export type RideStatus =
+	'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+/** Estados de uma reserva, exactamente como o backend os guarda. */
+export type BookingStatus =
+	| 'REQUESTED'
+	| 'CONFIRMED'
+	| 'IN_PROGRESS'
+	| 'COMPLETED'
+	| 'REJECTED'
+	| 'CANCELLED'
+	| 'EXPIRED';
+
+/** Papel de uma paragem no percurso. */
+export type RideStopKind = 'ORIGIN' | 'INTERMEDIATE' | 'DESTINATION';
+
+/**
+ * Métodos de pagamento aceites pelo backend.
+ *
+ * A v1 da app só usa `CASH`: `WALLET` e `MULTICAIXA` existem no esquema mas
+ * não têm Wallet nem integração Multicaixa, e oferecê-los na UI levaria o
+ * utilizador a um pagamento que não conclude.
+ */
+export type ApiPaymentMethod = 'WALLET' | 'CASH' | 'MULTICAIXA';
+
+export const SUPPORTED_PAYMENT_METHODS: ApiPaymentMethod[] = ['CASH'];
+
 export interface ApiRideStop {
 	sequence: number;
-	kind: string;
+	kind: RideStopKind;
 	localityId: string | null;
 	name: string;
+	/** Hora já formatada em WAT pelo backend, para mostrar sem recalcular. */
 	timeLabel: string;
 }
 
@@ -327,7 +358,12 @@ export interface ApiRide {
 	seatsTotal: number;
 	seatsTaken: number;
 	pricePerSeat: number;
-	status: string;
+	status: RideStatus;
+	/**
+	 * Paragem em que a corrida está. O ecrã de acompanhamento usa-o para saber
+	 * onde mostrar o marcador, e é atualizado por WebSocket (`ride:progress`).
+	 */
+	progressIndex: number;
 	stops?: ApiRideStop[];
 	driver?: { id: string; name: string };
 	vehicle?: {
@@ -339,24 +375,38 @@ export interface ApiRide {
 	} | null;
 }
 
+/** Paragem de recolha ou destino escolhida pelo passageiro. */
 export interface ApiBooking {
 	id: string;
-	rideId?: string;
-	passengerId?: string;
+	rideId: string;
+	passengerId: string;
 	seats: number;
 	amount: number;
-	paymentMethod: string;
-	status: string;
-	passenger?: { id: string; name: string };
+	paymentMethod: ApiPaymentMethod;
+	pickStopIndex: number | null;
+	dropStopIndex: number | null;
+	status: BookingStatus;
+	/** Motivo de recusa ou cancelamento. É o que a app mostra ao passageiro. */
+	reason: string | null;
+	createdAt: string;
 	ride?: {
 		id: string;
 		routeName: string;
 		departureAt: string;
-		status: string;
+		arrivalAt: string;
+		status: RideStatus;
 	};
 }
 
-export async function createRide(input: {
+/** Paragem a publicar, com hora e distância opcionais. */
+export interface CreateRideStopInput {
+	localityId?: string;
+	name?: string;
+	time?: string;
+	distanceKm?: number;
+}
+
+export interface CreateRideInput {
 	vehicleId: string;
 	originLocalityId: string;
 	destinationLocalityId: string;
@@ -364,20 +414,68 @@ export async function createRide(input: {
 	arrivalAt: string;
 	pricePerSeat: number;
 	seatsTotal: number;
-}): Promise<ApiRide> {
+	/** Paragens intermédias, por ordem. Opcional. */
+	stops?: CreateRideStopInput[];
+}
+
+/**
+ * Página de resultados da pesquisa.
+ *
+ * `GET /api/rides` devolve o array puro e põe o total no cabeçalho
+ * `X-Total-Count`, por isso o total vem separado da lista.
+ */
+export interface PagedRides {
+	rows: ApiRide[];
+	total: number;
+}
+
+export interface ListRidesQuery {
+	origin?: string;
+	destination?: string;
+	/** Dia inteiro, em `AAAA-MM-DD`. */
+	date?: string;
+	dateFrom?: string;
+	dateTo?: string;
+	page?: number;
+	limit?: number;
+}
+
+export interface ListMyRidesQuery {
+	status?: RideStatus;
+	page?: number;
+	limit?: number;
+}
+
+export interface Paged<T> {
+	rows: T[];
+	total: number;
+	page: number;
+	limit: number;
+}
+
+export async function createRide(input: CreateRideInput): Promise<ApiRide> {
 	const { data } = await client.post<ApiRide>('/api/rides', input);
 	return data;
 }
 
-export async function listRides(query: {
-	origin?: string;
-	destination?: string;
-	date?: string;
-}): Promise<ApiRide[]> {
-	const { data } = await client.get<ApiRide[]>('/api/rides', {
-		params: query,
+export async function listRides(
+	query: ListRidesQuery = {},
+): Promise<PagedRides> {
+	const res = await client.get<ApiRide[]>('/api/rides', {
+		params: {
+			...query,
+			page: query.page === undefined ? undefined : String(query.page),
+			limit: query.limit === undefined ? undefined : String(query.limit),
+		},
 	});
-	return data;
+	// Sem este cabeçalho a exposto, o React Native não o deixaria ler, e a
+	// app ficava sem forma de saber se havia mais páginas.
+	const rawTotal = res.headers['x-total-count'];
+	const total = Number(rawTotal ?? 0);
+	return {
+		rows: res.data,
+		total: Number.isFinite(total) ? total : res.data.length,
+	};
 }
 
 export async function getRide(id: string): Promise<ApiRide> {
@@ -385,14 +483,78 @@ export async function getRide(id: string): Promise<ApiRide> {
 	return data;
 }
 
-export async function cancelRide(id: string): Promise<ApiRide> {
-	const { data } = await client.post<ApiRide>(`/api/rides/${id}/cancel`);
+/** Corridas publicadas pelo utilizador autenticado como motorista. */
+export async function listMyRides(
+	query: ListMyRidesQuery = {},
+): Promise<Paged<ApiRide>> {
+	const { data } = await client.get<Paged<ApiRide>>('/api/rides/mine', {
+		params: {
+			...query,
+			page: query.page === undefined ? undefined : String(query.page),
+			limit: query.limit === undefined ? undefined : String(query.limit),
+		},
+	});
 	return data;
+}
+
+export async function updateRide(
+	id: string,
+	input: {
+		departureAt?: string;
+		arrivalAt?: string;
+		pricePerSeat?: number;
+		seatsTotal?: number;
+	},
+): Promise<ApiRide> {
+	const { data } = await client.patch<ApiRide>(`/api/rides/${id}`, input);
+	return data;
+}
+
+export async function cancelRide(
+	id: string,
+	reason?: string,
+): Promise<ApiRide> {
+	const { data } = await client.post<ApiRide>(`/api/rides/${id}/cancel`, {
+		reason,
+	});
+	return data;
+}
+
+/** Inicia a corrida. Só o motorista da corrida pode, e só se estiver agendada. */
+export async function startRide(id: string): Promise<ApiRide> {
+	const { data } = await client.post<ApiRide>(`/api/rides/${id}/start`);
+	return data;
+}
+
+/** Termina a corrida e fecha as reservas a bordo. */
+export async function finishRide(id: string): Promise<ApiRide> {
+	const { data } = await client.post<ApiRide>(`/api/rides/${id}/finish`);
+	return data;
+}
+
+/** Avança a corrida para uma paragem do percurso. */
+export async function setRideProgress(
+	id: string,
+	progressIndex: number,
+): Promise<ApiRide> {
+	const { data } = await client.patch<ApiRide>(`/api/rides/${id}/progress`, {
+		progressIndex,
+	});
+	return data;
+}
+
+export interface CreateBookingInput {
+	seats: number;
+	paymentMethod: ApiPaymentMethod;
+	/** Índice da paragem de recolha dentro do percurso. */
+	pickStopIndex?: number;
+	/** Índice da paragem de destino dentro do percurso. */
+	dropStopIndex?: number;
 }
 
 export async function bookRide(
 	rideId: string,
-	input: { seats: number; paymentMethod: string },
+	input: CreateBookingInput,
 ): Promise<ApiBooking> {
 	const { data } = await client.post<ApiBooking>(
 		`/api/rides/${rideId}/bookings`,
@@ -406,6 +568,7 @@ export async function listMyBookings(): Promise<ApiBooking[]> {
 	return data;
 }
 
+/** Reservas de uma corrida, para o motorista decidir. */
 export async function listRideBookings(rideId: string): Promise<ApiBooking[]> {
 	const { data } = await client.get<ApiBooking[]>(
 		`/api/rides/${rideId}/bookings`,
@@ -413,22 +576,103 @@ export async function listRideBookings(rideId: string): Promise<ApiBooking[]> {
 	return data;
 }
 
+/** O motorista aceita ou recusa uma reserva. A recusa exige motivo. */
 export async function decideBooking(
 	bookingId: string,
 	decision: 'CONFIRMED' | 'REJECTED',
+	reason?: string,
 ): Promise<ApiBooking> {
 	const { data } = await client.patch<ApiBooking>(
 		`/api/bookings/${bookingId}`,
-		{ decision },
+		{ decision, reason },
 	);
 	return data;
 }
 
-export async function cancelBooking(bookingId: string): Promise<ApiBooking> {
+export async function cancelBooking(
+	bookingId: string,
+	reason?: string,
+): Promise<ApiBooking> {
 	const { data } = await client.post<ApiBooking>(
 		`/api/bookings/${bookingId}/cancel`,
+		{ reason },
 	);
 	return data;
+}
+
+// ---------- Notificações ----------
+
+export interface ApiNotification {
+	id: string;
+	type: 'RIDE' | 'BOOKING' | 'PAYMENT' | 'SYSTEM' | 'PROMOTION';
+	title: string;
+	message: string;
+	data: Record<string, unknown> | null;
+	read: boolean;
+	readAt: string | null;
+	channel: 'IN_APP' | 'EMAIL' | 'SMS' | 'PUSH';
+	createdAt: string;
+}
+
+export interface NotificationList {
+	rows: ApiNotification[];
+	total: number;
+	page: number;
+	limit: number;
+	unread: number;
+}
+
+export async function listNotifications(
+	query: { page?: number; limit?: number } = {},
+): Promise<NotificationList> {
+	const { data } = await client.get<NotificationList>('/api/notifications', {
+		params: query,
+	});
+	return data;
+}
+
+export async function getUnreadNotificationCount(): Promise<{
+	unread: number;
+}> {
+	const { data } = await client.get<{ unread: number }>(
+		'/api/notifications/unread-count',
+	);
+	return data;
+}
+
+export async function markNotificationRead(
+	id: string,
+	read = true,
+): Promise<void> {
+	// O endpoint é um update genérico: o estado vem no corpo, não na rota.
+	await client.patch(`/api/notifications/${id}`, { read });
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+	await client.patch('/api/notifications/read-all');
+}
+
+// ---------- Push ----------
+
+/**
+ * Regista o token de push deste dispositivo.
+ *
+ * O token pertence à instalação, não à conta: reenviá-lo a cada arranque
+ * reinscreve o mesmo dispositivo, que é o comportamento pretendido.
+ */
+export async function registerPushDevice(input: {
+	token: string;
+	platform: 'ios' | 'android';
+}): Promise<void> {
+	await client.post('/api/push/devices', input);
+}
+
+export async function unregisterPushDevice(token: string): Promise<void> {
+	await client.request({
+		method: 'DELETE',
+		url: '/api/push/devices/current',
+		data: { token },
+	});
 }
 
 // ---------- Media (upload real via Cloudinary) ----------

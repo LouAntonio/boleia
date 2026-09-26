@@ -2,8 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { hhmm, fmtKz, durationBetween } from '../mock/helpers';
-import { rideMode } from '../mock/repos/rideRepo';
+import { hhmm, fmtKz, durationBetween } from '../lib/format';
 import StatusStamp from './StatusStamp';
 
 // ResultCard/Trip — "os detalhes mais importantes de uma viagem num só
@@ -71,10 +70,12 @@ export default function TripListingCard({
 						className="font-sans text-body-xs mt-1"
 						style={{ color: themeColors.secondary }}
 					>
-						{rideMode(ride) === 'interprovincial'
-							? 'Interprovincial'
-							: 'Intermunicipal'}{' '}
-						· {durationBetween(ride.departure, ride.arrival)}
+						{/* A linha já mostra a rota acima; aqui fica a duração,
+						    que o backend derivou das horas de partida e chegada. */}
+						{durationBetween(ride.departure, ride.arrival)}
+						{ride.stops.length > 0
+							? ` · ${ride.stops.length} paragem${ride.stops.length === 1 ? '' : 'ens'} pelo caminho`
+							: ''}
 					</Text>
 					<View className="flex-row items-center mt-1.5">
 						{reserved ? <StatusStamp status="confirmada" /> : null}

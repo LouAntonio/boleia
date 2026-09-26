@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../types/navigation';
 import { useAppStore } from '../store/appStore';
@@ -13,19 +13,12 @@ import ActiveRideScreen from '../screens/boleia/ActiveRideScreen';
 import SosCenterScreen from '../screens/boleia/SosCenterScreen';
 import ReviewScreen from '../screens/boleia/ReviewScreen';
 import NotificationsScreen from '../screens/boleia/NotificationsScreen';
-import { advanceLive } from '../mock/repos/liveRepo';
 
 const Stack = createNativeStackNavigator<BoleiaMainStackParamList>();
 
 // "Main" troca de tabs conforme o papel; ecrãs de detalhe ficam no mesmo stack.
 export default function BoleiaMainNavigator() {
 	const currentRole = useAppStore((s) => s.currentRole);
-
-	// Simulação "ao vivo": avança as viagens em curso enquanto a app está aberta.
-	useEffect(() => {
-		const timer = setInterval(advanceLive, 7000);
-		return () => clearInterval(timer);
-	}, []);
 
 	return (
 		<Stack.Navigator

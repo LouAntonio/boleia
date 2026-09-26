@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { initials } from '../mock/helpers';
+import { initials } from '../lib/format';
 import { Ride, BoleiaUser } from '../types/boleia';
 
 export default function RidePeople({

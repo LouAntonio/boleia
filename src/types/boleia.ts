@@ -44,7 +44,16 @@ export type Ride = {
 	seatsTaken: number;
 	pricePerSeat: number; // kwanzas
 	status: RideStatus;
-	vinculos: string[]; // segmento da pista já percorrido (mock live)
+	/**
+	 * Paragem em que a corrida está, contando da origem (0). Vem do backend e
+	 * é actualizado por WebSocket em `ride:progress`.
+	 */
+	progressIndex: number;
+	/**
+	 * Segmentos já percorridos. Deixou de ser preenchido: era artefacto da
+	 * simulação de mock e o acompanhamento real usa `progressIndex`.
+	 */
+	vinculos: string[];
 	createdAt: string;
 };
 

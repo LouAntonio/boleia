@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { hhmm, fmtKz, durationBetween } from '../mock/helpers';
+import { hhmm, fmtKz, durationBetween } from '../lib/format';
 import RouteStrip, { StripStop } from './RouteStrip';
 import StatusStamp from './StatusStamp';
 

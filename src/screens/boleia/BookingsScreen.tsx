@@ -2,14 +2,16 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useQuery } from '@tanstack/react-query';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
-import { useDbStore } from '../../mock/db';
 import BookingStub from '../../components/BookingStub';
 import BoleiaButton from '../../components/BoleiaButton';
 import ScreenHeader from '../../components/ScreenHeader';
 import EmptyState from '../../components/EmptyState';
 import GroupLabel from '../../components/GroupLabel';
+import { listMyBookings, getRide } from '../../lib/api';
+import { toBooking, toRide } from '../../lib/rideMapper';
 
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -31,19 +33,41 @@ export default function BookingsScreen() {
 	const tabNavigation =
 		useNavigation<BottomTabNavigationProp<PassengerTabsParamList>>();
 	const [tab, setTab] = useState<'upcoming' | 'history'>('upcoming');
-
-	const rides = useDbStore((s) => s.db.rides);
-	const bookings = useDbStore((s) => s.db.bookings);
 	const sessionUserId = useSessionUserId();
+
+	const { data: apiBookings, isLoading } = useQuery({
+		queryKey: ['myBookings'],
+		queryFn: listMyBookings,
+		enabled: !!sessionUserId,
+	});
+
+	// Cada reserva traz só um resumo da corrida. Para desenhar o cartão com a
+	// rota e as paragens é preciso o detalhe de cada uma; o cache do React Query
+	// evita repetir o pedido quando se abre o mesmo cartão outra vez.
+	const rides = useQuery({
+		queryKey: [
+			'bookingRides',
+			(apiBookings ?? []).map((b) => b.rideId).join(','),
+		],
+		enabled: (apiBookings ?? []).length > 0,
+		queryFn: async () => {
+			const ids = [...new Set((apiBookings ?? []).map((b) => b.rideId))];
+			const rows = await Promise.all(ids.map((id) => getRide(id)));
+			return Object.fromEntries(rows.map((r) => [r.id, r]));
+		},
+	});
+
 	const all = useMemo(
 		() =>
-			bookings
-				.filter((b) => b.passengerId === sessionUserId)
-				.flatMap((b) => {
-					const ride = rides.find((r) => r.id === b.rideId);
-					return ride ? [{ booking: b, ride }] : [];
-				}),
-		[bookings, rides, sessionUserId],
+			(apiBookings ?? [])
+				.map((b) => {
+					const api = rides.data?.[b.rideId];
+					return api
+						? { booking: toBooking(b), ride: toRide(api) }
+						: null;
+				})
+				.filter((x): x is NonNullable<typeof x> => x !== null),
+		[apiBookings, rides.data],
 	);
 
 	const upcoming = useMemo(
@@ -99,7 +123,16 @@ export default function BookingsScreen() {
 				}
 			/>
 
-			{all.length === 0 ? (
+			{isLoading ? (
+				<View className="flex-1 justify-center pb-10">
+					<Text
+						className="font-sans text-body-small text-center"
+						style={{ color: themeColors.secondary }}
+					>
+						A carregar as tuas reservas…
+					</Text>
+				</View>
+			) : all.length === 0 ? (
 				<View className="flex-1 justify-center pb-10">
 					<EmptyState
 						icon="car-outline"

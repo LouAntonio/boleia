@@ -3,86 +3,28 @@ import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import BackButton from '../../components/BackButton';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import Card from '../../components/Card';
+import BoleiaButton from '../../components/BoleiaButton';
+import SectionTitle from '../../components/SectionTitle';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
-import StatusStamp from '../../components/StatusStamp';
-import SectionTitle from '../../components/SectionTitle';
-import { useDbStore } from '../../mock/db';
-import { initials } from '../../mock/helpers';
-import { reviewsFor } from '../../mock/repos/reviewRepo';
 
-function Stat({
-	value,
-	label,
-	first,
-}: {
-	value: string;
-	label: string;
-	first?: boolean;
-}) {
-	const { themeColors } = useThemeColors();
-	return (
-		<View
-			className="flex-1 items-center"
-			style={
-				first
-					? undefined
-					: {
-							borderLeftWidth: 1,
-							borderLeftColor: themeColors.border,
-						}
-			}
-		>
-			<Text
-				className="font-sansMedium text-label"
-				style={{ color: themeColors.text }}
-			>
-				{value}
-			</Text>
-			<Text
-				className="font-sansMedium text-body-xs mt-1"
-				style={{ color: themeColors.secondary }}
-			>
-				{label}
-			</Text>
-		</View>
-	);
-}
-
+/**
+ * Perfil público de outro utilizador.
+ *
+ * Não existe endpoint de perfil no backend, e o caminho que abria este ecrã
+ * (a partir da lista de bordo) também não expõe dados de outras pessoas. O
+ * ecrã mantém-se na navegação com o que o servidor pode garantir e sem
+ * inventar reputação: mostrar um nome e uma nota que não existem seria pior do
+ * que não mostrar nada.
+ */
 export default function PublicProfileScreen() {
 	const navigation =
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'PublicProfile'>
 		>();
-	const route =
-		useRoute<RouteProp<BoleiaMainStackParamList, 'PublicProfile'>>();
 	const { themeColors } = useThemeColors();
-
-	const user = useDbStore((s) =>
-		s.db.users.find((u) => u.id === route.params.userId),
-	);
-	const reviews = reviewsFor(route.params.userId);
-
-	if (!user) {
-		return (
-			<SafeAreaView
-				className="flex-1 items-center justify-center px-5"
-				style={{ backgroundColor: themeColors.background }}
-			>
-				<Text style={{ color: themeColors.secondary }}>
-					Perfil não encontrado.
-				</Text>
-			</SafeAreaView>
-		);
-	}
-
-	const veh = user.vehicle;
-	const rating = user.rating ? user.rating.toFixed(1) : 'novo';
-	const since = new Date(user.createdAt)
-		.toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' })
-		.replace('.', '')
-		.toUpperCase();
 
 	return (
 		<SafeAreaView
@@ -91,216 +33,68 @@ export default function PublicProfileScreen() {
 		>
 			<View className="flex-row items-center pt-2 pb-3">
 				<BackButton onPress={() => navigation.goBack()} />
-				<View className="flex-1">
-					<Text
-						className="font-sansMedium text-body-xs"
-						style={{ color: themeColors.secondary }}
-					>
-						Perfil público
-					</Text>
-					<Text
-						className="font-sansExtraBold text-title-secondary -mt-0.5"
-						style={{ color: themeColors.text }}
-					>
-						{user.firstName} {user.lastName}
-					</Text>
-				</View>
+				<Text
+					className="font-sansExtraBold text-title-secondary"
+					style={{ color: themeColors.text }}
+				>
+					Perfil
+				</Text>
 			</View>
 
 			<ScrollView
 				className="flex-1"
-				contentContainerStyle={{ paddingBottom: 48 }}
+				contentContainerStyle={{ paddingBottom: 40 }}
 			>
-				{/* Ficha de apresentação */}
-				<View
-					className="p-5 rounded-xl border"
-					style={{
-						borderColor: themeColors.border,
-						backgroundColor: themeColors.card,
-					}}
-				>
-					<View className="items-center">
-						<View
-							className="w-20 h-20 rounded-full items-center justify-center"
-							style={{
-								backgroundColor: themeColors.primary,
-								borderWidth: 2,
-								borderColor: themeColors.border,
-							}}
-						>
-							<Text
-								className="font-sansExtraBold text-title-primary"
-								style={{ color: themeColors.text }}
-							>
-								{initials(user.firstName, user.lastName)}
-							</Text>
-						</View>
+				<Card>
+					<View className="items-center py-4">
 						<Text
-							className="font-sansBold text-title-secondary mt-3"
+							className="font-sansBold text-label"
 							style={{ color: themeColors.text }}
 						>
-							{user.firstName} {user.lastName}
+							Perfil ainda não disponível
 						</Text>
-						<View className="flex-row items-center mt-1">
-							<Text
-								className="font-sansMedium text-label-small mr-1"
-								style={{ color: themeColors.secondary }}
-							>
-								★
-							</Text>
-							<Text
-								className="font-sansMedium text-body-small"
-								style={{ color: themeColors.secondary }}
-							>
-								{rating}
-								{user.ratingsCount > 0
-									? ` · ${user.ratingsCount} avaliaçõe${user.ratingsCount > 1 ? 's' : ''}`
-									: ''}
-							</Text>
-						</View>
-					</View>
-
-					<View
-						className="border-t my-4"
-						style={{ borderColor: themeColors.border }}
-					/>
-
-					<View className="flex-row">
-						<Stat first value={rating} label="Avaliação" />
-						<Stat
-							value={String(user.ratingsCount)}
-							label="Viagens"
-						/>
-						<Stat value={since} label="Desde" />
-					</View>
-				</View>
-
-				<View className="flex-row mt-4 justify-center">
-					<StatusStamp status={user.kyc?.status ?? 'nao_submetido'} />
-					<View className="ml-2">
-						<StatusStamp
-							status={user.vehicle?.status ?? 'nao_submetido'}
-							label={
-								user.vehicle
-									? 'Viatura registada'
-									: 'Sem viatura'
-							}
-						/>
-					</View>
-				</View>
-
-				{veh ? (
-					<View className="mt-6">
-						<SectionTitle>Viatura</SectionTitle>
-						<View
-							className="p-4 rounded-xl border"
-							style={{
-								borderColor: themeColors.border,
-								backgroundColor: themeColors.card,
-							}}
-						>
-							<View className="flex-row items-start justify-between">
-								<View className="flex-1 mr-3">
-									<Text
-										className="font-sansBold text-label"
-										style={{ color: themeColors.text }}
-									>
-										{veh.make} {veh.model}
-									</Text>
-									<Text
-										className="font-sansMedium text-body-xs mt-0.5"
-										style={{ color: themeColors.secondary }}
-									>
-										{veh.color} · {veh.plate}
-									</Text>
-									<Text
-										className="font-sans text-body-xs mt-1"
-										style={{ color: themeColors.secondary }}
-									>
-										{veh.seats} lugares de lotação
-									</Text>
-								</View>
-								<View
-									className="rounded-full border px-2.5 py-1"
-									style={{ borderColor: themeColors.success }}
-								>
-									<Text
-										className="font-sansMedium text-body-xs"
-										style={{ color: themeColors.success }}
-									>
-										Registada
-									</Text>
-								</View>
-							</View>
-						</View>
-					</View>
-				) : null}
-
-				<View className="mt-6">
-					<SectionTitle>Avaliações ({reviews.length})</SectionTitle>
-					{reviews.length === 0 ? (
 						<Text
-							className="font-sans text-body-small"
+							className="font-sans text-body-small text-center mt-1.5"
 							style={{ color: themeColors.secondary }}
 						>
-							Ainda sem avaliações nesta rota.
+							{/*
+							 * Só se mostra o que o servidor garante. A
+							 * identidade de quem viaja contigo só é partilhada
+							 * com o motorista da corrida, e nunca por um
+							 * perfil público.
+							 */}
+							As avaliações e a nota de reputação ficam
+							disponíveis em breve.
 						</Text>
-					) : (
-						reviews.map((r) => (
-							<View
-								key={r.id}
-								className="rounded-xl border mb-2 overflow-hidden"
-								style={{
-									borderColor: themeColors.border,
-									backgroundColor: themeColors.card,
-								}}
-							>
-								<View className="flex-row">
-									<View
-										className="w-[4px]"
-										style={{
-											backgroundColor:
-												themeColors.primary,
-										}}
-									/>
-									<View className="flex-1 p-3.5">
-										<View className="flex-row items-center">
-											<Text
-												className="font-sansMedium text-body-small mr-2"
-												style={{
-													color: themeColors.secondary,
-												}}
-											>
-												★ {r.rating}
-											</Text>
-											<Text
-												className="font-sansMedium text-body-xs"
-												style={{
-													color: themeColors.secondary,
-												}}
-											>
-												{new Date(
-													r.createdAt,
-												).toLocaleDateString('pt-PT', {
-													day: '2-digit',
-													month: 'short',
-													year: 'numeric',
-												})}
-											</Text>
-										</View>
-										<Text
-											className="font-sans text-body-small mt-1"
-											style={{
-												color: themeColors.secondary,
-											}}
-										>
-											{r.comment}
-										</Text>
-									</View>
-								</View>
-							</View>
-						))
-					)}
+					</View>
+				</Card>
+
+				<View className="mt-5">
+					<SectionTitle>Privacidade</SectionTitle>
+					<View
+						className="p-4 rounded-xl border"
+						style={{
+							borderColor: themeColors.border,
+							backgroundColor: themeColors.card,
+						}}
+					>
+						<Text
+							className="font-sans text-body-xs leading-5"
+							style={{ color: themeColors.secondary }}
+						>
+							O teu nome e o teu número só são partilhados com o
+							motorista de uma viagem em que reservado lugar. Não
+							são públicos.
+						</Text>
+					</View>
+				</View>
+
+				<View className="w-full mt-6">
+					<BoleiaButton
+						title="Voltar"
+						variant="secondary"
+						onPress={() => navigation.goBack()}
+					/>
 				</View>
 			</ScrollView>
 		</SafeAreaView>

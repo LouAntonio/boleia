@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -10,16 +11,16 @@ import {
 } from '../../types/navigation';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
-import { useDbStore } from '../../mock/db';
-import { rideMode, RideMode } from '../../mock/repos/rideRepo';
+import { listMyBookings, listRides } from '../../lib/api';
+import { toRide } from '../../lib/rideMapper';
 import TripListingCard from '../../components/TripListingCard';
 import ScreenHeader from '../../components/ScreenHeader';
 import EmptyState from '../../components/EmptyState';
 import GroupLabel from '../../components/GroupLabel';
 
 // Montra de todas as viagens ativas ainda não iniciadas — sem depender da
-// pesquisa. Filtros e ordenação são client-side; cada cartão leva ao detalhe.
-type ModeFilter = 'all' | RideMode;
+// pesquisa. A listagem e a ordenação vêm do backend; aqui só se decide se
+// mostro mais caras primeiro.
 type Sort = 'soon' | 'cheap';
 
 function dayLabel(iso: string): string {
@@ -46,64 +47,86 @@ export default function ExploreScreen() {
 		>();
 	const tabNavigation =
 		useNavigation<BottomTabNavigationProp<PassengerTabsParamList>>();
-	const rides = useDbStore((s) => s.db.rides);
-	const bookings = useDbStore((s) => s.db.bookings);
 	const sessionUserId = useSessionUserId();
-	const [modeFilter, setModeFilter] = useState<ModeFilter>('all');
 	const [sort, setSort] = useState<Sort>('soon');
+
+	// O backend já devolve só corridas agendadas, com lugares livres e dentro da
+	// janela de pesquisa, ordenadas por partida.
+	const { data: page, isLoading } = useQuery({
+		queryKey: ['rides'],
+		queryFn: () => listRides({ limit: 50 }),
+	});
+
+	const { data: myBookings } = useQuery({
+		queryKey: ['myBookings'],
+		queryFn: listMyBookings,
+		enabled: !!sessionUserId,
+	});
 
 	const reservedIds = useMemo(
 		() =>
 			new Set(
-				bookings
-					.filter(
-						(b) =>
-							b.passengerId === sessionUserId &&
-							b.status !== 'cancelada',
-					)
+				(myBookings ?? [])
+					.filter((b) => b.status !== 'CANCELLED')
 					.map((b) => b.rideId),
 			),
-		[bookings, sessionUserId],
+		[myBookings],
 	);
 
-	const upcoming = useMemo(
+	const upcoming = useMemo(() => {
+		const rows = (page?.rows ?? []).map(toRide);
+		return (
+			sort === 'cheap'
+				? [...rows].sort((a, b) => a.pricePerSeat - b.pricePerSeat)
+				: rows
+		).map((ride) => ({
+			ride,
+			reserved: reservedIds.has(ride.id),
+		}));
+	}, [page, sort, reservedIds]);
+
+	/**
+	 * Filtros que o backend sustenta.
+	 *
+	 * Antes havia um chip "Interprovincial / Intermunicipal", que dependia de
+	 * comparar as províncias das paragens — informação que o payload da corrida
+	 * não traz. Um filtro que depende de dados que não temos é um filtro que
+	 * mente, por isso ficou só o que dá para saber: se ainda há lugares e se a
+	 * rota tem paragens pelo caminho.
+	 */
+	const [onlyWithSeats, setOnlyWithSeats] = useState(true);
+	const [onlyDirect, setOnlyDirect] = useState(false);
+
+	const filtered = useMemo(
 		() =>
-			rides
-				.filter(
-					(r) =>
-						r.status === 'programada' &&
-						r.seatsTaken < r.seatsTotal &&
-						Date.parse(r.departure) > Date.now() &&
-						(modeFilter === 'all' || rideMode(r) === modeFilter),
-				)
-				.sort((a, b) =>
-					sort === 'cheap'
-						? a.pricePerSeat - b.pricePerSeat
-						: Date.parse(a.departure) - Date.parse(b.departure),
-				)
-				.map((ride) => ({
-					ride,
-					reserved: reservedIds.has(ride.id),
-				})),
-		[rides, reservedIds, modeFilter, sort],
+			upcoming.filter((x) => {
+				if (onlyWithSeats && x.ride.seatsTaken >= x.ride.seatsTotal) {
+					return false;
+				}
+				if (onlyDirect && x.ride.stops.length > 0) {
+					return false;
+				}
+				return true;
+			}),
+		[upcoming, onlyWithSeats, onlyDirect],
 	);
 
-	const groups = useMemo(() => {
-		const map = new Map<string, typeof upcoming>();
-		for (const x of upcoming) {
+	const grouped = useMemo(() => {
+		const map = new Map<string, typeof filtered>();
+		for (const x of filtered) {
 			const label = dayLabel(x.ride.departure);
 			const list = map.get(label) ?? [];
 			list.push(x);
 			map.set(label, list);
 		}
 		return [...map.entries()];
-	}, [upcoming]);
+	}, [filtered]);
 
 	const chip = (label: string, active: boolean, onPress: () => void) => (
 		<Pressable
 			key={label}
 			onPress={onPress}
-			className="rounded-full px-3 py-1.5 mr-2"
+			className="rounded-full px-3 py-1.5 mr-2 min-h-[32px] justify-center"
 			style={{
 				backgroundColor: active
 					? themeColors.text
@@ -136,14 +159,11 @@ export default function ExploreScreen() {
 			/>
 
 			<View className="flex-row mt-4 mb-2">
-				{chip('Todas', modeFilter === 'all', () =>
-					setModeFilter('all'),
+				{chip('Com lugares', onlyWithSeats, () =>
+					setOnlyWithSeats((v) => !v),
 				)}
-				{chip('Interprovincial', modeFilter === 'interprovincial', () =>
-					setModeFilter('interprovincial'),
-				)}
-				{chip('Intermunicipal', modeFilter === 'intermunicipal', () =>
-					setModeFilter('intermunicipal'),
+				{chip('Direto, sem paragens', onlyDirect, () =>
+					setOnlyDirect((v) => !v),
 				)}
 			</View>
 			<View className="flex-row items-center mb-1">
@@ -175,7 +195,16 @@ export default function ExploreScreen() {
 				))}
 			</View>
 
-			{upcoming.length === 0 ? (
+			{isLoading ? (
+				<View className="flex-1 justify-center pb-10">
+					<Text
+						className="font-sans text-body-small text-center"
+						style={{ color: themeColors.secondary }}
+					>
+						A procurar viagens…
+					</Text>
+				</View>
+			) : filtered.length === 0 ? (
 				<View className="flex-1 justify-center pb-10">
 					<EmptyState
 						icon="compass-outline"
@@ -190,7 +219,7 @@ export default function ExploreScreen() {
 					className="flex-1"
 					contentContainerStyle={{ paddingBottom: 40 }}
 				>
-					{groups.map(([day, items]) => (
+					{grouped.map(([day, items]) => (
 						<View key={day}>
 							<View className="flex-row items-center mt-4 mb-3">
 								<View className="flex-1">

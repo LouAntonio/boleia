@@ -1,18 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { useSessionUserId } from '../../hooks/useSessionUser';
-import { useDbStore } from '../../mock/db';
-import { fmtKz, initials } from '../../mock/helpers';
+import { fmtKz } from '../../lib/format';
 import TripStripCard from '../../components/TripStripCard';
 import StatusStamp from '../../components/StatusStamp';
 import BoleiaButton from '../../components/BoleiaButton';
 import ScreenHeader from '../../components/ScreenHeader';
 import EmptyState from '../../components/EmptyState';
-import { ridesForDriver } from '../../mock/repos/rideRepo';
-import { confirmBooking, declineBooking } from '../../mock/repos/bookingRepo';
-import { startRide } from '../../mock/repos/liveRepo';
+import {
+	apiErrorMessage,
+	decideBooking,
+	listMyRides,
+	listRideBookings,
+	startRide,
+} from '../../lib/api';
+import { toRide, toBooking } from '../../lib/rideMapper';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -21,6 +25,13 @@ import {
 	DriverTabsParamList,
 } from '../../types/navigation';
 
+/**
+ * Painel do motorista: as suas corridas e os pedidos de boleia de cada uma.
+ *
+ * Uma corrida pendente de decisão é a única acção que bloqueia alguém: o
+ * passageiro fica à espera até o pedido expirar. Por isso a decisão dá erro
+ * visível, em vez de o botão fingir que resultou.
+ */
 export default function TripsScreen() {
 	const { themeColors } = useThemeColors();
 	const navigation =
@@ -29,11 +40,70 @@ export default function TripsScreen() {
 		>();
 	const tabNavigation =
 		useNavigation<BottomTabNavigationProp<DriverTabsParamList>>();
-	const mine = ridesForDriver(useSessionUserId());
-	const allBookings = useDbStore((s) => s.db.bookings);
-	const users = useDbStore((s) => s.db.users);
+	const queryClient = useQueryClient();
 
-	if (mine.length === 0) {
+	const [error, setError] = useState<string | null>(null);
+	const [busy, setBusy] = useState<string | null>(null);
+
+	const { data: page, isLoading } = useQuery({
+		queryKey: ['myRides'],
+		queryFn: () => listMyRides({ limit: 50 }),
+	});
+	const mine = page?.rows ?? [];
+
+	const { data: bookingsByRide } = useQuery({
+		queryKey: ['rideBookings', mine.map((r) => r.id).join(',')],
+		enabled: mine.length > 0,
+		queryFn: async () => {
+			const entries = await Promise.all(
+				mine.map(async (ride) => {
+					const rows = await listRideBookings(ride.id);
+					return [ride.id, rows] as const;
+				}),
+			);
+			return Object.fromEntries(entries);
+		},
+	});
+
+	const decideById = async (
+		bookingId: string,
+		decision: 'CONFIRMED' | 'REJECTED',
+	) => {
+		setBusy(bookingId);
+		setError(null);
+		try {
+			await decideBooking(
+				bookingId,
+				decision,
+				decision === 'REJECTED'
+					? 'O lugar não está a bater certo com a tua rota.'
+					: undefined,
+			);
+			await queryClient.invalidateQueries({ queryKey: ['rideBookings'] });
+		} catch (err) {
+			setError(apiErrorMessage(err, 'Não foi possível responder.'));
+		} finally {
+			setBusy(null);
+		}
+	};
+
+	const begin = async (rideId: string) => {
+		setBusy(rideId);
+		setError(null);
+		try {
+			await startRide(rideId);
+			await queryClient.invalidateQueries({ queryKey: ['myRides'] });
+			navigation.navigate('ActiveRide', { rideId });
+		} catch (err) {
+			setError(
+				apiErrorMessage(err, 'Não foi possível iniciar a viagem.'),
+			);
+		} finally {
+			setBusy(null);
+		}
+	};
+
+	if (!isLoading && mine.length === 0) {
 		return (
 			<SafeAreaView
 				className="flex-1 px-5"
@@ -69,9 +139,19 @@ export default function TripsScreen() {
 				className="flex-1 mt-4"
 				contentContainerStyle={{ paddingBottom: 48 }}
 			>
-				{mine.map((ride) => {
-					const bookings = allBookings.filter(
-						(b) => b.rideId === ride.id,
+				{error ? (
+					<Text
+						className="font-sans text-body-xs mb-3"
+						style={{ color: themeColors.error }}
+					>
+						{error}
+					</Text>
+				) : null}
+
+				{mine.map((apiRide) => {
+					const ride = toRide(apiRide);
+					const bookings = (bookingsByRide?.[apiRide.id] ?? []).map(
+						toBooking,
 					);
 					const pending = bookings.filter(
 						(b) => b.status === 'pedido',
@@ -93,20 +173,15 @@ export default function TripsScreen() {
 										backgroundColor: themeColors.background,
 									}}
 								>
-									<View className="flex-row">
-										<View className="flex-1 mr-2">
-											<BoleiaButton
-												title="Iniciar viagem"
-												onPress={() => {
-													startRide(ride.id);
-													navigation.navigate(
-														'ActiveRide',
-														{ rideId: ride.id },
-													);
-												}}
-											/>
-										</View>
-									</View>
+									<BoleiaButton
+										title={
+											busy === ride.id
+												? 'A iniciar…'
+												: 'Iniciar viagem'
+										}
+										onPress={() => void begin(ride.id)}
+										disabled={busy === ride.id}
+									/>
 								</View>
 							)}
 							{ride.status === 'em_curso' && (
@@ -116,19 +191,14 @@ export default function TripsScreen() {
 										backgroundColor: themeColors.background,
 									}}
 								>
-									<View className="flex-row">
-										<View className="flex-1 mr-2">
-											<BoleiaButton
-												title="Acompanhar ao vivo"
-												onPress={() =>
-													navigation.navigate(
-														'ActiveRide',
-														{ rideId: ride.id },
-													)
-												}
-											/>
-										</View>
-									</View>
+									<BoleiaButton
+										title="Acompanhar ao vivo"
+										onPress={() =>
+											navigation.navigate('ActiveRide', {
+												rideId: ride.id,
+											})
+										}
+									/>
 								</View>
 							)}
 							{bookings.length > 0 && (
@@ -139,128 +209,23 @@ export default function TripsScreen() {
 									}}
 								>
 									{pending.length > 0 ? (
-										pending.map((b) => {
-											const pax = users.find(
-												(u) => u.id === b.passengerId,
-											);
-											return (
-												<View
-													key={b.id}
-													className="pt-3 border-t"
-													style={{
-														borderTopColor:
-															themeColors.border,
-													}}
-												>
-													<View className="flex-row items-center justify-between">
-														<View className="flex-row items-center flex-1 mr-2">
-															<View
-																className="w-8 h-8 rounded-full items-center justify-center mr-2"
-																style={{
-																	backgroundColor:
-																		themeColors.card,
-																}}
-															>
-																<Text
-																	className="font-sansBold text-body-xs"
-																	style={{
-																		color: themeColors.text,
-																	}}
-																>
-																	{pax
-																		? initials(
-																				pax.firstName,
-																				pax.lastName,
-																			)
-																		: '?'}
-																</Text>
-															</View>
-															<Text
-																className="font-sansBold text-body-small"
-																style={{
-																	color: themeColors.text,
-																}}
-															>
-																{pax
-																	? `${pax.firstName} ${pax.lastName}`
-																	: 'Passageiro'}
-															</Text>
-														</View>
-														<Text
-															className="font-sansMedium text-body-small"
-															style={{
-																color: themeColors.secondary,
-															}}
-														>
-															{b.seats} lugar
-															{b.seats > 1
-																? 'es'
-																: ''}{' '}
-															· {fmtKz(b.amount)}
-														</Text>
-													</View>
-													<Text
-														className="font-sansMedium text-body-xs mt-0.5"
-														style={{
-															color: themeColors.secondary,
-														}}
-													>
-														BL-
-														{b.id
-															.replace(/^bk_/, '')
-															.toUpperCase()}
-														{' · '}
-														{
-															ride.origin.name
-														} →{' '}
-														{ride.destination.name}
-													</Text>
-													<Text
-														className="font-sansMedium text-body-xs"
-														style={{
-															color: themeColors.secondary,
-														}}
-													>
-														Saída{' '}
-														{ride.departure.slice(
-															0,
-															10,
-														)}
-														{' · '}
-														{ride.departure.slice(
-															11,
-															16,
-														)}
-													</Text>
-													<View className="flex-row mt-2.5">
-														<View className="flex-1 mr-2">
-															<BoleiaButton
-																small
-																title="Aceitar"
-																onPress={() =>
-																	confirmBooking(
-																		b.id,
-																	)
-																}
-															/>
-														</View>
-														<View className="flex-1">
-															<BoleiaButton
-																small
-																title="Recusar"
-																variant="outline"
-																onPress={() =>
-																	declineBooking(
-																		b.id,
-																		'Lota não a bater certo',
-																	)
-																}
-															/>
-														</View>
-													</View>
-												</View>
-											);
-										})
+										pending.map((b) => (
+											<BookingRequest
+												key={b.id}
+												booking={b}
+												ride={ride}
+												busy={busy === b.id}
+												onAccept={() =>
+													decideById(
+														b.id,
+														'CONFIRMED',
+													)
+												}
+												onDecline={() =>
+													decideById(b.id, 'REJECTED')
+												}
+											/>
+										))
 									) : (
 										<View className="flex-row items-center justify-between pt-2">
 											<Text
@@ -285,81 +250,6 @@ export default function TripsScreen() {
 											</View>
 										</View>
 									)}
-
-									{ride.status === 'concluida' &&
-										bookings
-											.filter(
-												(b) => b.status === 'concluida',
-											)
-											.map((b) => {
-												const pax = users.find(
-													(u) =>
-														u.id === b.passengerId,
-												);
-												return (
-													<View
-														key={b.id}
-														className="pt-3 border-t flex-row items-center justify-between"
-														style={{
-															borderTopColor:
-																themeColors.border,
-														}}
-													>
-														<View className="flex-row items-center mr-2">
-															<View
-																className="w-8 h-8 rounded-full items-center justify-center mr-2"
-																style={{
-																	backgroundColor:
-																		themeColors.card,
-																}}
-															>
-																<Text
-																	className="font-sansBold text-body-xs"
-																	style={{
-																		color: themeColors.text,
-																	}}
-																>
-																	{pax
-																		? initials(
-																				pax.firstName,
-																				pax.lastName,
-																			)
-																		: '?'}
-																</Text>
-															</View>
-															<Text
-																className="font-sansMedium text-body-small"
-																style={{
-																	color: themeColors.text,
-																}}
-															>
-																{pax
-																	? `${pax.firstName} ${pax.lastName}`
-																	: 'Passageiro'}
-															</Text>
-														</View>
-														<View className="flex-1 ml-3">
-															<BoleiaButton
-																small
-																variant="outline"
-																title="Avaliar passageiro"
-																onPress={() =>
-																	navigation.navigate(
-																		'Review',
-																		{
-																			rideId: ride.id,
-																			toUserId:
-																				b.passengerId,
-																			subject:
-																				'passenger',
-																		},
-																	)
-																}
-															/>
-														</View>
-													</View>
-												);
-											})}
 								</View>
 							)}
 						</View>
@@ -367,5 +257,82 @@ export default function TripsScreen() {
 				})}
 			</ScrollView>
 		</SafeAreaView>
+	);
+}
+
+/** Um pedido à espera de resposta, com os dois botões de decisão. */
+function BookingRequest({
+	booking,
+	ride,
+	busy,
+	onAccept,
+	onDecline,
+}: {
+	booking: ReturnType<typeof toBooking>;
+	ride: ReturnType<typeof toRide>;
+	busy: boolean;
+	onAccept: () => void;
+	onDecline: () => void;
+}) {
+	const { themeColors } = useThemeColors();
+
+	return (
+		<View
+			className="pt-3 border-t"
+			style={{ borderTopColor: themeColors.border }}
+		>
+			{/*
+			 * A identidade do passageiro não vem no payload das reservas. O
+			 * backend envia só o que o motorista precisa para decidir: lugares
+			 * e trajeto. Inventar um nome a partir de um id seria pior.
+			 */}
+			<View className="flex-row items-center justify-between">
+				<Text
+					className="font-sansBold text-body-small flex-1"
+					style={{ color: themeColors.text }}
+				>
+					Pedido de boleia
+				</Text>
+				<Text
+					className="font-sansMedium text-body-small"
+					style={{ color: themeColors.secondary }}
+				>
+					{booking.seats} lugar{booking.seats > 1 ? 'es' : ''} ·{' '}
+					{fmtKz(booking.amount)}
+				</Text>
+			</View>
+			<Text
+				className="font-sansMedium text-body-xs mt-0.5"
+				style={{ color: themeColors.secondary }}
+			>
+				{ride.origin.name} → {ride.destination.name}
+			</Text>
+			<Text
+				className="font-sansMedium text-body-xs"
+				style={{ color: themeColors.secondary }}
+			>
+				Saída {ride.departure.slice(0, 10)} ·{' '}
+				{ride.departure.slice(11, 16)}
+			</Text>
+			<View className="flex-row mt-2.5">
+				<View className="flex-1 mr-2">
+					<BoleiaButton
+						small
+						title="Aceitar"
+						onPress={onAccept}
+						disabled={busy}
+					/>
+				</View>
+				<View className="flex-1">
+					<BoleiaButton
+						small
+						title="Recusar"
+						variant="outline"
+						onPress={onDecline}
+						disabled={busy}
+					/>
+				</View>
+			</View>
+		</View>
 	);
 }

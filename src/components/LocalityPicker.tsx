@@ -6,103 +6,124 @@ import {
 	Modal,
 	TextInput,
 	ScrollView,
+	ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { LOCALITIES, PROVINCES } from '../mock/locale';
-import { toAscii } from '../mock/helpers';
-import { Locality } from '../types/boleia';
+import { toAscii } from '../lib/format';
+import { useAllLocalities, useProvinces } from '../hooks/useLocalities';
+import type { ApiLocality } from '../lib/api';
 
-// Escolha de localidade por bottom-sheet com pesquisa — usado no motorista
-// (publicar) e no passageiro (pesquisa). Com a lista real de ~306 municípios,
-// a grelha de chips original não escala; aqui há pesquisa + filtro por província.
+/**
+ * Escolha de local por bottom-sheet com pesquisa.
+ *
+ * O valor devolvido é sempre o `id` da localidade, que é o que o backend
+ * espera em `originLocalityId`/`destinationLocalityId`. Anteriormente o
+ * picker devolvia o nome da província no modo interprovincial, o que não
+ * corresponde a nenhum identificador do servidor.
+ *
+ * A lista vem da API. São ~306 municípios, por isso a grelha de chips não
+ * escala e a escolha é sempre por pesquisa com filtro de província.
+ */
 export default function LocalityPicker({
 	value,
 	onChange,
 	exclude,
-	filter,
+	restrictToProvinceId,
 	variant = 'box',
 	label,
 	dotColor,
-	scope = 'municipality',
 }: {
 	value: string;
-	onChange: (id: string) => void;
+	onChange: (localityId: string) => void;
+	/** Local a esconder, para não permitir origem igual a destino. */
 	exclude?: string;
-	filter?: (l: Locality) => boolean;
+	/** Restringe a escolha a uma província (pesquisa intermunicipal). */
+	restrictToProvinceId?: string | null;
 	variant?: 'row' | 'box';
 	label?: string;
 	dotColor?: string;
-	scope?: 'municipality' | 'province';
 }) {
 	const { themeColors } = useThemeColors();
 	const [visible, setVisible] = useState(false);
-	const [province, setProvince] = useState('');
+	const [provinceId, setProvinceId] = useState('');
 	const [query, setQuery] = useState('');
 
-	const isProvinceScope = scope === 'province';
+	const provinces = useProvinces();
+	const localities = useAllLocalities();
 
-	const available = useMemo(
-		() =>
-			isProvinceScope
-				? []
-				: LOCALITIES.filter(
-						(l) =>
-							(!exclude || l.id !== exclude) &&
-							(!filter || filter(l)),
-					),
-		[exclude, filter, isProvinceScope],
+	const byId = useMemo(
+		() => new Map(localities.map((l) => [l.id, l])),
+		[localities],
 	);
+	const provinceName = useMemo(() => {
+		const map = new Map((provinces.data ?? []).map((p) => [p.id, p.name]));
+		return (id: string) => map.get(id) ?? '';
+	}, [provinces.data]);
 
-	const provinces = useMemo(() => {
-		if (isProvinceScope) return PROVINCES.filter((p) => p !== exclude);
-		const present = new Set(available.map((l) => l.province));
-		return PROVINCES.filter((p) => present.has(p));
-	}, [available, exclude, isProvinceScope]);
+	const selected = value ? byId.get(value) : undefined;
 
-	const selected = value ? LOCALITIES.find((l) => l.id === value) : undefined;
+	// A lista de províncias offered é a união das províncias que têm
+	// localidades, para não oferecer uma província vazia.
+	const provincesWithLocalities = useMemo(() => {
+		const present = new Set(localities.map((l) => l.provinceId));
+		return (provinces.data ?? []).filter((p) => present.has(p.id));
+	}, [provinces.data, localities]);
 
-	const provinceOptions = useMemo(() => {
+	const options = useMemo(() => {
 		const q = toAscii(query.trim());
-		if (!isProvinceScope) return [];
-		return provinces.filter((p) => !q || toAscii(p).includes(q));
-	}, [isProvinceScope, provinces, query]);
-
-	const localityOptions = useMemo(() => {
-		const q = toAscii(query.trim());
-		if (isProvinceScope) return [];
-		return available.filter((l) => {
-			if (province && l.province !== province) return false;
-			if (!q) return true;
-			return (
-				toAscii(l.municipality).includes(q) ||
-				toAscii(l.province).includes(q)
-			);
-		});
-	}, [available, isProvinceScope, province, query]);
+		return localities
+			.filter((l) => l.id !== exclude)
+			.filter(
+				(l) =>
+					!restrictToProvinceId ||
+					l.provinceId === restrictToProvinceId,
+			)
+			.filter((l) => !provinceId || l.provinceId === provinceId)
+			.filter((l) => {
+				if (!q) return true;
+				return (
+					toAscii(l.municipality).includes(q) ||
+					toAscii(l.name).includes(q) ||
+					toAscii(provinceName(l.provinceId)).includes(q)
+				);
+			})
+			.slice(0, 200);
+	}, [
+		localities,
+		exclude,
+		restrictToProvinceId,
+		provinceId,
+		query,
+		provinceName,
+	]);
 
 	const open = () => {
-		// se o filtro restringe a uma só província, pré-seleciona
-		setProvince(provinces.length === 1 ? provinces[0] : '');
+		// Se a escolha está restrita a uma província, não faz sentido oferecer
+		// os chips de província: pré-selecciona-a e esconde-os.
+		setProvinceId(restrictToProvinceId ?? '');
 		setQuery('');
 		setVisible(true);
 	};
 
-	const pick = (id: string) => {
-		onChange(id);
+	const pick = (locality: ApiLocality) => {
+		onChange(locality.id);
 		setVisible(false);
 	};
 
-	const hasValue = isProvinceScope ? !!value : !!selected;
-	const triggerLabel = isProvinceScope
-		? value || 'Escolher província'
-		: selected
-			? `${selected.municipality} · ${selected.province}`
-			: 'Escolher local';
+	const hasValue = !!selected;
+	const triggerLabel = selected
+		? `${selected.municipality} · ${provinceName(selected.provinceId)}`
+		: 'Escolher local';
 
 	const trigger =
 		variant === 'row' ? (
-			<Pressable onPress={open} className="flex-row items-center py-3">
+			<Pressable
+				onPress={open}
+				className="flex-row items-center py-3"
+				accessibilityRole="button"
+				accessibilityLabel={label ?? 'Escolher local'}
+			>
 				<View className="w-6 items-center">
 					<View
 						className="w-3 h-3 rounded-full"
@@ -142,7 +163,7 @@ export default function LocalityPicker({
 		) : (
 			<Pressable
 				onPress={open}
-				className="rounded-xl px-4 py-3 border"
+				className="rounded-xl px-4 py-3 border min-h-[44px] justify-center"
 				style={{
 					borderColor: hasValue
 						? themeColors.primary
@@ -150,45 +171,22 @@ export default function LocalityPicker({
 					backgroundColor: themeColors.card,
 				}}
 			>
-				{isProvinceScope ? (
-					<Text
-						className={
-							hasValue
-								? 'font-sansBold text-label-small'
-								: 'font-sans text-label-small'
-						}
-						style={{
-							color: hasValue
-								? themeColors.text
-								: themeColors.border,
-						}}
-					>
-						{triggerLabel}
-					</Text>
-				) : selected ? (
-					<Text
-						className="font-sansBold text-label-small"
-						style={{ color: themeColors.text }}
-					>
-						{selected.municipality}
-						<Text
-							className="font-sans text-body-xs"
-							style={{ color: themeColors.secondary }}
-						>
-							{'  ·  '}
-							{selected.province}
-						</Text>
-					</Text>
-				) : (
-					<Text
-						className="font-sans text-label-small"
-						style={{ color: themeColors.border }}
-					>
-						Escolher local
-					</Text>
-				)}
+				<Text
+					className={
+						hasValue
+							? 'font-sansBold text-label-small'
+							: 'font-sans text-label-small'
+					}
+					style={{
+						color: hasValue ? themeColors.text : themeColors.border,
+					}}
+				>
+					{triggerLabel}
+				</Text>
 			</Pressable>
 		);
+
+	const showProvinceChips = !restrictToProvinceId;
 
 	return (
 		<>
@@ -225,14 +223,11 @@ export default function LocalityPicker({
 								className="font-sansExtraBold text-title-tertiary"
 								style={{ color: themeColors.text }}
 							>
-								{label ??
-									(isProvinceScope
-										? 'Escolhe a província'
-										: 'Escolhe o teu local')}
+								{label ?? 'Escolhe o teu local'}
 							</Text>
 							<Pressable
 								onPress={() => setVisible(false)}
-								hitSlop={6}
+								hitSlop={10}
 								className="w-8 h-8 rounded-full items-center justify-center"
 								style={{
 									backgroundColor: themeColors.background,
@@ -261,18 +256,17 @@ export default function LocalityPicker({
 							<TextInput
 								className="flex-1 py-2.5 pl-2 font-sans text-body-small"
 								style={{ color: themeColors.text }}
-								placeholder={
-									isProvinceScope
-										? 'Pesquisar província'
-										: 'Pesquisar município'
-								}
+								placeholder="Pesquisar município"
 								placeholderTextColor={themeColors.border}
 								value={query}
 								onChangeText={setQuery}
 								autoCorrect={false}
 							/>
 							{query ? (
-								<Pressable onPress={() => setQuery('')}>
+								<Pressable
+									onPress={() => setQuery('')}
+									hitSlop={10}
+								>
 									<Ionicons
 										name="close-circle"
 										size={18}
@@ -282,21 +276,23 @@ export default function LocalityPicker({
 							) : null}
 						</View>
 
-						{!isProvinceScope ? (
+						{showProvinceChips ? (
 							<ScrollView
 								horizontal
 								showsHorizontalScrollIndicator={false}
 								className="mb-2"
 							>
-								{provinces.map((p) => {
-									const active = province === p;
+								{provincesWithLocalities.map((p) => {
+									const active = provinceId === p.id;
 									return (
 										<Pressable
-											key={p}
+											key={p.id}
 											onPress={() =>
-												setProvince(active ? '' : p)
+												setProvinceId(
+													active ? '' : p.id,
+												)
 											}
-											className="rounded-full px-3 py-1.5 border mr-2"
+											className="rounded-full px-3 py-1.5 border mr-2 min-h-[32px] justify-center"
 											style={{
 												borderColor: active
 													? themeColors.text
@@ -314,7 +310,7 @@ export default function LocalityPicker({
 														: themeColors.secondary,
 												}}
 											>
-												{p}
+												{p.name}
 											</Text>
 										</Pressable>
 									);
@@ -323,89 +319,32 @@ export default function LocalityPicker({
 						) : null}
 
 						<ScrollView
-							className="flex-grow-0"
 							keyboardShouldPersistTaps="handled"
 							style={{ maxHeight: 380 }}
 						>
-							{isProvinceScope ? (
-								provinceOptions.length === 0 ? (
-									<View className="py-10 items-center">
-										<Text
-											className="font-sans text-body-small"
-											style={{
-												color: themeColors.secondary,
-											}}
-										>
-											Sem províncias a bater certo.
-										</Text>
-									</View>
-								) : (
-									provinceOptions.map((p) => {
-										const active = value === p;
-										const count = LOCALITIES.filter(
-											(l) => l.province === p,
-										).length;
-										return (
-											<Pressable
-												key={p}
-												onPress={() => pick(p)}
-												className="flex-row items-center px-1 py-3 border-b"
-												style={{
-													borderColor:
-														themeColors.border,
-												}}
-											>
-												<View className="flex-1">
-													<Text
-														className="font-sansMedium text-label-small"
-														style={{
-															color: themeColors.text,
-														}}
-													>
-														{p}
-													</Text>
-													<Text
-														className="font-sans text-body-xs"
-														style={{
-															color: themeColors.secondary,
-														}}
-													>
-														{count} município
-														{count > 1 ? 's' : ''}
-													</Text>
-												</View>
-												{active ? (
-													<Ionicons
-														name="checkmark-circle"
-														size={20}
-														color={
-															themeColors.primary
-														}
-													/>
-												) : null}
-											</Pressable>
-										);
-									})
-								)
-							) : localityOptions.length === 0 ? (
+							{provinces.isLoading ? (
+								<View className="py-10 items-center">
+									<ActivityIndicator
+										color={themeColors.primary}
+									/>
+								</View>
+							) : options.length === 0 ? (
 								<View className="py-10 items-center">
 									<Text
 										className="font-sans text-body-small"
-										style={{
-											color: themeColors.secondary,
-										}}
+										style={{ color: themeColors.secondary }}
 									>
 										Sem municípios a bater certo.
 									</Text>
 								</View>
 							) : (
-								localityOptions.map((l) => {
+								options.map((l) => {
 									const active = value === l.id;
 									return (
 										<Pressable
 											key={l.id}
-											onPress={() => pick(l.id)}
-											className="flex-row items-center px-1 py-3 border-b"
+											onPress={() => pick(l)}
+											className="flex-row items-center px-1 py-3 border-b min-h-[44px]"
 											style={{
 												borderColor: themeColors.border,
 											}}
@@ -425,7 +364,7 @@ export default function LocalityPicker({
 														color: themeColors.secondary,
 													}}
 												>
-													{l.province}
+													{provinceName(l.provinceId)}
 												</Text>
 											</View>
 											{active ? (
