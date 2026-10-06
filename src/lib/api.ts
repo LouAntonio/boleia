@@ -667,11 +667,16 @@ export async function registerPushDevice(input: {
 	await client.post('/api/push/devices', input);
 }
 
+/**
+ * Desregista o token de push.
+ *
+ * O token vai na query string e não no corpo: um `DELETE` com corpo é
+ * descartado por alguns proxies e CDNs, e a desregisto é justamente a operação
+ * que mais suffers quando é perdida em silêncio.
+ */
 export async function unregisterPushDevice(token: string): Promise<void> {
-	await client.request({
-		method: 'DELETE',
-		url: '/api/push/devices/current',
-		data: { token },
+	await client.delete('/api/push/devices/current', {
+		params: { token },
 	});
 }
 
