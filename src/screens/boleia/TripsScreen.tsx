@@ -11,6 +11,7 @@ import ScreenHeader from '../../components/ScreenHeader';
 import EmptyState from '../../components/EmptyState';
 import {
 	apiErrorMessage,
+	cancelRide,
 	decideBooking,
 	listMyRides,
 	listRideBookings,
@@ -103,6 +104,30 @@ export default function TripsScreen() {
 		}
 	};
 
+	/*
+	 * Cancelar uma corrida agendada.
+	 *
+	 * Sem isto, `cancelRide` era código morto e uma corrida que o motorista
+	 * já não queria continuava agendada para sempre — com lugares bloqueados e
+	 * passageiros à espera de uma resposta que não viria. O cancelamento fecha
+	 * os pedidos pendentes e devolve os lugares, e o passageiro é avisado.
+	 */
+	const abort = async (rideId: string) => {
+		setBusy(rideId);
+		setError(null);
+		try {
+			await cancelRide(rideId, 'Cancelada pelo motorista.');
+			await queryClient.invalidateQueries({ queryKey: ['myRides'] });
+			await queryClient.invalidateQueries({ queryKey: ['rideBookings'] });
+		} catch (err) {
+			setError(
+				apiErrorMessage(err, 'Não foi possível cancelar a viagem.'),
+			);
+		} finally {
+			setBusy(null);
+		}
+	};
+
 	if (!isLoading && mine.length === 0) {
 		return (
 			<SafeAreaView
@@ -182,6 +207,14 @@ export default function TripsScreen() {
 										onPress={() => void begin(ride.id)}
 										disabled={busy === ride.id}
 									/>
+									<View className="mt-2">
+										<BoleiaButton
+											title="Cancelar viagem"
+											variant="outline"
+											onPress={() => void abort(ride.id)}
+											disabled={busy === ride.id}
+										/>
+									</View>
 								</View>
 							)}
 							{ride.status === 'em_curso' && (
@@ -191,8 +224,14 @@ export default function TripsScreen() {
 										backgroundColor: themeColors.background,
 									}}
 								>
+									{/*
+									 * "Gerir viagem", não "Acompanhar ao vivo": o
+									 * ecrã para onde vai tem os controlos de avançar
+									 * paragem e terminar. Dizer só "acompanhar"
+									 * descrevia metade do que se lá faz.
+									 */}
 									<BoleiaButton
-										title="Acompanhar ao vivo"
+										title="Gerir viagem"
 										onPress={() =>
 											navigation.navigate('ActiveRide', {
 												rideId: ride.id,

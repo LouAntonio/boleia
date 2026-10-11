@@ -532,14 +532,27 @@ export async function finishRide(id: string): Promise<ApiRide> {
 	return data;
 }
 
-/** Avança a corrida para uma paragem do percurso. */
+/**
+ * Avança a corrida para uma paragem do percurso.
+ *
+ * Este endpoint **não** devolve a corrida: o servidor responde só com o id e o
+ * índice gravado. Estava tipado como `ApiRide`, e quem confiasse nisso
+ * receberia um objecto sem `stops` nem `status` — que é o suficiente para uma
+ * estrada desenhada a partir de `undefined`.
+ */
+export interface RideProgressResult {
+	id: string;
+	progressIndex: number;
+}
+
 export async function setRideProgress(
 	id: string,
 	progressIndex: number,
-): Promise<ApiRide> {
-	const { data } = await client.patch<ApiRide>(`/api/rides/${id}/progress`, {
-		progressIndex,
-	});
+): Promise<RideProgressResult> {
+	const { data } = await client.patch<RideProgressResult>(
+		`/api/rides/${id}/progress`,
+		{ progressIndex },
+	);
 	return data;
 }
 

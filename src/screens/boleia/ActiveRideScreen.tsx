@@ -10,7 +10,14 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import RouteStrip, { StripStop } from '../../components/RouteStrip';
 import SectionTitle from '../../components/SectionTitle';
-import { getRide, listRideBookings } from '../../lib/api';
+import BoleiaButton from '../../components/BoleiaButton';
+import {
+	getRide,
+	listRideBookings,
+	setRideProgress,
+	finishRide,
+} from '../../lib/api';
+import { apiErrorMessage } from '../../lib/api';
 import { toRide, rideProgressFraction } from '../../lib/rideMapper';
 import {
 	getSocket,
@@ -19,7 +26,7 @@ import {
 	rejoinTripRoomOnReconnect,
 	TripEventName,
 } from '../../lib/socket';
-import { useAppStore } from '../../store/appStore';
+import { useSessionUserId } from '../../hooks/useSessionUser';
 
 /**
  * Acompanhamento ao vivo de uma corrida.
@@ -37,23 +44,35 @@ export default function ActiveRideScreen() {
 		>();
 	const route = useRoute<RouteProp<BoleiaMainStackParamList, 'ActiveRide'>>();
 	const { themeColors } = useThemeColors();
-	const currentRole = useAppStore((s) => s.currentRole);
 	const queryClient = useQueryClient();
 	const rideId = route.params.rideId;
 
 	const [live, setLive] = useState(false);
+	const [busy, setBusy] = useState<string | null>(null);
+	const [actionError, setActionError] = useState<string | null>(null);
 
 	const { data: apiRide, isLoading } = useQuery({
 		queryKey: ['ride', rideId],
 		queryFn: () => getRide(rideId),
 	});
 
+	const ride = apiRide ? toRide(apiRide) : undefined;
+
+	/*
+	 * Motorista por posse, não por preferência.
+	 *
+	 * `currentRole` é o botão "estou a conduzir" do perfil: qualquer passageiro o
+	 * pode ligar. Gatear os controlos por aí mostrava-os a quem conduz e
+	 * escondia-os de quem conduz com o interruptor desligado.
+	 */ const sessionUserId = useSessionUserId();
+	const isDriver = !!ride && ride.driverId === sessionUserId;
+
 	// O motorista precisa de saber quantas pessoas seguem a bordo. A identidade
 	// dos passageiros não vem no payload, por isso mostramos a contagem.
 	const { data: bookings } = useQuery({
 		queryKey: ['rideBookings', rideId],
 		queryFn: () => listRideBookings(rideId),
-		enabled: currentRole === 'driver',
+		enabled: isDriver,
 	});
 	const onBoardCount = useMemo(
 		() =>
@@ -84,6 +103,7 @@ export default function ActiveRideScreen() {
 
 		socket.on('connect', onConnect);
 		socket.on('disconnect', onDisconnect);
+		socket.on(TripEventName.RIDE_SNAPSHOT, refresh);
 		socket.on(TripEventName.RIDE_PROGRESS, refresh);
 		socket.on(TripEventName.RIDE_STARTED, refresh);
 		socket.on(TripEventName.RIDE_FINISHED, refresh);
@@ -92,6 +112,7 @@ export default function ActiveRideScreen() {
 		return () => {
 			socket.off('connect', onConnect);
 			socket.off('disconnect', onDisconnect);
+			socket.off(TripEventName.RIDE_SNAPSHOT, refresh);
 			socket.off(TripEventName.RIDE_PROGRESS, refresh);
 			socket.off(TripEventName.RIDE_STARTED, refresh);
 			socket.off(TripEventName.RIDE_FINISHED, refresh);
@@ -99,8 +120,6 @@ export default function ActiveRideScreen() {
 			leaveTripRoom(rideId);
 		};
 	}, [rideId, queryClient]);
-
-	const ride = apiRide ? toRide(apiRide) : undefined;
 
 	if (!ride) {
 		return (
@@ -164,6 +183,58 @@ export default function ActiveRideScreen() {
 	// A pista é actualizada só quando o servidor a manda, pelo que o
 	// diagnóstico de rede vale mais do que um "ligado" permanente.
 	const liveLabel = live ? 'Ao vivo' : 'Sem ligação';
+
+	/*
+	 * Quantas paragens existem, para o servidor e para o cliente contarem igual.
+	 *
+	 * `countStops` do servidor inclui ORIGIN e DESTINATION, e `ride.stops` no
+	 * cliente só tem as intermédias — daí o `+ 2`. O mesmo `+ 2` está em
+	 * `rideProgressFraction`. Com `+ 1` aqui, o botão deixaria de funcionar
+	 * exactamente na última paragem, que é a que mais interessa marcar.
+	 */
+	const totalStops = ride.stops.length + 2;
+	const lastIndex = totalStops - 1;
+	const isAtLastStop = ride.progressIndex >= lastIndex;
+
+	const advance = async () => {
+		if (busy) return;
+		setBusy('progress');
+		setActionError(null);
+		try {
+			await setRideProgress(
+				ride.id,
+				Math.min(ride.progressIndex + 1, lastIndex),
+			);
+			await queryClient.invalidateQueries({ queryKey: ['ride', rideId] });
+			await queryClient.invalidateQueries({ queryKey: ['myRides'] });
+		} catch (e) {
+			setActionError(
+				apiErrorMessage(e, 'Não foi possível marcar a paragem.'),
+			);
+		} finally {
+			setBusy(null);
+		}
+	};
+
+	const finish = async () => {
+		if (busy) return;
+		setBusy('finish');
+		setActionError(null);
+		try {
+			await finishRide(ride.id);
+			await queryClient.invalidateQueries({ queryKey: ['ride', rideId] });
+			await queryClient.invalidateQueries({ queryKey: ['myRides'] });
+			await queryClient.invalidateQueries({
+				queryKey: ['rideBookings', rideId],
+			});
+		} catch (e) {
+			setActionError(
+				apiErrorMessage(e, 'Não foi possível terminar a viagem.'),
+			);
+		} finally {
+			setBusy(null);
+		}
+	};
 
 	return (
 		<SafeAreaView
@@ -243,7 +314,7 @@ export default function ActiveRideScreen() {
 					/>
 				</View>
 
-				{currentRole === 'driver' && (
+				{isDriver ? (
 					<View className="mt-5">
 						<SectionTitle>Bordo</SectionTitle>
 						<View
@@ -263,7 +334,56 @@ export default function ActiveRideScreen() {
 							</Text>
 						</View>
 					</View>
-				)}
+				) : null}
+
+				{/*
+				 * Os controlos da viagem só existem para quem conduz, e só
+				 * durante. Sem isto, uma corrida iniciada na app não podia ser
+				 * avançada nem terminada: as funções existiam, o botão é que
+				 * não estava em lado nenhum, e `IN_PROGRESS → COMPLETED` só
+				 * acontecia a partir de um `PATCH` à mão.
+				 */}
+				{isDriver && ride.status === 'em_curso' ? (
+					<View className="mt-5">
+						<SectionTitle>Viagem</SectionTitle>
+
+						{!isAtLastStop ? (
+							<BoleiaButton
+								title={`Marcar ${stops[ride.progressIndex + 1]?.place ?? 'a paragem'} como alcançada`}
+								onPress={advance}
+								loading={busy === 'progress'}
+								disabled={busy !== null}
+							/>
+						) : (
+							<Text
+								className="font-sans text-body-small"
+								style={{ color: themeColors.secondary }}
+							>
+								Última paragem alcançada.
+							</Text>
+						)}
+
+						<View className="mt-2">
+							<BoleiaButton
+								title="Terminar viagem"
+								variant="outline"
+								onPress={finish}
+								loading={busy === 'finish'}
+								disabled={busy !== null}
+							/>
+						</View>
+
+						{actionError ? (
+							<Text
+								role="alert"
+								className="font-sans text-body-small mt-2"
+								style={{ color: themeColors.error }}
+							>
+								{actionError}
+							</Text>
+						) : null}
+					</View>
+				) : null}
 
 				{/* Segurança */}
 				<View className="mt-6">
