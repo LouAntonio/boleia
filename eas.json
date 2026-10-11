@@ -11,13 +11,15 @@
 		"preview": {
 			"distribution": "internal",
 			"env": {
-				"APP_ENV": "preview"
+				"APP_ENV": "preview",
+				"API_URL": "https://api.boleia.ao"
 			}
 		},
 		"production": {
 			"autoIncrement": true,
 			"env": {
-				"APP_ENV": "production"
+				"APP_ENV": "production",
+				"API_URL": "https://api.boleia.ao"
 			}
 		}
 	},

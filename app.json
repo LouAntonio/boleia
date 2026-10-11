@@ -30,6 +30,19 @@
 			"@react-native-community/datetimepicker",
 			"expo-web-browser",
 			[
+				"expo-image-picker",
+				{
+					"photosPermission": "A Boleia precisa de aceder às tuas fotografias para carregares o teu BI, os teus selfies e as fotos da tua viatura.",
+					"cameraPermission": "A Boleia usa a câmara para fotografar o teu BI e a tua carta de condução."
+				}
+			],
+			[
+				"expo-location",
+				{
+					"locationWhenInUsePermission": "A Boleia usa a tua localização durante a viagem para o motorista e os passageiros saberem por onde vão."
+				}
+			],
+			[
 				"expo-notifications",
 				{
 					"color": "#0071EB",

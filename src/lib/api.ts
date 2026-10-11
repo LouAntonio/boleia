@@ -719,6 +719,45 @@ export async function confirmUpload(publicId: string): Promise<{ id: string }> {
  * Envia uma foto local (expo-image-picker) para o Cloudinary e devolve o
  * id da Media confirmada, pronto a usar em KYC/viatura.
  */
+/**
+ * Os campos que o Cloudinary assina, e que têm de viajar no pedido.
+ *
+ * O backend assina cinco parâmetros (`cloudinary.service.ts`, `toSign`):
+ * `timestamp`, `public_id`, `transformation`, `eager` e `allowed_formats`. O
+ * Cloudinary recalcula a assinatura **sobre o que recebe**; um parâmetro que
+ * foi assinado e não vai no pedido faz a assinatura não bater e o upload ser
+ * recusado. Não há erro explicativo do lado do Cloudinary — é um 400.
+ *
+ * Era aqui que o KYC e o registo de viaturas morriam: o `eager` e o
+ * `allowed_formats` ficavam de fora, em qualquer das duas apps. A assinatura
+ * é montada a partir desta lista para que acrescentar um parâmetro no servidor
+ * não volte a passar despercebido aqui.
+ */
+const SIGNED_UPLOAD_FIELDS = [
+	'timestamp',
+	'public_id',
+	'transformation',
+	'eager',
+	'allowed_formats',
+] as const;
+
+/** Metade do FormData que é a assinatura, derivada do objecto que o backend mandou. */
+function appendSignedParams(form: FormData, signature: UploadSignature): void {
+	// `public_id` e `allowed_formats` têm sublinhado no protocolo do Cloudinary;
+	// o objecto da API usa camelCase.
+	for (const field of SIGNED_UPLOAD_FIELDS) {
+		const value =
+			field === 'public_id'
+				? signature.publicId
+				: field === 'allowed_formats'
+					? signature.allowedFormats
+					: signature[field];
+		if (value !== undefined && value !== null && value !== '') {
+			form.append(field, String(value));
+		}
+	}
+}
+
 export async function uploadPhoto(
 	localUri: string,
 	ownerType: 'DRIVER_KYC' | 'PASSENGER_KYC' | 'VEHICLE' | 'USER',
@@ -731,12 +770,9 @@ export async function uploadPhoto(
 		type: 'image/jpeg',
 	} as unknown as Blob);
 	form.append('api_key', signature.apiKey);
-	form.append('timestamp', String(signature.timestamp));
 	form.append('signature', signature.signature);
-	form.append('public_id', signature.publicId);
-	if (signature.transformation) {
-		form.append('transformation', signature.transformation);
-	}
+	appendSignedParams(form, signature);
+
 	const upload = await fetch(signature.uploadUrl, {
 		method: 'POST',
 		body: form,

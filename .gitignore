@@ -31,7 +31,19 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+#
+# Isto era só `.env*.local`, e não apanhava `.env.production` — que é o ficheiro
+# que o `react-native-dotenv` carrega com `APP_ENV=production` e que, por
+# defeito, contém o `API_URL` real. `.env` aparecia ainda três vezes aqui em
+# baixo, duas delas com um espaço no fim da linha: um padrão com espaço no fim
+# nunca casa com um nome de ficheiro, o que deixava passar o `.env` normal.
+#
+# As excepções ficam explícitas e estreitas: só os dois ficheiros de exemplo
+# são versionados.
+.env
+.env.*
+!.env.example
+!.env.production.example
 
 # typescript
 *.tsbuildinfo
@@ -39,8 +51,3 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-
-.env
-
-.env 
-.env 
