@@ -1,12 +1,13 @@
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { listLocalities, listProvinces, type ApiLocality } from '../lib/api';
+import { qk } from '../lib/queryKeys';
 
 /** As províncias e counties não mudam: o cache pode durar um dia. */
 const REFY_TIME = 24 * 60 * 60 * 1000;
 
 export function useProvinces() {
 	return useQuery({
-		queryKey: ['provinces'],
+		queryKey: qk.localities.provinces,
 		queryFn: listProvinces,
 		staleTime: REFY_TIME,
 		gcTime: REFY_TIME,
@@ -16,7 +17,11 @@ export function useProvinces() {
 /** Localidades de uma província. Desactivado sem `provinceId`. */
 export function useLocalities(provinceId: string | null | undefined) {
 	return useQuery({
-		queryKey: ['localities', provinceId],
+		// `''` como chave de provinces-a-ninguém: a query está desactivada
+		// abaixo, mas a chave tem de ser um array de strings estáveis — um
+		// `undefined` dentro do array tornaria a identidade da query
+		// imprevisível.
+		queryKey: qk.localities.of(provinceId ?? ''),
 		queryFn: () => listLocalities(provinceId as string),
 		enabled: !!provinceId,
 		staleTime: REFY_TIME,
@@ -36,7 +41,7 @@ export function useAllLocalities() {
 	const provinces = useProvinces();
 	const results = useQueries({
 		queries: (provinces.data ?? []).map((province) => ({
-			queryKey: ['localities', province.id],
+			queryKey: qk.localities.of(province.id),
 			queryFn: () => listLocalities(province.id),
 			staleTime: REFY_TIME,
 			gcTime: REFY_TIME,

@@ -2,6 +2,8 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '@env';
 import { useAppStore } from '../store/appStore';
+import { queryClient } from './queryClient';
+import { navigationRef } from './navigationRef';
 
 export const AUTH_TOKEN_KEY = 'boleia.authToken';
 
@@ -46,6 +48,40 @@ async function captureToken(headers: Record<string, unknown>): Promise<void> {
 	}
 }
 
+/**
+ * Terminar a sessão depois de um 401.
+ *
+ * A versão anterior limitava-se a apagar o token e a chamar `signOut()`, e
+ * só o `ProfileScreen` é que navega depois de um `signOut()`. Um 401 em
+ * qualquer outro sítio — token expirado, sessão revogada noutro dispositivo —
+ * deixava a pessoa dentro do `BoleiaMainNavigator` com `authenticated: false`
+ * e `sessionUserId: null`: ecrãs a mostrar `0` e `—`, nenhuma query nova a
+ * correr (`enabled: !!sessionUserId`), e a única forma de sair passando pelo
+ * botão do perfil. Agrava porque `signOut()` repõe `currentRole:
+ * 'passenger'`, pelo que o papel escolhido desaparecia em silêncio.
+ *
+ * Três passos, e os três importam:
+ *
+ * 1. **navegar** — a app precisa de sair da árvore de autenticação, não
+ *    apenas de saber que não há sessão. `navigationRef` pode não estar pronto
+ *    (no Splash, antes do `NavigationContainer`), e nesse caso não há ecrã
+ *    para mostrar: o Splash resolve pelo seu caminho.
+ * 2. **limpar a cache** — as queries antigas de quem saiu podem ficar no
+ *    ecrã quando outro utilizador entrar no mesmo aparelho.
+ * 3. **limpar o estado** — `signOut()`.
+ */
+function endSessionAfter401(): void {
+	useAppStore.getState().signOut();
+	queryClient.clear();
+
+	if (navigationRef.isReady()) {
+		navigationRef.reset({
+			index: 0,
+			routes: [{ name: 'Auth', params: { screen: 'Login' } }],
+		});
+	}
+}
+
 client.interceptors.response.use(
 	async (response) => {
 		// A sessão criada/renovada devolve o token Bearer no header
@@ -56,7 +92,7 @@ client.interceptors.response.use(
 	async (error) => {
 		if (axios.isAxiosError(error) && error.response?.status === 401) {
 			await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
-			useAppStore.getState().signOut();
+			endSessionAfter401();
 		}
 		return Promise.reject(error);
 	},
@@ -346,6 +382,19 @@ export interface ApiRideStop {
 	name: string;
 	/** Hora já formatada em WAT pelo backend, para mostrar sem recalcular. */
 	timeLabel: string;
+	/**
+	 * Distância acumulada desde a origem, em km. Fica a 0 enquanto ninguém a
+	 * calcular, e é por isso que a app não a mostra nesse caso.
+	 */
+	distanceKm: number;
+	/**
+	 * Coordenadas da província-sede da paragem, quando a conhece.
+	 *
+	 * São as coordenadas da província, não do município: `Locality` não tem
+	 * `latitude`/`longitude`. Dá para estimar a dimensão do percurso, não para
+	 * localizar a paragem ao metro.
+	 */
+	provinceCoordinates: { latitude: number; longitude: number } | null;
 }
 
 export interface ApiRide {
@@ -797,17 +846,49 @@ export async function uploadPhoto(
 	return confirmed.id;
 }
 
-export async function fetchSession(): Promise<ApiSession | null> {
+/**
+ * Sessão actual, com o motivo da falta de sessão distinguido.
+ *
+ * O `catch { return null }` original tratava "o token já não é válido" e "o
+ * servidor não respondeu" como a mesma coisa. O Splash usa isto para decidir
+ * entre entrar na app e mostrar o login — e, mais grave, para decidir se
+ * chama `signOut()`. Um arranque em 2G, num túnel ou antes de o TLS
+ * resolver expirava a conta: a pessoa era expulsa, perdia o papel escolhido
+ * e tinha de reintroduzir a senha. Num produto com rede intermitente isso é
+ * frequente, não é um canto.
+ *
+ * `null` passa a significar só uma coisa: o servidor respondeu e não há
+ * sessão. A rede cai para `offline: true`.
+ */
+export interface SessionCheck {
+	session: ApiSession | null;
+	/** O pedido não chegou ao servidor. Não prova nada sobre a sessão. */
+	offline: boolean;
+}
+
+export async function checkSession(): Promise<SessionCheck> {
 	try {
 		const res = await client.get<{
 			user?: ApiUser;
 			session?: { id: string };
 		}>('/api/auth/get-session');
 		if (!res.data.user || !res.data.session) {
-			return null;
+			return { session: null, offline: false };
 		}
-		return { user: res.data.user, token: null };
-	} catch {
-		return null;
+		return {
+			session: { user: res.data.user, token: null },
+			offline: false,
+		};
+	} catch (error) {
+		// Um 401 é o servidor a dizer que o token não serve — isso é uma
+		// resposta, e o interceptor já limpou a sessão. Todo o resto é rede.
+		if (axios.isAxiosError(error) && error.response?.status === 401) {
+			return { session: null, offline: false };
+		}
+		return { session: null, offline: true };
 	}
+}
+
+export async function fetchSession(): Promise<ApiSession | null> {
+	return (await checkSession()).session;
 }

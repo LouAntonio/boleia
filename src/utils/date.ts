@@ -1,5 +1,7 @@
 // Datas — chaves 'yyyy-mm-dd' locais e calendário pt-PT (semana começa 2ª feira)
 
+import { fmtDayMonthYear } from '../lib/format';
+
 export const MONTHS_PT = [
 	'Janeiro',
 	'Fevereiro',
@@ -55,11 +57,9 @@ export function fmtDayShort(key: string): string {
 
 export function fmtDayLong(key: string): string {
 	const d = fromDateKey(key);
-	return d.toLocaleDateString('pt-PT', {
-		weekday: 'long',
-		day: 'numeric',
-		month: 'long',
-	});
+	//Escrito à mão: `toLocaleDateString('pt-PT')` depende do ICU do runtime e
+	// no Hermes sem ICU completo sai em inglês.
+	return fmtDayMonthYear(d);
 }
 
 export function fmtRange(from: string, to: string): string {

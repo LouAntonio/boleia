@@ -9,9 +9,11 @@ import {
 	BoleiaMainStackParamList,
 	PassengerTabsParamList,
 } from '../../types/navigation';
+import { qk } from '../../lib/queryKeys';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { listMyBookings, listRides } from '../../lib/api';
+import { fmtDayMonth, fmtWeekdayShort } from '../../lib/format';
 import { toRide } from '../../lib/rideMapper';
 import TripListingCard from '../../components/TripListingCard';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -31,11 +33,8 @@ function dayLabel(iso: string): string {
 	const diff = Math.round((startOf(d) - startOf(now)) / 86400000);
 	if (diff <= 0) return 'Hoje';
 	if (diff === 1) return 'Amanhã';
-	const label = d.toLocaleDateString('pt-PT', {
-		weekday: 'short',
-		day: 'numeric',
-		month: 'short',
-	});
+	// "Sex, 12 mar" — escrito à mão porque o ICU do Hermes não garante PT.
+	const label = `${fmtWeekdayShort(d)}, ${fmtDayMonth(d)}`;
 	return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
@@ -53,12 +52,12 @@ export default function ExploreScreen() {
 	// O backend já devolve só corridas agendadas, com lugares livres e dentro da
 	// janela de pesquisa, ordenadas por partida.
 	const { data: page, isLoading } = useQuery({
-		queryKey: ['rides'],
+		queryKey: qk.rides.search({ limit: 50 }),
 		queryFn: () => listRides({ limit: 50 }),
 	});
 
 	const { data: myBookings } = useQuery({
-		queryKey: ['myBookings'],
+		queryKey: qk.myBookings.all,
 		queryFn: listMyBookings,
 		enabled: !!sessionUserId,
 	});

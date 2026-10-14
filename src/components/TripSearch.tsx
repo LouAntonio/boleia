@@ -12,6 +12,7 @@ import BoleiaButton from './BoleiaButton';
 import Card from './Card';
 import { listRides, apiErrorMessage, type ApiRide } from '../lib/api';
 import { toRide } from '../lib/rideMapper';
+import { fmtDayMonth } from '../lib/format';
 import { useAllLocalities, useProvinces } from '../hooks/useLocalities';
 import {
 	loadRecentSearches,
@@ -171,11 +172,7 @@ export default function TripSearch() {
 
 	const recentDateLabel = (r: RecentSearch): string => {
 		if (!r.dateFrom) return 'Qualquer dia';
-		const fmt = (iso: string) =>
-			new Date(`${iso}T00:00:00`).toLocaleDateString('pt-PT', {
-				day: 'numeric',
-				month: 'short',
-			});
+		const fmt = (iso: string) => fmtDayMonth(new Date(`${iso}T00:00:00`));
 		return r.dateTo && r.dateTo !== r.dateFrom
 			? `${fmt(r.dateFrom)} → ${fmt(r.dateTo)}`
 			: fmt(r.dateFrom);

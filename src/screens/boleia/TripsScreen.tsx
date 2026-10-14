@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { qk } from '../../lib/queryKeys';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { fmtKz } from '../../lib/format';
+import { fmtKz, ymd, hhmm } from '../../lib/format';
 import TripStripCard from '../../components/TripStripCard';
 import StatusStamp from '../../components/StatusStamp';
 import BoleiaButton from '../../components/BoleiaButton';
@@ -47,13 +48,16 @@ export default function TripsScreen() {
 	const [busy, setBusy] = useState<string | null>(null);
 
 	const { data: page, isLoading } = useQuery({
-		queryKey: ['myRides'],
+		// O `limit` na chave: o Perfil pede 100 com `myRides` e esta tela 50. Com
+		// a chave em comum eram a mesma query e as contagens do perfil vinham
+		// de uma lista truncada (ou o contrário).
+		queryKey: qk.myRides.list({ limit: 50 }),
 		queryFn: () => listMyRides({ limit: 50 }),
 	});
 	const mine = page?.rows ?? [];
 
 	const { data: bookingsByRide } = useQuery({
-		queryKey: ['rideBookings', mine.map((r) => r.id).join(',')],
+		queryKey: qk.rideBookings.of(mine.map((r) => r.id).join(',')),
 		enabled: mine.length > 0,
 		queryFn: async () => {
 			const entries = await Promise.all(
@@ -80,7 +84,9 @@ export default function TripsScreen() {
 					? 'O lugar não está a bater certo com a tua rota.'
 					: undefined,
 			);
-			await queryClient.invalidateQueries({ queryKey: ['rideBookings'] });
+			await queryClient.invalidateQueries({
+				queryKey: qk.rideBookings.all,
+			});
 		} catch (err) {
 			setError(apiErrorMessage(err, 'Não foi possível responder.'));
 		} finally {
@@ -93,7 +99,7 @@ export default function TripsScreen() {
 		setError(null);
 		try {
 			await startRide(rideId);
-			await queryClient.invalidateQueries({ queryKey: ['myRides'] });
+			await queryClient.invalidateQueries({ queryKey: qk.myRides.all });
 			navigation.navigate('ActiveRide', { rideId });
 		} catch (err) {
 			setError(
@@ -117,8 +123,10 @@ export default function TripsScreen() {
 		setError(null);
 		try {
 			await cancelRide(rideId, 'Cancelada pelo motorista.');
-			await queryClient.invalidateQueries({ queryKey: ['myRides'] });
-			await queryClient.invalidateQueries({ queryKey: ['rideBookings'] });
+			await queryClient.invalidateQueries({ queryKey: qk.myRides.all });
+			await queryClient.invalidateQueries({
+				queryKey: qk.rideBookings.all,
+			});
 		} catch (err) {
 			setError(
 				apiErrorMessage(err, 'Não foi possível cancelar a viagem.'),
@@ -350,8 +358,13 @@ function BookingRequest({
 				className="font-sansMedium text-body-xs"
 				style={{ color: themeColors.secondary }}
 			>
-				Saída {ride.departure.slice(0, 10)} ·{' '}
-				{ride.departure.slice(11, 16)}
+				{/*
+				 * `ymd`/`hhmm` e não `slice` sobre o ISO: `slice(11,16)`
+				 * devolve **UTC**, uma hora atrás de WAT. O motorista lia
+				 * "05:00" para uma corrida que ele próprio criou às 06:00, e
+				 * o erro não dependia do fuso do telemóvel — estava sempre lá.
+				 */}
+				Saída {ymd(ride.departure)} · {hhmm(ride.departure)}
 			</Text>
 			<View className="flex-row mt-2.5">
 				<View className="flex-1 mr-2">

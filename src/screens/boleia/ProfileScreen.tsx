@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
+import { qk } from '../../lib/queryKeys';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { onBand } from '../../store/colors';
 import {
@@ -24,6 +25,7 @@ import { useQuery } from '@tanstack/react-query';
 import { listMyBookings, listMyRides } from '../../lib/api';
 import { toBooking, toRide } from '../../lib/rideMapper';
 import { fmtKz } from '../../lib/format';
+import { MONTHS_PT } from '../../utils/date';
 import { maskPhone } from '../../utils/phone';
 import { statusMeta, StatusTone } from '../../utils/status';
 import { useNavigation } from '@react-navigation/native';
@@ -279,12 +281,12 @@ export default function ProfileScreen() {
 	// Reservas e corridas vêm da API: o perfil conta as viagens reais do
 	// utilizador, não as de uma base local.
 	const { data: apiBookings } = useQuery({
-		queryKey: ['myBookings'],
+		queryKey: qk.myBookings.all,
 		queryFn: listMyBookings,
 		enabled: !!sessionUserId,
 	});
 	const { data: myRidesPage } = useQuery({
-		queryKey: ['myRides'],
+		queryKey: qk.myRides.list({ limit: 100 }),
 		queryFn: () => listMyRides({ limit: 100 }),
 		enabled: !!sessionUserId,
 	});
@@ -392,13 +394,9 @@ export default function ProfileScreen() {
 	// "novo" ou uma nota do mock seria inventar reputação de alguém.
 	const rating = '—';
 	const since = me?.createdAt
-		? new Date(me.createdAt)
-				.toLocaleDateString('pt-PT', {
-					month: 'short',
-					year: '2-digit',
-				})
-				.replace('.', '')
-				.toUpperCase()
+		? `${MONTHS_PT[new Date(me.createdAt).getMonth()].slice(0, 3).toUpperCase()}.${String(
+				new Date(me.createdAt).getFullYear(),
+			).slice(2)}`
 		: '—';
 
 	const goToBookings = () => {
@@ -782,8 +780,21 @@ export default function ProfileScreen() {
 									className="font-sans text-body-xs mt-0.5"
 									style={{ color: themeColors.secondary }}
 								>
-									A central Boleia liga a esta pessoa numa
-									emergência.
+									{/*
+									 * Dizia "A central Boleia liga a esta pessoa numa
+									 * emergência". Não há central, nem há `SosEvent` em
+									 * lado nenhum — o modelo existe no esquema e não tem
+									 * uma linha de código. Dizer isto a alguém que guardou
+									 * o número de um familiar numa viagem entre províncias
+									 * é o pior sítio para uma promessa falsa.
+									 *
+									 * O que a app faz mesmo: guarda o número, e fica
+									 * disponível para a pessoa mostrar a quem estiver com
+									 * ela.
+									 */}
+									A central Boleia ainda não está activa. O
+									número fica guardado para o levares connosco
+									se precisares de ajuda.
 								</Text>
 							</View>
 						</View>

@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { qk } from '../../lib/queryKeys';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import BookingStub from '../../components/BookingStub';
@@ -10,8 +11,11 @@ import BoleiaButton from '../../components/BoleiaButton';
 import ScreenHeader from '../../components/ScreenHeader';
 import EmptyState from '../../components/EmptyState';
 import GroupLabel from '../../components/GroupLabel';
-import { listMyBookings, getRide } from '../../lib/api';
+import { listMyBookings, getRide, cancelBooking } from '../../lib/api';
+import { apiErrorMessage } from '../../lib/api';
 import { toBooking, toRide } from '../../lib/rideMapper';
+import { MONTHS_PT } from '../../utils/date';
+import { dateOf } from '../../lib/format';
 
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -34,9 +38,11 @@ export default function BookingsScreen() {
 		useNavigation<BottomTabNavigationProp<PassengerTabsParamList>>();
 	const [tab, setTab] = useState<'upcoming' | 'history'>('upcoming');
 	const sessionUserId = useSessionUserId();
+	const queryClient = useQueryClient();
+	const [cancellingId, setCancellingId] = useState<string | null>(null);
 
 	const { data: apiBookings, isLoading } = useQuery({
-		queryKey: ['myBookings'],
+		queryKey: qk.myBookings.all,
 		queryFn: listMyBookings,
 		enabled: !!sessionUserId,
 	});
@@ -52,10 +58,78 @@ export default function BookingsScreen() {
 		enabled: (apiBookings ?? []).length > 0,
 		queryFn: async () => {
 			const ids = [...new Set((apiBookings ?? []).map((b) => b.rideId))];
-			const rows = await Promise.all(ids.map((id) => getRide(id)));
-			return Object.fromEntries(rows.map((r) => [r.id, r]));
+			/*
+			 * `allSettled` e não `all`, e a diferença é visível: com `all`, uma
+			 * única corrida que falhasse (uma viagem apagada pelo motorista, um
+			 * 500) fazia a promessa toda rejeitar, `rides.data` ficava
+			 * `undefined` e **todas** as reservas desapareciam — sem erro, sem
+			 * esqueleto, com o ecrã a dizer "Ainda não tens reservas". A pessoa
+			 * concluía que tinha perdido tudo.
+			 *
+			 * Uma corrida que falhou simplesmente não desenha; as restantes,
+			 * sim.
+			 */
+			const settled = await Promise.allSettled(
+				ids.map((id) => getRide(id)),
+			);
+			return Object.fromEntries(
+				settled
+					.filter(
+						(
+							r,
+						): r is PromiseFulfilledResult<
+							Awaited<ReturnType<typeof getRide>>
+						> => r.status === 'fulfilled',
+					)
+					.map((r) => [r.value.id, r.value]),
+			);
 		},
 	});
+
+	/**
+	 * Cancelar uma reserva, com confirmação.
+	 *
+	 * O `Alert` não é formalidade: `cancelBooking` desfaz a reserva e devolve
+	 * os lugares ao motorista. Um toque acidental numa tela onde o cartão
+	 * inteiro é `Pressable` seria irreversível.
+	 */
+	function confirmCancel(bookingId: string) {
+		Alert.alert(
+			'Cancelar reserva?',
+			'O lugar volta a ficar disponível para outra pessoa.',
+			[
+				{ text: 'Manter', style: 'cancel' },
+				{
+					text: 'Cancelar reserva',
+					style: 'destructive',
+					onPress: () => void doCancel(bookingId),
+				},
+			],
+		);
+	}
+
+	async function doCancel(bookingId: string) {
+		setCancellingId(bookingId);
+		try {
+			await cancelBooking(bookingId, 'Mudei de planos');
+			// A reserva sai do ecrã e o lugar volta à corrida: as duas listas
+			// mudaram.
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: qk.myBookings.all }),
+				queryClient.invalidateQueries({
+					queryKey: qk.ride.of(bookingId),
+				}),
+				queryClient.invalidateQueries({ queryKey: qk.rides.all }),
+			]);
+			setCancellingId(null);
+		} catch (error) {
+			setCancellingId(null);
+			Alert.alert(
+				'Não foi possível cancelar',
+				apiErrorMessage(error, 'Tenta de novo daqui a pouco.'),
+			);
+		}
+	}
 
 	const all = useMemo(
 		() =>
@@ -95,16 +169,23 @@ export default function BookingsScreen() {
 	);
 
 	const groups = useMemo(() => {
+		/*
+		 * Agrupar por mês com `toLocaleDateString('pt-PT')` tinha dois
+		 * problemas: o ICU do Hermes sem dados devolve o mês em inglês ("march
+		 * 2026") dentro de um produto em PT-AO, e a data vinha no fuso do
+		 * dispositivo, não em WAT — uma reserva de 1 de Abril às 00:30 WAT
+		 * agrupava em Março para quem está em UTC.
+		 *
+		 * `MONTHS_PT` e `dateOf` resolvem os dois sem depender do locale.
+		 */
 		const map = new Map<string, typeof history>();
 		for (const x of history) {
-			const label = new Date(x.ride.departure).toLocaleDateString(
-				'pt-PT',
-				{ month: 'long', year: 'numeric' },
-			);
-			const month = label.charAt(0).toUpperCase() + label.slice(1);
-			const list = map.get(month) ?? [];
+			const d = dateOf(x.ride.departure);
+			const month = `${MONTHS_PT[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+			const key = month.charAt(0).toUpperCase() + month.slice(1);
+			const list = map.get(key) ?? [];
 			list.push(x);
-			map.set(month, list);
+			map.set(key, list);
 		}
 		return [...map.entries()];
 	}, [history]);
@@ -216,6 +297,12 @@ export default function BookingsScreen() {
 													'RideDetail',
 													{ rideId: ride.id },
 												)
+											}
+											onCancel={() =>
+												confirmCancel(booking.id)
+											}
+											cancelling={
+												cancellingId === booking.id
 											}
 											footer={
 												booking.status ===

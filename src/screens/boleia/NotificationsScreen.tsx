@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { qk } from '../../lib/queryKeys';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import BackButton from '../../components/BackButton';
 import { useNavigation } from '@react-navigation/native';
@@ -43,7 +44,7 @@ export default function NotificationsScreen() {
 	const queryClient = useQueryClient();
 
 	const { data, isLoading } = useQuery({
-		queryKey: ['notifications'],
+		queryKey: qk.notifications.all,
 		queryFn: () => listNotifications({ limit: 50 }),
 	});
 	const notifications = data?.rows ?? [];
@@ -58,7 +59,7 @@ export default function NotificationsScreen() {
 			try {
 				await markNotificationRead(n.id);
 				await queryClient.invalidateQueries({
-					queryKey: ['notifications'],
+					queryKey: qk.notifications.all,
 				});
 			} catch {
 				// Falhar a marcação não deve impedir o utilizador de ver a

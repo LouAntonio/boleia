@@ -2,7 +2,16 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { hhmm, fmtKz, durationBetween } from '../lib/format';
+import {
+	hhmm,
+	fmtKz,
+	fmtKm,
+	fmtDayMonth,
+	fmtWeekdayShort,
+	durationBetween,
+	dateOf,
+} from '../lib/format';
+import { seatsLeft } from '../lib/rideMapper';
 import RouteStrip, { StripStop } from './RouteStrip';
 import StatusStamp from './StatusStamp';
 
@@ -23,22 +32,25 @@ export default function TripStripCard({
 	const origin: StripStop = {
 		place: ride.origin.name,
 		time: hhmm(ride.departure),
-		km: `${ride.origin.km} km`,
+		km: fmtKm(ride.origin.km),
 		kind: 'origin',
 	};
 	const stops: StripStop[] = ride.stops.map((s) => ({
 		place: s.name,
 		time: s.time,
-		km: `${s.km} km`,
+		km: fmtKm(s.km),
 		kind: 'stop',
 	}));
 	const destination: StripStop = {
 		place: ride.destination.name,
 		time: hhmm(ride.arrival),
-		km: `${ride.destination.km} km`,
+		km: fmtKm(ride.destination.km),
 		kind: 'destination',
 	};
-	const seatsLeft = ride.seatsTotal - ride.seatsTaken;
+	const seatsFree = seatsLeft(ride);
+	// "sex, 12 mar" — escrito à mão porque o ICU do Hermes não garante PT.
+	const departure = dateOf(ride.departure);
+	const departureLabel = `${fmtWeekdayShort(departure)}, ${fmtDayMonth(departure)}`;
 
 	return (
 		<Pressable
@@ -71,12 +83,7 @@ export default function TripStripCard({
 						className="font-sans text-body-small"
 						style={{ color: themeColors.secondary }}
 					>
-						Saída{' '}
-						{new Date(ride.departure).toLocaleDateString('pt-PT', {
-							weekday: 'short',
-							day: 'numeric',
-							month: 'short',
-						})}
+						Saída {departureLabel}
 					</Text>
 					{reserved ? (
 						<StatusStamp status="confirmada" label="Reservado" />
@@ -118,13 +125,13 @@ export default function TripStripCard({
 							className="font-sansMedium text-body-small"
 							style={{
 								color:
-									seatsLeft > 0
+									seatsFree > 0
 										? themeColors.secondary
 										: themeColors.error,
 							}}
 						>
-							{seatsLeft > 0
-								? `${seatsLeft} livre${seatsLeft > 1 ? 's' : ''}`
+							{seatsFree > 0
+								? `${seatsFree} livre${seatsFree > 1 ? 's' : ''}`
 								: 'Lotada'}
 						</Text>
 					</View>

@@ -3,6 +3,8 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { qk } from '../../lib/queryKeys';
+import BackButton from '../../components/BackButton';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUserId } from '../../hooks/useSessionUser';
 import { Eligibility, fetchEligibility } from '../../lib/eligibility';
@@ -29,7 +31,15 @@ import {
 	seatsLeft,
 	rideProgressFraction,
 } from '../../lib/rideMapper';
-import { hhmm, durationBetween, fmtKz, initials } from '../../lib/format';
+import {
+	hhmm,
+	durationBetween,
+	fmtKz,
+	fmtKm,
+	fmtDayMonth,
+	initials,
+	dateOf,
+} from '../../lib/format';
 
 export default function RideDetailScreen() {
 	const navigation =
@@ -45,7 +55,7 @@ export default function RideDetailScreen() {
 	// o detalhe reflecta logo um lugar que o passageiro acabou de perder, sem
 	// ter de recarregar o ecrã.
 	const { data: apiRide, isLoading } = useQuery({
-		queryKey: ['ride', route.params.rideId],
+		queryKey: qk.ride.of(route.params.rideId),
 		queryFn: () => getRide(route.params.rideId),
 	});
 
@@ -53,7 +63,7 @@ export default function RideDetailScreen() {
 	// estado do pedido dele, não o livro de reservas da corrida (que é do
 	// motorista e exige KYC verificado).
 	const { data: myBookings } = useQuery({
-		queryKey: ['myBookings'],
+		queryKey: qk.myBookings.all,
 		queryFn: listMyBookings,
 		enabled: !!sessionUserId,
 	});
@@ -62,11 +72,22 @@ export default function RideDetailScreen() {
 	// O backend envia o motorista com o nome e o id, que é tudo o que este
 	// ecrã precisa. Não há dados inventados.
 	const driver = apiRide?.driver;
+	/*
+	 * Uma reserva só bloqueia o ecrã se ainda estiver viva.
+	 *
+	 * O filtro anterior só excluía `CANCELLED`, o que deixava `REJECTED` e
+	 * `EXPIRED` a satisfazerem a busca: se o motorista recusasse, a pessoa via
+	 * o `BookingStub` em vez do formulário, e **não conseguia pedir lugar de
+	 * novo** a partir do ecrã da corrida. O servidor aceitaria — `createBooking`
+	 * só barra com `REQUESTED`/`CONFIRMED`. Era só a UI a dizer que não.
+	 */
 	const myBookingApi = myBookings?.find(
 		(b) =>
 			b.rideId === route.params.rideId &&
 			b.passengerId === sessionUserId &&
-			b.status !== 'CANCELLED',
+			(b.status === 'REQUESTED' ||
+				b.status === 'CONFIRMED' ||
+				b.status === 'IN_PROGRESS'),
 	);
 	const myBooking = myBookingApi ? toBooking(myBookingApi) : undefined;
 
@@ -123,25 +144,22 @@ export default function RideDetailScreen() {
 	const stripOrigin: StripStop = {
 		place: ride.origin.name,
 		time: hhmm(ride.departure),
-		km: `${ride.origin.km} km`,
+		km: fmtKm(ride.origin.km),
 		kind: 'origin',
 	};
 	const stripStops: StripStop[] = ride.stops.map((s) => ({
 		place: s.name,
 		time: s.time,
-		km: `${s.km} km`,
+		km: fmtKm(s.km),
 		kind: 'stop',
 	}));
 	const stripDestination: StripStop = {
 		place: ride.destination.name,
 		time: hhmm(ride.arrival),
-		km: `${ride.destination.km} km`,
+		km: fmtKm(ride.destination.km),
 		kind: 'destination',
 	};
-	const dateLabel = new Date(ride.departure).toLocaleDateString('pt-PT', {
-		day: 'numeric',
-		month: 'short',
-	});
+	const dateLabel = fmtDayMonth(dateOf(ride.departure));
 
 	/**
 	 * Pede um lugar à corrida.
@@ -167,7 +185,9 @@ export default function RideDetailScreen() {
 			});
 			setResult({ ok: true, bookingId: booking.id });
 			// A lista de reservas do passageiro passou a ter uma entrada nova.
-			await queryClient.invalidateQueries({ queryKey: ['myBookings'] });
+			await queryClient.invalidateQueries({
+				queryKey: qk.myBookings.all,
+			});
 		} catch (error) {
 			setResult({
 				ok: false,
@@ -192,17 +212,27 @@ export default function RideDetailScreen() {
 					onBack={() => navigation.goBack()}
 				/>
 				<ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+					{/*
+					 * Os índices vêm do servidor. `cleanStopIndexes` valida
+					 * contra o número de paragens que o servidor tem, e esse
+					 * número pode ser maior do que o que este cliente tem em
+					 * `stops` — por exemplo se a corrida foi editada depois
+					 * de a reserva ser criada. Sem a guarda, isto rebenta em
+					 * `TypeError` a meio do ecrã de reserva, que é o pior
+					 * sítio para um crash.
+					 */}
 					<BookingStub
 						booking={myBooking}
 						ride={ride}
-						note={`${stops[myBooking.pickStopIndex].name} → ${stops[myBooking.dropStopIndex].name}`}
+						note={`${stops[myBooking.pickStopIndex]?.name ?? 'Recolha'} → ${stops[myBooking.dropStopIndex]?.name ?? 'Destino'}`}
 						footer={
 							myBooking.status === 'pedido' ? (
 								<Text
 									className="font-sans text-body-xs"
 									style={{ color: themeColors.secondary }}
 								>
-									O motorista confirma em ~6s (demo).
+									Fica à espera da resposta do motorista.
+									Avisamos-te quando decidir.
 								</Text>
 							) : myBooking.status === 'confirmada' ? (
 								<Text
@@ -495,9 +525,19 @@ export default function RideDetailScreen() {
 							</Text>
 							<Stepper
 								label="+"
-								onPress={() =>
-									setSeats((v) => Math.min(available, v + 1))
-								}
+								/*
+								 * O clamp sozinho não chega. Com `available === 0`,
+								 * `Math.min(0, v + 1)` dava 0, e o `−` só aparece
+								 * com `seats > 1` — não havia forma de recuperar:
+								 * o botão de reservar envava `seats: 0` e o
+								 * servidor respondia 400 sem explicar.
+								 */
+								onPress={() => {
+									if (available > 0)
+										setSeats((v) =>
+											Math.min(available, v + 1),
+										);
+								}}
 							/>
 							<View className="flex-1 items-end">
 								<Text
@@ -521,7 +561,7 @@ export default function RideDetailScreen() {
 						>
 							<View className="flex-row items-center">
 								<Ionicons
-									name="card"
+									name="cash-outline"
 									size={18}
 									color={themeColors.text}
 								/>
@@ -529,7 +569,7 @@ export default function RideDetailScreen() {
 									className="font-sansMedium text-body-small ml-2"
 									style={{ color: themeColors.text }}
 								>
-									Multicaixa Express
+									Dinheiro
 								</Text>
 							</View>
 							<Ionicons
@@ -538,12 +578,21 @@ export default function RideDetailScreen() {
 								color={themeColors.text}
 							/>
 						</View>
+						{/*
+						 * Este ecrã oferecia "Multicaixa Express" com um
+						 * radio marcado, e o pedido era enviado com
+						 * `paymentMethod: 'CASH'`. Não há integração Multicaixa:
+						 * `WalletTransaction` está no esquema e não tem código,
+						 * e `PAYMENT_METHODS` aceita `WALLET` e `MULTICAIXA` sem
+						 * que nada os trate. O `AGENTS.md` diz que a v1 é só
+						 * dinheiro — a interface é que não reflectia isso.
+						 */}
 						<Text
 							className="font-sans text-body-xs mt-1.5"
 							style={{ color: themeColors.secondary }}
 						>
-							Pagas por Multicaixa Express quando confirmares o
-							pedido.
+							Pagas ao motorista, em dinheiro, na hora do
+							embarque.
 						</Text>
 
 						{result ? (
@@ -575,8 +624,9 @@ export default function RideDetailScreen() {
 												color: themeColors.secondary,
 											}}
 										>
-											O motorista confirma em ~6s (demo).
-											Segue o estado em Reservas.
+											Fica à espera da resposta do
+											motorista. Segue o estado em
+											Reservas.
 										</Text>
 									</View>
 								</View>
@@ -678,25 +728,17 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 	const { themeColors } = useThemeColors();
 	return (
 		<View className="flex-row items-center pt-2 pb-3">
-			<Pressable
-				onPress={onBack}
-				hitSlop={4}
-				className="w-9 h-9 rounded-full items-center justify-center mr-3"
-				style={{
-					backgroundColor: themeColors.card,
-					shadowColor: '#000',
-					shadowOpacity: 0.1,
-					shadowOffset: { width: 0, height: 2 },
-					shadowRadius: 6,
-					elevation: 2,
-				}}
-			>
-				<Ionicons
-					name="chevron-back"
-					size={18}
-					color={themeColors.text}
-				/>
-			</Pressable>
+			{/*
+			 * O `BackButton` partilhado, não um `Pressable` com `chevron-back`
+			 * reescrito à mão. A versão local tinha 36×36 com `hitSlop={4}` — o
+			 * alvo de toque chegava aos 44 por sorte, mas **sem nome
+			 * acessível**: o leitor de ecrã dizia "botão" sem dizer para onde
+			 * voltava. O componente partilhado tem o `MIN_TAP` garantido e o
+			 * `accessibilityLabel="Voltar"`, e é o que o `AGENTS.md`obriga.
+			 */}
+			<View className="mr-3">
+				<BackButton onPress={onBack} />
+			</View>
 			<View className="flex-1">
 				<Text
 					className="font-sansMedium text-body-xs"

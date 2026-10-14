@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { qk } from '../../lib/queryKeys';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSessionUser, useSessionInitials } from '../../hooks/useSessionUser';
 import {
@@ -23,6 +24,7 @@ import Card from '../../components/Card';
 import SectionTitle from '../../components/SectionTitle';
 
 import TripListingCard from '../../components/TripListingCard';
+import { fmtDayMonth, fmtWeekdayShort, dateOf } from '../../lib/format';
 
 // Viagens que o passageiro pode ainda embarcar.
 
@@ -161,11 +163,18 @@ export default function HomeScreen() {
 	// Reservas e próximos embarques vêm do backend. A cache do React Query
 	// evita repetir os pedidos a cada visita à Home.
 	const { data: apiBookings } = useQuery({
-		queryKey: ['myBookings'],
+		queryKey: qk.myBookings.all,
 		queryFn: listMyBookings,
 	});
 	const { data: ridesPage } = useQuery({
-		queryKey: ['rides'],
+		/*
+		 * O `limit` vai na chave, e não só no `queryFn`. Com `['rides']` em
+		 * comum com o Explorar (que pede 50), o React Query deduplicava as
+		 * duas e quem montasse primeiro decidia o que a outra via: a Home
+		 * exibia os 3 resultados do Explorar, ou o inverso. Duas telas com a
+		 * mesma chave e `queryFn` diferentes não são duas queries, são uma.
+		 */
+		queryKey: qk.rides.featured(3),
 		queryFn: () => listRides({ limit: 3 }),
 	});
 
@@ -202,7 +211,7 @@ export default function HomeScreen() {
 		)
 		.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))[0];
 	const { data: nextUpRide } = useQuery({
-		queryKey: ['ride', nextUpBooking?.rideId],
+		queryKey: qk.ride.of(nextUpBooking?.rideId),
 		queryFn: () => getRide(nextUpBooking?.rideId as string),
 		enabled: !!nextUpBooking,
 	});
@@ -212,6 +221,8 @@ export default function HomeScreen() {
 				ride: toRide(nextUpRide),
 			}
 		: undefined;
+	// "sex, 12 mar" — escrito à mão porque o ICU do Hermes não garante PT.
+	const nextUpDate = nextUp ? dateOf(nextUp.ride.departure) : new Date();
 
 	// Próximos embarques: o backend já devolve as corridas agendadas com
 	// lugares livres, ordenadas por partida.
@@ -312,16 +323,10 @@ export default function HomeScreen() {
 													}}
 												>
 													{statusLabel} ·{' '}
-													{new Date(
-														nextUp.ride.departure,
-													).toLocaleDateString(
-														'pt-PT',
-														{
-															weekday: 'short',
-															day: 'numeric',
-															month: 'short',
-														},
+													{fmtWeekdayShort(
+														nextUpDate,
 													)}
+													, {fmtDayMonth(nextUpDate)}
 												</Text>
 											</View>
 											<Ionicons

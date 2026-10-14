@@ -48,8 +48,17 @@ const SLIDES = [
 	{
 		id: '3',
 		title: 'Motoristas verificados',
+		/*
+		 * Dizia "e avaliações bilaterais". As avaliações não existem: o
+		 * `Review` está no esquema e no mapa de permissões, e não há
+		 * controller, serviço nem endpoint. A promessa é o que sustenta o
+		 * primeiro ecrã da app, por isso anuncia uma coisa que a pessoa vai
+		 * procurar e não vai encontrar.
+		 *
+		 * A verificação de identidade é real e é o que interessa dizer.
+		 */
 		description:
-			'Bilhete de Identidade verificado, viatura registada e avaliações bilaterais. Viajas com quem cumpre.',
+			'Bilhete de Identidade verificado e viatura registada. Só quem passa pela revisão aparece como motorista.',
 		image: {
 			uri: 'https://images.unsplash.com/photo-1706733788801-f71266d4ec71?auto=format&fit=crop&w=900&q=80',
 		},

@@ -11,7 +11,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Booking, Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { hhmm, fmtKz } from '../lib/format';
+import {
+	hhmm,
+	fmtKz,
+	fmtDayMonth,
+	fmtWeekdayShort,
+	dateOf,
+} from '../lib/format';
+import BoleiaButton from './BoleiaButton';
 import { rideProgressFraction } from '../lib/rideMapper';
 import { statusMeta } from '../utils/status';
 import RouteRail from './RouteRail';
@@ -94,24 +101,32 @@ export default function BookingStub({
 	booking,
 	ride,
 	onPress,
+	onCancel,
+	cancelling,
 	footer,
 	note,
 }: {
 	booking: Booking;
 	ride: Ride;
 	onPress?: () => void;
+	/** Só é usado nos estados que ainda se podem desfazer. */
+	onCancel?: () => void;
+	cancelling?: boolean;
 	footer?: React.ReactNode;
 	note?: string;
 }) {
 	const { themeColors } = useThemeColors();
 	const band = bandOf(booking.status, themeColors);
 	const live = booking.status === 'em_viagem';
+	// Depois de `em_viagem` o lugar já foi usado e cancelar não faz sentido.
+	const cancellable = Boolean(
+		onCancel &&
+		(booking.status === 'pedido' || booking.status === 'confirmada'),
+	);
 	const code = `BL-${booking.id.replace(/^bk_/, '').toUpperCase()}`;
-	const dateLabel = new Date(ride.departure).toLocaleDateString('pt-PT', {
-		weekday: 'short',
-		day: 'numeric',
-		month: 'short',
-	});
+	// "sex, 12 mar" — escrito à mão porque o ICU do Hermes não garante PT.
+	const departure = dateOf(ride.departure);
+	const dateLabel = `${fmtWeekdayShort(departure)}, ${fmtDayMonth(departure)}`;
 	// A interprovincialidade já não se deduz do nome: o backend diz quantas
 	// paragens intermédias a corrida tem, e é isso que o utilizador reconhece.
 	const stopsLabel =
@@ -239,6 +254,28 @@ export default function BookingStub({
 						{fmtKz(booking.amount)}
 					</Text>
 				</View>
+				{/*
+				 * Cancelar.
+				 *
+				 * O endpoint `POST /api/bookings/:id/cancel` existe no backend,
+				 * notifica e liberta os lugares — e o wrapper estava no cliente
+				 * sem uma única chamada. Sem isto, um pedido `REQUESTED`
+				 * segurava um lugar até o job de expiração passar por ele, e uma
+				 * reserva `CONFIRMED` segurava-o até ao fim da viagem: o
+				 * passageiro ficava preso numa reserva que já não queria.
+				 *
+				 * Só nos estados que ainda se podem desfazer. Depois de `em_viagem`
+				 * o lugar já foi usado.
+				 */}
+				{cancellable ? (
+					<BoleiaButton
+						small
+						variant="outline"
+						title="Cancelar reserva"
+						onPress={onCancel!}
+						disabled={cancelling}
+					/>
+				) : null}
 				{footer ? <View className="mt-4">{footer}</View> : null}
 			</View>
 		</Pressable>

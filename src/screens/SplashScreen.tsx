@@ -12,7 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { BoleiaRootStackParamList } from '../types/navigation';
 import { useAppStore } from '../store/appStore';
-import { fetchSession } from '../lib/api';
+import { checkSession } from '../lib/api';
 
 const NODE = 14;
 const R = NODE / 2;
@@ -108,13 +108,26 @@ export default function SplashScreen({
 			const { authenticated, onboardingSeen } = useAppStore.getState();
 			let authed = authenticated;
 			if (authed) {
-				// Confirma se o token guardado ainda corresponde a uma sessão
-				// válida no servidor (sessões revogadas -> logout).
-				const session = await fetchSession();
-				authed = Boolean(session);
-				if (!authed) {
+				/*
+				 * Confirma se o token guardado ainda corresponde a uma sessão
+				 * válida no servidor.
+				 *
+				 * `checkSession` distingue as duas coisas que `fetchSession`
+				 * tratava como uma só. Só quando o **servidor respondeu** e disse
+				 * que não há sessão é que se termina a sessão. Com o `catch {
+				 * return null }` de antes, um arranque em 2G ou num túnel
+				 * expirava a conta: a pessoa era manda para o login, perdia o
+				 * papel escolhido e tinha de reintroduzir a senha — sem que
+				 * houvesse erro nenhum, porque o arranque tinha corrido bem.
+				 */
+				const { session, offline } = await checkSession();
+				if (!offline && !session) {
 					useAppStore.getState().signOut();
 				}
+				// Offline com token guardado: mantém a sessão e deixa a app
+				// abrir. As queries que correrem vão falhar e mostrar o seu
+				// estado de erro, que é o sítio certo para dizer isso.
+				authed = Boolean(session) || offline;
 			}
 			if (authed) {
 				navigation.replace('App', { screen: 'Main' });

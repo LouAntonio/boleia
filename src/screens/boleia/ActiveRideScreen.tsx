@@ -3,6 +3,7 @@ import { View, Text, Pressable, ScrollView, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { qk } from '../../lib/queryKeys';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import BackButton from '../../components/BackButton';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -52,7 +53,7 @@ export default function ActiveRideScreen() {
 	const [actionError, setActionError] = useState<string | null>(null);
 
 	const { data: apiRide, isLoading } = useQuery({
-		queryKey: ['ride', rideId],
+		queryKey: qk.ride.of(rideId),
 		queryFn: () => getRide(rideId),
 	});
 
@@ -70,7 +71,7 @@ export default function ActiveRideScreen() {
 	// O motorista precisa de saber quantas pessoas seguem a bordo. A identidade
 	// dos passageiros não vem no payload, por isso mostramos a contagem.
 	const { data: bookings } = useQuery({
-		queryKey: ['rideBookings', rideId],
+		queryKey: qk.rideBookings.of(rideId),
 		queryFn: () => listRideBookings(rideId),
 		enabled: isDriver,
 	});
@@ -96,7 +97,9 @@ export default function ActiveRideScreen() {
 		// fonte de verdade e a resposta é sempre coerente.
 		const refresh = () => {
 			setLive(true);
-			void queryClient.invalidateQueries({ queryKey: ['ride', rideId] });
+			void queryClient.invalidateQueries({
+				queryKey: qk.ride.of(rideId),
+			});
 		};
 		const onDisconnect = () => setLive(false);
 		const onConnect = () => setLive(true);
@@ -205,8 +208,10 @@ export default function ActiveRideScreen() {
 				ride.id,
 				Math.min(ride.progressIndex + 1, lastIndex),
 			);
-			await queryClient.invalidateQueries({ queryKey: ['ride', rideId] });
-			await queryClient.invalidateQueries({ queryKey: ['myRides'] });
+			await queryClient.invalidateQueries({
+				queryKey: qk.ride.of(rideId),
+			});
+			await queryClient.invalidateQueries({ queryKey: qk.myRides.all });
 		} catch (e) {
 			setActionError(
 				apiErrorMessage(e, 'Não foi possível marcar a paragem.'),
@@ -222,10 +227,12 @@ export default function ActiveRideScreen() {
 		setActionError(null);
 		try {
 			await finishRide(ride.id);
-			await queryClient.invalidateQueries({ queryKey: ['ride', rideId] });
-			await queryClient.invalidateQueries({ queryKey: ['myRides'] });
 			await queryClient.invalidateQueries({
-				queryKey: ['rideBookings', rideId],
+				queryKey: qk.ride.of(rideId),
+			});
+			await queryClient.invalidateQueries({ queryKey: qk.myRides.all });
+			await queryClient.invalidateQueries({
+				queryKey: qk.rideBookings.of(rideId),
 			});
 		} catch (e) {
 			setActionError(

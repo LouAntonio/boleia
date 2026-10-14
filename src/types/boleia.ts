@@ -28,7 +28,12 @@ export type RouteStop = {
 	localityId: string;
 	name: string;
 	time: string; // HH:MM
-	km: number; // distância acumulada à origem
+	/**
+	 * Distância acumulada à origem, em km. `null` quando não há distância
+	 * calculada — a UI omite o segmento em vez de mostrar "0 km", que é uma
+	 * afirmação sobre a estrada e não um espaço em branco.
+	 */
+	km: number | null;
 };
 
 export type Ride = {

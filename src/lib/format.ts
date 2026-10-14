@@ -6,6 +6,8 @@
  * destes funções toca em estado, rede ou relógio, excepto onde indicado.
  */
 
+import { MONTHS_PT } from '../utils/date';
+
 /** Iniciais para o avatar: "Lourenço António" -> "LA". */
 export function initials(firstName: string, lastName: string): string {
 	return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -28,21 +30,92 @@ export function parseKzInput(raw: string): number {
 	return Math.max(0, Number(raw.replace(/\D/g, '')) || 0);
 }
 
-/** "08:30" na hora local do dispositivo. */
-export function hhmm(iso: string): string {
+/**
+ * Angola é UTC+1 fixo, o ano inteiro. Não há horário de Verão.
+ *
+ * O backend já devolve as horas de paragem em WAT (`RideStop.timeLabel`,
+ * formatado com `timeZone: 'Africa/Luanda'`). O cliente usava `getHours()`,
+ * que é a hora **do dispositivo** — o mesmo itinerário mostrava a origem às
+ * 06:00 e uma paragem às 07:20, quando a pessoa via 07:00 e 08:20.
+ *
+ * `slice(11, 16)` sobre a string ISO é pior ainda: devolve UTC a sério. Era o
+ * que o painel do motorista fazia, e o erro não dependia do fuso do
+ * telemóvel — estava sempre lá, uma hora fora.
+ */
+const WAT_OFFSET_MINUTES = 60;
+
+/** A mesma data, deslocada para WAT. */
+function inWat(iso: string): Date {
 	const d = new Date(Date.parse(iso));
-	return `${String(d.getHours()).padStart(2, '0')}:${String(
-		d.getMinutes(),
+	if (Number.isNaN(d.getTime())) return d;
+	return new Date(d.getTime() + WAT_OFFSET_MINUTES * 60 * 1000);
+}
+
+/** "08:30", em WAT. */
+export function hhmm(iso: string): string {
+	const d = inWat(iso);
+	if (Number.isNaN(d.getTime())) return '';
+	return `${String(d.getUTCHours()).padStart(2, '0')}:${String(
+		d.getUTCMinutes(),
 	).padStart(2, '0')}`;
 }
 
+/** "2026-03-12" em WAT, a partir de um ISO UTC. */
+export function ymd(iso: string): string {
+	const d = inWat(iso);
+	if (Number.isNaN(d.getTime())) return '';
+	return d.toISOString().slice(0, 10);
+}
+
+/** Data em WAT. O resto dos formatadores de data trabalha sobre WAT. */
+export function dateOf(iso: string): Date {
+	return inWat(iso);
+}
+
+/*
+ * Nomes de data em português, escritos à mão de propósito.
+ *
+ * `toLocaleDateString('pt-PT', ...)` depende do ICU que o runtime traz. No
+ * Hermes sem ICU completo (builds Android normais) o pedido é ignorado e sai
+ * "Mar 12" ou "12 Mar" em inglês — dentro de um produto em PT-AO, ao lado de
+ * "Talatona". Derivar de `MONTHS_PT` não depende do dispositivo e não
+ * reintroduz a dependência de locale que vinha a dar outputs diferentes entre
+ * iOS e Android.
+ *
+ * A tabela é a de `utils/date.ts`, que é a canónica do projecto. `WEEKDAY_PT`
+ * de lá são iniciais de uma letra e não servem para texto corrido, por isso os
+ * dias da semana completos ficam aqui.
+ */
+const PT_WEEKDAYS_SHORT = [
+	'dom',
+	'seg',
+	'ter',
+	'qua',
+	'qui',
+	'sex',
+	'sáb',
+] as const;
+
+/** "12 mar" — o formato usado nos cartões de viagem. Espera uma data em WAT. */
+export function fmtDayMonth(d: Date): string {
+	return `${d.getUTCDate()} ${MONTHS_PT[d.getUTCMonth()].slice(0, 3).toLowerCase()}`;
+}
+
+/** "12 de março de 2026" — o formato das datas longas. */
+export function fmtDayMonthYear(d: Date): string {
+	return `${d.getUTCDate()} de ${MONTHS_PT[d.getUTCMonth()].toLowerCase()} de ${d.getUTCFullYear()}`;
+}
+
+/** "sex" — dia da semana abreviado, à segunda-feira. */
+export function fmtWeekdayShort(d: Date): string {
+	return PT_WEEKDAYS_SHORT[d.getUTCDay()];
+}
+
 export function fmtDate(iso: string): string {
-	const d = new Date(Date.parse(iso));
-	return d.toLocaleDateString('pt-PT', {
-		day: 'numeric',
-		month: 'short',
-		year: 'numeric',
-	});
+	// Em WAT, como o resto: `getFullYear()` num instante UTC perto da meia-noite
+	// dava o dia seguinte (ou o anterior) em WAT.
+	const d = dateOf(iso);
+	return `${fmtDayMonth(d)} ${d.getUTCFullYear()}`;
 }
 
 /** Minutos de espera até `iso`, para as mensagens de contagem decrescente. */
@@ -58,6 +131,20 @@ export function fmtDuration(totalMinutes: number): string {
 	const r = m % 60;
 	if (h === 0) return `${r}min`;
 	return r === 0 ? `${h}h` : `${h}h${String(r).padStart(2, '0')}`;
+}
+
+/**
+ * Distância de uma paragem para o rótulo da UI.
+ *
+ * Devolve string vazia quando não há distância conhecida, e é isso que
+ * `RouteStrip`/`TripStripCard` tratam como "omitir". O objectivo é nunca
+ * escrever "0 km": lido ao lado de uma paragem, diz que a paragem está
+ * colada à origem, e quem acredita nisso planeia a viagem errado.
+ */
+export function fmtKm(km: number | null | undefined): string {
+	if (km == null || !Number.isFinite(km) || km <= 0) return '';
+	const rounded = Math.round(km);
+	return `${rounded} km`;
 }
 
 export function durationBetween(fromISO: string, toISO: string): string {

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
 	View,
 	Text,
@@ -34,6 +34,8 @@ import {
 import { useAllLocalities } from '../../hooks/useLocalities';
 import type { SearchMode } from '../../lib/recentSearches';
 import { fmtKz, formatKzInput, parseKzInput } from '../../lib/format';
+import { useQueryClient } from '@tanstack/react-query';
+import { qk } from '../../lib/queryKeys';
 import { toDateKey } from '../../utils/date';
 
 const PRICE_SUGGEST = [12000, 15000, 18000, 22000];
@@ -71,6 +73,15 @@ export default function PublishTripScreen() {
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'PublishTrip'>
 		>();
 	const { themeColors } = useThemeColors();
+	const queryClient = useQueryClient();
+	// Timer da navegação de sucesso, limpo no unmount.
+	const navigateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+	useEffect(
+		() => () => {
+			if (navigateTimer.current) clearTimeout(navigateTimer.current);
+		},
+		[],
+	);
 	// O nome vem da sessão real, que o backend devolveu no login.
 	const sessionUser = useSessionUser();
 	const driverName =
@@ -277,8 +288,27 @@ export default function PublishTripScreen() {
 			return;
 		}
 
+		/*
+		 * Invalidar a cache não é afinação. Com `staleTime: 5 min` e
+		 * `refetchOnMount` por omissão, a query `myRides` do `TripsScreen`
+		 * voltava com menos de cinco minutos e **não refazia o pedido**: o
+		 * motorista publicava uma boleia, voltava e via "0 viagens". Tinha de
+		 * esperar cinco minutos ou matar a app.
+		 *
+		 * `qk.rides.all` também, porque a corrida é agendada e passa a
+		 * aparecer para os passageiros a procurarem.
+		 */
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: qk.myRides.all }),
+			queryClient.invalidateQueries({ queryKey: qk.rides.all }),
+			queryClient.invalidateQueries({ queryKey: qk.eligibility }),
+		]);
+
 		setPublishing(false);
-		setTimeout(() => {
+		// O timer vive num `ref` e é limpo no unmount: sem isso, quem carrega
+		// no botão de voltar da barra durante a animação de sucesso fica com um
+		// `goBack()` a disparar sobre um ecrã já desmontado.
+		navigateTimer.current = setTimeout(() => {
 			navigation.goBack();
 		}, 1800);
 	};

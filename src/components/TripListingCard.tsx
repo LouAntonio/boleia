@@ -2,7 +2,15 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Ride } from '../types/boleia';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { hhmm, fmtKz, durationBetween } from '../lib/format';
+import {
+	hhmm,
+	fmtKz,
+	fmtDayMonth,
+	fmtWeekdayShort,
+	durationBetween,
+	dateOf,
+} from '../lib/format';
+import { seatsLeft } from '../lib/rideMapper';
 import StatusStamp from './StatusStamp';
 
 // ResultCard/Trip — "os detalhes mais importantes de uma viagem num só
@@ -18,12 +26,10 @@ export default function TripListingCard({
 	onPress?: () => void;
 }) {
 	const { themeColors } = useThemeColors();
-	const seatsLeft = ride.seatsTotal - ride.seatsTaken;
-	const dateLabel = new Date(ride.departure).toLocaleDateString('pt-PT', {
-		weekday: 'short',
-		day: 'numeric',
-		month: 'short',
-	});
+	const seatsFree = seatsLeft(ride);
+	// "sex, 12 mar" — escrito à mão porque o ICU do Hermes não garante PT.
+	const departure = dateOf(ride.departure);
+	const dateLabel = `${fmtWeekdayShort(departure)}, ${fmtDayMonth(departure)}`;
 
 	return (
 		<Pressable
@@ -105,13 +111,13 @@ export default function TripListingCard({
 						className="font-sansMedium text-body-xs mt-1"
 						style={{
 							color:
-								seatsLeft > 0
+								seatsFree > 0
 									? themeColors.secondary
 									: themeColors.error,
 						}}
 					>
-						{seatsLeft > 0
-							? `${seatsLeft} livre${seatsLeft > 1 ? 's' : ''}`
+						{seatsFree > 0
+							? `${seatsFree} livre${seatsFree > 1 ? 's' : ''}`
 							: 'Lotada'}
 					</Text>
 				</View>

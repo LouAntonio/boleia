@@ -1,3 +1,4 @@
+import { kmBetween } from './format';
 import type { ApiBooking, ApiRide, ApiRideStop } from './api';
 import type {
 	Booking,
@@ -19,9 +20,55 @@ export function toRide(ride: ApiRide): Ride {
 	const stops = ride.stops ?? [];
 	const origin = stops.find((s) => s.kind === 'ORIGIN');
 	const destination = stops.find((s) => s.kind === 'DESTINATION');
+	const ordered = stops.filter(
+		(s) =>
+			s.kind === 'ORIGIN' ||
+			s.kind === 'INTERMEDIATE' ||
+			s.kind === 'DESTINATION',
+	);
+
+	/*
+	 * Distância acumulada, paragem a paragem.
+	 *
+	 * O servidor não a calcula — `RideStop.distanceKm` fica a 0 — e a app
+	 * mostrava "0 km" ao lado de todas as paragens. Uma distância inventada
+	 * é pior do que uma ausente: alguém lê "0 km" e entende que a paragem
+	 * está colada à origem.
+	 *
+	 * As coordenadas são as da província-sede (`Locality` não tem
+	 * latitude/longitude), pelo que isto estima a dimensão do percurso e não
+	 * localiza a paragem. `km: null` quando não há coordenadas, e a UI omite
+	 * o segmento.
+	 */
+	let travelled = 0;
+	let previous = origin?.provinceCoordinates ?? null;
+	const distances = new Map<string, number | null>();
+
+	for (const stop of ordered) {
+		const here = stop.provinceCoordinates;
+		const leg =
+			here && previous
+				? kmBetween(
+						previous.latitude,
+						previous.longitude,
+						here.latitude,
+						here.longitude,
+					)
+				: null;
+		travelled += leg ?? 0;
+		distances.set(`${stop.sequence}`, leg === null ? null : travelled);
+		if (here) previous = here;
+	}
+
+	const distanceOf = (stop: ApiRideStop | undefined): number | null => {
+		if (!stop) return null;
+		if (stop.distanceKm > 0) return stop.distanceKm;
+		return distances.get(`${stop.sequence}`) ?? null;
+	};
+
 	const intermediate = stops
 		.filter((s) => s.kind === 'INTERMEDIATE')
-		.map(toRouteStop);
+		.map((s) => toRouteStop(s, distanceOf(s)));
 
 	return {
 		id: ride.id,
@@ -29,10 +76,12 @@ export function toRide(ride: ApiRide): Ride {
 		routeName: ride.routeName,
 		// Uma corrida sem paragens é um dado incoerente do servidor, não uma
 		// corrida sem origem. Usar o `routeName` evita renderizar campos vazios.
-		origin: origin ? toRouteStop(origin) : fallbackStop(ride, 'Origem'),
+		origin: origin
+			? toRouteStop(origin, distanceOf(origin))
+			: fallbackStop(ride, 'Origem'),
 		stops: intermediate,
 		destination: destination
-			? toRouteStop(destination)
+			? toRouteStop(destination, distanceOf(destination))
 			: fallbackStop(ride, 'Destino'),
 		departure: ride.departureAt,
 		arrival: ride.arrivalAt,
@@ -129,14 +178,14 @@ export function rideProgressFraction(ride: Ride): number {
 	return Math.max(0, Math.min(1, done / (steps - 1)));
 }
 
-function toRouteStop(stop: ApiRideStop): RouteStop {
+function toRouteStop(stop: ApiRideStop, distanceKm: number | null): RouteStop {
 	return {
 		localityId: stop.localityId ?? '',
 		name: stop.name,
 		// O backend já devolve a hora em WAT formatada; o mock guardava "HH:MM"
 		// e a app compõe a linha "sai 08:30 · Talatona".
 		time: stop.timeLabel,
-		km: 0,
+		km: distanceKm,
 	};
 }
 
@@ -145,7 +194,7 @@ function fallbackStop(ride: ApiRide, label: string): RouteStop {
 		localityId: '',
 		name: label,
 		time: '',
-		km: 0,
+		km: null,
 	};
 }
 
