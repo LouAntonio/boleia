@@ -10,7 +10,8 @@ import GroupLabel from '../../components/GroupLabel';
 
 import ConsentRow from '../../components/ConsentRow';
 import Input from '../../components/Input';
-import { signUp, apiErrorMessage } from '../../lib/api';
+import { apiErrorMessage } from '../../lib/api';
+import { signUp } from '../../lib/phone-auth';
 import { maskPhone, normalizePhone } from '../../utils/phone';
 
 export default function RegisterScreen() {

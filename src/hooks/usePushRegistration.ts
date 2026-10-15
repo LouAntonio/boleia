@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import { useAppStore } from '../store/appStore';
+import { authClient } from '../lib/auth-client';
 import { connectSocket, disconnectSocket } from '../lib/socket';
 import { registerPushDevice, unregisterPushDevice } from '../lib/api';
 
@@ -15,7 +15,11 @@ import { registerPushDevice, unregisterPushDevice } from '../lib/api';
  * notificações deixarem de chegar a quem já saiu da conta neste aparelho.
  */
 export function usePushRegistration(): void {
-	const authenticated = useAppStore((s) => s.authenticated);
+	// A sessão vem do `authClient`. Antes vinha de `appStore.authenticated`, uma
+	// cópia que podia discordar da real — e era a discordância entre as duas que
+	// deixava o gateway ligado sem ninguém a ouvir, ou fechado com sessão válida.
+	const { data: session } = authClient.useSession();
+	const authenticated = Boolean(session?.user);
 
 	useEffect(() => {
 		if (!authenticated) {

@@ -7,7 +7,8 @@ import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
-import { resetPassword, apiErrorMessage } from '../../lib/api';
+import { apiErrorMessage } from '../../lib/api';
+import { resetPassword } from '../../lib/phone-auth';
 
 export default function ResetPasswordScreen() {
 	const route =

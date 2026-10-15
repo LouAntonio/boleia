@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { API_URL } from '@env';
+import { sessionTokenOrNull } from './auth-cookie';
 
 let socket: Socket | null = null;
 let currentToken: string | null = null;
@@ -41,14 +42,17 @@ export function isSocketConnected(): boolean {
 /**
  * Abre (ou reabre) a ligação ao gateway.
  *
- * O token é lido do SecureStore e não de um import, para que uma sessão nova
- * não continue a usar o token antigo: o gateway rejeita a ligação e o
- * `reconnection` do socket não conseguiria corrigir isso sozinho.
+ * O token vem do cookie que o `expoClient` guarda, e é lido a cada tentativa em
+ * vez de numa constante de módulo: uma sessão nova não pode continuar a usar o
+ * token antigo, porque o gateway rejeita a ligação e o `reconnection` do socket
+ * não conseguiria corrigir isso sozinho.
+ *
+ * O gateway só aceita Bearer no *handshake* e não olha para cookies, e é por isso
+ * que o valor do cookie é que vai lá — a ponte entre os dois está em
+ * `auth-cookie.ts`, e é a mesma que dá o header `Cookie` ao axios.
  */
 export async function connectSocket(): Promise<Socket | null> {
-	const SecureStore = await import('expo-secure-store');
-	const { AUTH_TOKEN_KEY } = await import('./api');
-	const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
+	const token = await sessionTokenOrNull();
 	if (!token) {
 		return null;
 	}

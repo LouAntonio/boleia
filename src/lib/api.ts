@@ -1,11 +1,10 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '@env';
 import { useAppStore } from '../store/appStore';
 import { queryClient } from './queryClient';
 import { navigationRef } from './navigationRef';
-
-export const AUTH_TOKEN_KEY = 'boleia.authToken';
+import { authClient } from './auth-client';
+import { sessionCookieHeader } from './auth-cookie';
 
 const API_TIMEOUT_MS = 15000;
 
@@ -22,10 +21,7 @@ export interface ApiUser {
 
 export interface ApiSession {
 	user: ApiUser;
-	token: string | null;
 }
-
-export type OtpPurpose = 'signup' | 'reset';
 
 const client = axios.create({
 	baseURL: API_URL,
@@ -33,27 +29,30 @@ const client = axios.create({
 	headers: { 'Content-Type': 'application/json' },
 });
 
+/*
+ * A sessão é transportada por cookie, e o React Native não tem cookie jar.
+ *
+ * O `expoClient` guarda os cookies da sessão em SecureStore e reenvia-os nas
+ * chamadas do `authClient`; este interceptor faz o mesmo pelas chamadas do
+ * axios, que é o REST inteiro da app. O valor vem do mesmo sítio — o
+ * `auth-cookie.ts` — que alimenta o WebSocket, e é por isso que o token deixou
+ * de ser uma chave deste ficheiro: deixou de haver dois sítios onde a sessão
+ * podia estar, e divergirem sem dar por isso.
+ */
 client.interceptors.request.use(async (config) => {
-	const token = await SecureStore.getItemAsync(AUTH_TOKEN_KEY);
-	if (token) {
-		config.headers.Authorization = `Bearer ${token}`;
+	const cookie = await sessionCookieHeader();
+	if (cookie) {
+		config.headers.Cookie = cookie;
 	}
 	return config;
 });
-
-async function captureToken(headers: Record<string, unknown>): Promise<void> {
-	const token = headers['set-auth-token'];
-	if (typeof token === 'string' && token.length > 0) {
-		await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
-	}
-}
 
 /**
  * Terminar a sessão depois de um 401.
  *
  * A versão anterior limitava-se a apagar o token e a chamar `signOut()`, e
  * só o `ProfileScreen` é que navega depois de um `signOut()`. Um 401 em
- * qualquer outro sítio — token expirado, sessão revogada noutro dispositivo —
+ * qualquer outro sítio — sessão expirada, revogada noutro dispositivo —
  * deixava a pessoa dentro do `BoleiaMainNavigator` com `authenticated: false`
  * e `sessionUserId: null`: ecrãs a mostrar `0` e `—`, nenhuma query nova a
  * correr (`enabled: !!sessionUserId`), e a única forma de sair passando pelo
@@ -68,11 +67,13 @@ async function captureToken(headers: Record<string, unknown>): Promise<void> {
  *    para mostrar: o Splash resolve pelo seu caminho.
  * 2. **limpar a cache** — as queries antigas de quem saiu podem ficar no
  *    ecrã quando outro utilizador entrar no mesmo aparelho.
- * 3. **limpar o estado** — `signOut()`.
+ * 3. **terminar a sessão** — o `authClient` é o dono dela; este ficheiro
+ *    limpa o estado local e avisa-o.
  */
 function endSessionAfter401(): void {
-	useAppStore.getState().signOut();
+	useAppStore.getState().resetAfterLogout();
 	queryClient.clear();
+	void authClient.signOut().catch(() => {});
 
 	if (navigationRef.isReady()) {
 		navigationRef.reset({
@@ -83,24 +84,14 @@ function endSessionAfter401(): void {
 }
 
 client.interceptors.response.use(
-	async (response) => {
-		// A sessão criada/renovada devolve o token Bearer no header
-		// `set-auth-token` (plugin bearer do better-auth, sem cookies no RN).
-		await captureToken(response.headers as Record<string, unknown>);
-		return response;
-	},
-	async (error) => {
+	(response) => response,
+	(error: unknown) => {
 		if (axios.isAxiosError(error) && error.response?.status === 401) {
-			await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
 			endSessionAfter401();
 		}
 		return Promise.reject(error);
 	},
 );
-
-export async function clearAuthToken(): Promise<void> {
-	await SecureStore.deleteItemAsync(AUTH_TOKEN_KEY);
-}
 
 export function apiErrorMessage(error: unknown, fallback: string): string {
 	if (axios.isAxiosError(error)) {
@@ -118,73 +109,7 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
 	return fallback;
 }
 
-export async function sendOtp(
-	phone: string,
-	purpose: OtpPurpose,
-): Promise<{ status: boolean }> {
-	const { data } = await client.post<{ status: boolean }>(
-		'/api/auth/phone/otp/send',
-		{ phone, purpose },
-	);
-	return data;
-}
-
-export async function verifyOtpCode(
-	phone: string,
-	purpose: OtpPurpose,
-	code: string,
-): Promise<{ status?: boolean; token?: string; expiresAt?: string }> {
-	const { data } = await client.post<{
-		status?: boolean;
-		token?: string;
-		expiresAt?: string;
-	}>('/api/auth/phone/otp/verify', { phone, purpose, code });
-	return data;
-}
-
-export interface SignUpInput {
-	phone: string;
-	password: string;
-	name: string;
-	surname?: string;
-	email?: string;
-	termsAccepted: boolean;
-	marketingAccepted?: boolean;
-}
-
-export async function signUp(input: SignUpInput): Promise<{ status: boolean }> {
-	const { data } = await client.post<{ status: boolean }>(
-		'/api/auth/phone/sign-up',
-		input,
-	);
-	return data;
-}
-
-export async function signIn(
-	phone: string,
-	password: string,
-): Promise<ApiSession> {
-	const res = await client.post<{ user: ApiUser }>(
-		'/api/auth/phone/sign-in',
-		{ phone, password },
-	);
-	const token = (res.headers['set-auth-token'] as string | undefined) ?? null;
-	if (token) {
-		await SecureStore.setItemAsync(AUTH_TOKEN_KEY, token);
-	}
-	return { user: res.data.user, token };
-}
-
-export async function resetPassword(
-	token: string,
-	newPassword: string,
-): Promise<{ status: boolean }> {
-	const { data } = await client.post<{ status: boolean }>(
-		'/api/auth/reset-password',
-		{ token, newPassword },
-	);
-	return data;
-}
+// ---------- Perfil ----------
 
 export async function updateProfile(input: {
 	name?: string;
@@ -847,48 +772,14 @@ export async function uploadPhoto(
 }
 
 /**
- * Sessão actual, com o motivo da falta de sessão distinguido.
+ * A sessão não se consulta aqui.
  *
- * O `catch { return null }` original tratava "o token já não é válido" e "o
- * servidor não respondeu" como a mesma coisa. O Splash usa isto para decidir
- * entre entrar na app e mostrar o login — e, mais grave, para decidir se
- * chama `signOut()`. Um arranque em 2G, num túnel ou antes de o TLS
- * resolver expirava a conta: a pessoa era expulsa, perdia o papel escolhido
- * e tinha de reintroduzir a senha. Num produto com rede intermitente isso é
- * frequente, não é um canto.
+ * `checkSession` e `fetchSession` saíram: faziam `GET /api/auth/get-session` à
+ * mão para saber o que o `authClient` já sabe. O `Splash` usava-as para
+ * distinguir "o servidor disse que não há sessão" de "o servidor não respondeu"
+ * — distinção que passou a ser um `getSession()` com `catch`.
  *
- * `null` passa a significar só uma coisa: o servidor respondeu e não há
- * sessão. A rede cai para `offline: true`.
+ * `ApiSession` também não tem `token`: o token deixou de ser uma coisa que a app
+ * guarda. Vive no cookie que o `expoClient` trata, e é de lá que sai o valor que
+ * o gateway do WebSocket exige (ver `auth-cookie.ts`).
  */
-export interface SessionCheck {
-	session: ApiSession | null;
-	/** O pedido não chegou ao servidor. Não prova nada sobre a sessão. */
-	offline: boolean;
-}
-
-export async function checkSession(): Promise<SessionCheck> {
-	try {
-		const res = await client.get<{
-			user?: ApiUser;
-			session?: { id: string };
-		}>('/api/auth/get-session');
-		if (!res.data.user || !res.data.session) {
-			return { session: null, offline: false };
-		}
-		return {
-			session: { user: res.data.user, token: null },
-			offline: false,
-		};
-	} catch (error) {
-		// Um 401 é o servidor a dizer que o token não serve — isso é uma
-		// resposta, e o interceptor já limpou a sessão. Todo o resto é rede.
-		if (axios.isAxiosError(error) && error.response?.status === 401) {
-			return { session: null, offline: false };
-		}
-		return { session: null, offline: true };
-	}
-}
-
-export async function fetchSession(): Promise<ApiSession | null> {
-	return (await checkSession()).session;
-}

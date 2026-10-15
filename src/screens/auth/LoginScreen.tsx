@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import axios from 'axios';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -8,8 +7,9 @@ import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
-import { signIn, apiErrorMessage } from '../../lib/api';
-import { useAppStore } from '../../store/appStore';
+import { apiErrorMessage } from '../../lib/api';
+import { signInPhone } from '../../lib/phone-auth';
+import { sessionUserFrom } from '../../lib/auth-client';
 import { navigationRef } from '../../lib/navigationRef';
 import { maskPhone, normalizePhone } from '../../utils/phone';
 
@@ -32,18 +32,28 @@ export default function LoginScreen() {
 		setPending(true);
 		setError(null);
 		try {
-			const { user } = await signIn(normalized, password);
-			if (!user.name) {
-				navigation.navigate('ProfileSetup', { userId: user.id });
+			const { user } = await signInPhone(normalized, password);
+			const sessionUser = sessionUserFrom(user);
+			if (!sessionUser.name) {
+				navigation.navigate('ProfileSetup', { userId: sessionUser.id });
 				return;
 			}
-			useAppStore.getState().signIn(user.id);
 			navigationRef.reset({
 				index: 0,
 				routes: [{ name: 'App', params: { screen: 'Main' } }],
 			});
 		} catch (e) {
-			if (axios.isAxiosError(e) && e.response?.status === 403) {
+			/*
+			 * 403 é o `phone/sign-in` a dizer que a conta existe e a senha está
+			 * certa, mas o telefone continua por verificar. Não é senha errada,
+			 * e mandar a pessoa ao ecrã de verificação por causa de uma senha
+			 * errada era o que acontecia antes: o backend respondia 403 antes de
+			 * comparar a senha.
+			 */
+			if (
+				(e as { response?: { status?: number } })?.response?.status ===
+				403
+			) {
 				setError(
 					'O teu número ainda não foi verificado. Confirma o código que enviamos por WhatsApp.',
 				);

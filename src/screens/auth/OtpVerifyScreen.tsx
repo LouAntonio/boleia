@@ -6,7 +6,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaAuthStackParamList } from '../../types/navigation';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
-import { sendOtp, verifyOtpCode, apiErrorMessage } from '../../lib/api';
+import { apiErrorMessage } from '../../lib/api';
+import { sendOtp, verifyOtpCode } from '../../lib/phone-auth';
 
 export default function OtpVerifyScreen() {
 	const route = useRoute<RouteProp<BoleiaAuthStackParamList, 'OtpVerify'>>();

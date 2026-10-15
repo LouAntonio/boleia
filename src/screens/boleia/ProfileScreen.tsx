@@ -34,7 +34,7 @@ import { BoleiaMainStackParamList } from '../../types/navigation';
 import SectionTitle from '../../components/SectionTitle';
 import { Ionicons } from '@expo/vector-icons';
 import { navigationRef } from '../../lib/navigationRef';
-import { clearAuthToken } from '../../lib/api';
+import { authClient } from '../../lib/auth-client';
 import {
 	apiErrorMessage,
 	getEmergencyContact,
@@ -961,12 +961,23 @@ export default function ProfileScreen() {
 											text: 'Terminar sessão',
 											style: 'destructive',
 											onPress: () => {
+												/*
+												 * O `signOut` é do `authClient` e
+												 * **revoga a sessão no servidor**.
+												 * Antes isto só apagava o token
+												 * local: a sessão continuava viva
+												 * no backend, e voltar a abrir a
+												 * app num ecrã que não passasse
+												 * pela verificação voltava a
+												 * autenticar. É também o que
+												 * limpa os cookies no SecureStore.
+												 */
+												void authClient
+													.signOut()
+													.catch(() => {});
 												useAppStore
 													.getState()
-													.signOut();
-												clearAuthToken().catch(
-													() => {},
-												);
+													.resetAfterLogout();
 												navigationRef.reset({
 													index: 0,
 													routes: [

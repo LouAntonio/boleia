@@ -1,43 +1,39 @@
-import { useQuery } from '@tanstack/react-query';
-import { useAppStore } from '../store/appStore';
-import { fetchSession, type ApiUser } from '../lib/api';
+import { authClient, sessionUserFrom } from '../lib/auth-client';
 import { initials } from '../lib/format';
 
 /**
  * Identificador do utilizador da sessão.
  *
- * Antes devolvia `u_me_001` quando não havia sessão, um id do mock. Com a app
- * ligada ao backend, um id inventado faria a app mostrar e editar dados de
- * outra pessoa; por isso devolve `null` e quem chama decide o que fazer.
+ * Vem do `authClient`, que é quem tem a sessão. Antes vinha de
+ * `appStore.sessionUserId`, que era uma cópia — e duas fontes que podem
+ * discordar dão ecrãs vazios dentro da app, sem erro nenhum.
+ *
+ * `null` sem sessão, nunca um id inventado: um id de recurso que não é desta
+ * pessoa faria a app mostrar e editar dados de outra.
  */
 export function useSessionUserId(): string | null {
-	return useAppStore((s) => s.sessionUserId);
+	const { data } = authClient.useSession();
+	return data?.user?.id ?? null;
 }
 
 /**
- * O utilizador autenticado, lido do backend.
+ * O utilizador autenticado.
  *
- * Não é preciso devolver `undefined`: a sessão é carregada no arranque e o
- * `signIn` do store guarda o `userId` que o backend devolveu. A query
- * revalida por cima para manter o nome e a foto actualizados.
+ * Já não há `fetchSession()` a fazer isto à mão. O `useSession()` do
+ * `authClient` mantém a sessão em memória e revalida-a sozinho, com o mesmo
+ * mecanismo nos restantes ecrãs — o que evita oito ecrãs a disparar cada um o
+ * seu pedido ao servidor para saber o mesmo nome.
  */
-export function useSessionUser(): ApiUser | null {
-	const userId = useSessionUserId();
-	return (
-		useQuery({
-			queryKey: ['session', userId],
-			queryFn: fetchSession,
-			enabled: !!userId,
-			staleTime: 5 * 60 * 1000,
-		}).data?.user ?? null
-	);
+export function useSessionUser() {
+	const { data } = authClient.useSession();
+	return data?.user ? sessionUserFrom(data.user) : null;
 }
 
 /**
  * Iniciais para o avatar, a partir do utilizador da sessão.
  *
- * `ApiUser` traz `name` e `surname` separados, ao contrário do `BoleiaUser` do
- * mock, por isso as iniciais são compostas aqui e não no componente.
+ * O utilizador traz `name` e `surname` separados, por isso as iniciais são
+ * compostas aqui e não no componente.
  */
 export function useSessionInitials(): string {
 	const user = useSessionUser();

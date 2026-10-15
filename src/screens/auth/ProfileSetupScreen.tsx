@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { BoleiaAuthStackParamList } from '../../types/navigation';
+import { useNavigation } from '@react-navigation/native';
 import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
 import { updateProfile, apiErrorMessage } from '../../lib/api';
-import { useAppStore } from '../../store/appStore';
 import { navigationRef } from '../../lib/navigationRef';
 
 export default function ProfileSetupScreen() {
-	const route =
-		useRoute<RouteProp<BoleiaAuthStackParamList, 'ProfileSetup'>>();
 	const navigation = useNavigation();
-	const { userId } = route.params;
 	const { themeColors } = useThemeColors();
 
 	const [firstName, setFirstName] = useState('');
@@ -33,7 +28,6 @@ export default function ProfileSetupScreen() {
 				surname: lastName.trim(),
 				bio: bio.trim() || undefined,
 			});
-			useAppStore.getState().signIn(userId);
 			navigationRef.reset({
 				index: 0,
 				routes: [{ name: 'App', params: { screen: 'Main' } }],

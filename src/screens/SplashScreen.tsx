@@ -12,7 +12,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { BoleiaRootStackParamList } from '../types/navigation';
 import { useAppStore } from '../store/appStore';
-import { checkSession } from '../lib/api';
+import { authClient } from '../lib/auth-client';
+import { sessionTokenOrNull } from '../lib/auth-cookie';
 
 const NODE = 14;
 const R = NODE / 2;
@@ -105,30 +106,29 @@ export default function SplashScreen({
 		}
 
 		const timer = setTimeout(async () => {
-			const { authenticated, onboardingSeen } = useAppStore.getState();
-			let authed = authenticated;
-			if (authed) {
-				/*
-				 * Confirma se o token guardado ainda corresponde a uma sessão
-				 * válida no servidor.
-				 *
-				 * `checkSession` distingue as duas coisas que `fetchSession`
-				 * tratava como uma só. Só quando o **servidor respondeu** e disse
-				 * que não há sessão é que se termina a sessão. Com o `catch {
-				 * return null }` de antes, um arranque em 2G ou num túnel
-				 * expirava a conta: a pessoa era manda para o login, perdia o
-				 * papel escolhido e tinha de reintroduzir a senha — sem que
-				 * houvesse erro nenhum, porque o arranque tinha corrido bem.
-				 */
-				const { session, offline } = await checkSession();
-				if (!offline && !session) {
-					useAppStore.getState().signOut();
-				}
-				// Offline com token guardado: mantém a sessão e deixa a app
+			const { onboardingSeen } = useAppStore.getState();
+
+			/*
+			 * Confirma ao servidor se a sessão guardada ainda é válida.
+			 *
+			 * A distinção que importa é entre "o servidor disse que não há
+			 * sessão" e "o servidor não respondeu". Só a primeira termina a
+			 * sessão. Com o `catch { return null }` de antes, um arranque em 2G
+			 * ou num túnel expirava a conta: a pessoa era manda para o login,
+			 * perdia o papel escolhido e tinha de reintroduzir a senha — sem
+			 * que houvesse erro nenhum, porque o arranque tinha corrido bem.
+			 */
+			let authed = false;
+			try {
+				const { data } = await authClient.getSession();
+				authed = Boolean(data?.user);
+			} catch {
+				// Offline com sessão guardada: mantém a sessão e deixa a app
 				// abrir. As queries que correrem vão falhar e mostrar o seu
 				// estado de erro, que é o sítio certo para dizer isso.
-				authed = Boolean(session) || offline;
+				authed = await sessionTokenOrNull().then(Boolean);
 			}
+
 			if (authed) {
 				navigation.replace('App', { screen: 'Main' });
 			} else if (onboardingSeen) {
