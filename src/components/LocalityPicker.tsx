@@ -321,6 +321,7 @@ export default function LocalityPicker({
 						<ScrollView
 							keyboardShouldPersistTaps="handled"
 							style={{ maxHeight: 380 }}
+							showsVerticalScrollIndicator={false}
 						>
 							{provinces.isLoading ? (
 								<View className="py-10 items-center">

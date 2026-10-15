@@ -6,6 +6,7 @@ import PassengerTabs from './PassengerTabs';
 import DriverTabs from './DriverTabs';
 import KycScreen from '../screens/boleia/KycScreen';
 import VehicleScreen from '../screens/boleia/VehicleScreen';
+import AccountScreen from '../screens/boleia/AccountScreen';
 import PublishTripScreen from '../screens/boleia/PublishTripScreen';
 import RideDetailScreen from '../screens/boleia/RideDetailScreen';
 import PublicProfileScreen from '../screens/boleia/PublicProfileScreen';
@@ -38,6 +39,7 @@ export default function BoleiaMainNavigator() {
 			</Stack.Screen>
 			<Stack.Screen name="Kyc" component={KycScreen} />
 			<Stack.Screen name="Vehicle" component={VehicleScreen} />
+			<Stack.Screen name="Account" component={AccountScreen} />
 			<Stack.Screen name="PublishTrip" component={PublishTripScreen} />
 			<Stack.Screen name="RideDetail" component={RideDetailScreen} />
 			<Stack.Screen

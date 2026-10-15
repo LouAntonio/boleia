@@ -226,13 +226,14 @@ export default function HomeScreen() {
 			className="flex-1"
 			style={{ backgroundColor: themeColors.background }}
 		>
+			<AppHeader />
+
 			<ScrollView
 				className="flex-1 px-5"
 				contentContainerStyle={{ paddingBottom: 40 }}
 				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
 			>
-				<AppHeader />
-
 				<Greeting
 					role={currentRole}
 					name={

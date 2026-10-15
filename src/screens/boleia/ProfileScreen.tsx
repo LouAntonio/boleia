@@ -354,6 +354,7 @@ export default function ProfileScreen() {
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
 				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
 			>
 				{/*
 				 * Bloco de identidade — a assinatura do ecrã.
@@ -604,6 +605,12 @@ export default function ProfileScreen() {
 
 				<View className="mt-6">
 					<Card padded={false}>
+						<NavRow
+							icon="person-circle-outline"
+							label="Conta e segurança"
+							onPress={() => navigation.navigate('Account')}
+						/>
+						<Divider />
 						<NavRow
 							icon="shield-checkmark-outline"
 							label="Central de segurança"

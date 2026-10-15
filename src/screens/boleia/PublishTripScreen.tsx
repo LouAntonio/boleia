@@ -370,6 +370,7 @@ export default function PublishTripScreen() {
 				className="flex-1 px-5"
 				contentContainerStyle={{ paddingBottom: 48 }}
 				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
 			>
 				{/* Cabeçalho do assistente */}
 				<View className="flex-row items-center pt-1">

@@ -12,6 +12,12 @@ export interface ApiUser {
 	name: string | null;
 	surname: string | null;
 	email: string;
+	/**
+	 * Só interessa para o ecrã de conta, e mesmo aí só para dizer a verdade
+	 * sobre o email: uma conta de telefone tem `<phone>@boleia.ao` como email e
+	 * nunca o confirmou — o que é recebido corre por WhatsApp, não por correio.
+	 */
+	emailVerified?: boolean;
 	phone?: string | null;
 	image?: string | null;
 	bio?: string | null;
@@ -124,6 +130,58 @@ export async function updateProfile(input: {
 }): Promise<ApiUser> {
 	const { data } = await client.patch<ApiUser>('/api/account/profile', input);
 	return data;
+}
+
+/**
+ * Elimina a conta do utilizador autenticado.
+ *
+ * Vai para `POST /api/account/delete`, e não para o `delete-user` do
+ * better-auth: o endpoint do backend marca a conta como removida e apaga
+ * sessões, notificações e dispositivos de push numa transacção. O
+ * `delete-user` apagaria a linha do utilizador e deixaria os dispositivos
+ * registados a receber notificações — foi exactamente isso que o
+ * `account.service.ts` resolveu.
+ */
+export async function deleteAccount(): Promise<{ status: true }> {
+	const { data } = await client.post<{ status: true }>('/api/account/delete');
+	return data;
+}
+
+/**
+ * Desvincula a conta Google.
+ *
+ * Não usa o `unlink-account` do better-auth porque `allowUnlinkingAll: false`
+ * recusa sempre que a linha do Google é a única. A rota do backend aplica a
+ * regra certa: só recusa quando **nenhuma** outra credencial fica disponível.
+ */
+export async function unlinkGoogle(): Promise<{ status: true }> {
+	const { data } = await client.post<{ status: true }>(
+		'/api/account/unlink-google',
+	);
+	return data;
+}
+
+/**
+ * Uma sessão activa, tal como o `list-sessions` do better-auth a devolve.
+ *
+ * Chama-se `SessionRow` e **não** `ApiSession` de propósito: já existe um
+ * `ApiSession` neste ficheiro, com outro sentido (a sessão do utilizador
+ * autenticado, com o `user` dentro). Interfaces em TypeScript fundem-se em vez
+ * de se substituírem, portanto um segundo `ApiSession` não dava erro — dava
+ * uma personagem com os dois conjuntos de campos ao mesmo tempo.
+ *
+ * `token` é o segredo de que a sessão precisa para ser revogada
+ * (`revoke-session` leva-o no corpo), por isso o cliente tem de o ter em mãos.
+ * Nunca é mostrado nem registado em lado nenhum — só passado de volta ao
+ * servidor quando a pessoa decide terminar aquela sessão.
+ */
+export interface SessionRow {
+	token: string;
+	createdAt: string | Date;
+	updatedAt: string | Date;
+	expiresAt: string | Date;
+	ipAddress: string | null;
+	userAgent: string | null;
 }
 
 // ---------- KYC (motorista + passageiro) ----------

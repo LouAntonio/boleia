@@ -47,6 +47,7 @@ export default function AuthShell({
 					className="flex-1 px-5"
 					contentContainerStyle={{ flexGrow: 1, paddingVertical: 32 }}
 					keyboardShouldPersistTaps="handled"
+					showsVerticalScrollIndicator={false}
 				>
 					<View className="w-full max-w-md self-center flex-1 justify-center">
 						{back ? (

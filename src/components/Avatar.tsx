@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Image, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { HIT_SLOP } from '../store/type';
 
@@ -23,6 +24,9 @@ type AvatarSize = 36 | 44 | 64;
 
 /** Tamanho da letra das iniciais, em função do diâmetro do círculo. */
 const INK: Record<AvatarSize, number> = { 36: 13, 44: 15, 64: 22 };
+
+/** Tamanho do glifo de pessoa, para o caso de não haver nome nenhum. */
+const GLYPH: Record<AvatarSize, number> = { 36: 18, 44: 22, 64: 30 };
 
 export default function Avatar({
 	initials,
@@ -54,7 +58,7 @@ export default function Avatar({
 					style={{ width: size, height: size }}
 					resizeMode="cover"
 				/>
-			) : (
+			) : initials ? (
 				<Text
 					className="font-sansExtraBold"
 					style={{
@@ -64,6 +68,18 @@ export default function Avatar({
 				>
 					{initials}
 				</Text>
+			) : (
+				/*
+				 * Sem nome e sem apelido — o registo aceita os dois vazios.
+				 * Um glifo de pessoa é o que a plataforma toda usa para
+				 * "conta sem retrato"; um ponto de interrogação seria uma
+				 * pergunta feita à pessoa que não cabe ali responder.
+				 */
+				<Ionicons
+					name="person"
+					size={GLYPH[size]}
+					color={themeColors.onPrimary}
+				/>
 			)}
 		</View>
 	);

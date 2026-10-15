@@ -37,9 +37,6 @@ export function useSessionUser() {
  */
 export function useSessionInitials(): string {
 	const user = useSessionUser();
-	if (!user) return '?';
-	const first = (user.name ?? '').trim();
-	const last = (user.surname ?? '').trim();
-	if (!first && !last) return '?';
-	return initials(first || '?', last || '?');
+	if (!user) return '';
+	return initials((user.name ?? '').trim(), (user.surname ?? '').trim());
 }

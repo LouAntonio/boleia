@@ -31,6 +31,7 @@ export type BoleiaMainStackParamList = {
 	Main: undefined;
 	Kyc: undefined;
 	Vehicle: undefined;
+	Account: undefined;
 	PublishTrip: undefined;
 	RideDetail: { rideId: string };
 	PublicProfile: { userId: string };

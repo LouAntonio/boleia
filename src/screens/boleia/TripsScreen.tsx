@@ -140,23 +140,27 @@ export default function TripsScreen() {
 	if (!isLoading && mine.length === 0) {
 		return (
 			<SafeAreaView
-				className="flex-1 px-5"
+				className="flex-1"
 				style={{ backgroundColor: themeColors.background }}
 			>
 				<AppHeader />
 
-				<ScreenHeader
-					title="As tuas viagens"
-					meta="Viagens publicadas e pedidos de boleia"
-				/>
-				<View className="flex-1 justify-center pb-10">
-					<EmptyState
-						icon="add-circle-outline"
-						title="Ainda nada publicado"
-						copy="Publica a tua primeira viagem e gere aqui os pedidos de boleia."
-						actionTitle="Publicar viagem"
-						onAction={() => tabNavigation.navigate('DriverPublish')}
+				<View className="flex-1 px-5">
+					<ScreenHeader
+						title="As tuas viagens"
+						meta="Viagens publicadas e pedidos de boleia"
 					/>
+					<View className="flex-1 justify-center pb-10">
+						<EmptyState
+							icon="add-circle-outline"
+							title="Ainda nada publicado"
+							copy="Publica a tua primeira viagem e gere aqui os pedidos de boleia."
+							actionTitle="Publicar viagem"
+							onAction={() =>
+								tabNavigation.navigate('DriverPublish')
+							}
+						/>
+					</View>
 				</View>
 			</SafeAreaView>
 		);
@@ -164,150 +168,166 @@ export default function TripsScreen() {
 
 	return (
 		<SafeAreaView
-			className="flex-1 px-5"
+			className="flex-1"
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<AppHeader />
 
-			<ScreenHeader
-				title="As tuas viagens"
-				meta={`${mine.length} viagem${mine.length === 1 ? '' : 's'} publicada${mine.length === 1 ? '' : 's'}`}
-			/>
-			<ScrollView
-				className="flex-1 mt-4"
-				contentContainerStyle={{ paddingBottom: 48 }}
-			>
-				{error ? (
-					<Text
-						className="font-sans text-body-xs mb-3"
-						style={{ color: themeColors.error }}
-					>
-						{error}
-					</Text>
-				) : null}
+			<View className="flex-1 px-5">
+				<ScreenHeader
+					title="As tuas viagens"
+					meta={`${mine.length} viagem${mine.length === 1 ? '' : 's'} publicada${mine.length === 1 ? '' : 's'}`}
+				/>
+				<ScrollView
+					className="flex-1 mt-4"
+					contentContainerStyle={{ paddingBottom: 48 }}
+					showsVerticalScrollIndicator={false}
+				>
+					{error ? (
+						<Text
+							className="font-sans text-body-xs mb-3"
+							style={{ color: themeColors.error }}
+						>
+							{error}
+						</Text>
+					) : null}
 
-				{mine.map((apiRide) => {
-					const ride = toRide(apiRide);
-					const bookings = (bookingsByRide?.[apiRide.id] ?? []).map(
-						toBooking,
-					);
-					const pending = bookings.filter(
-						(b) => b.status === 'pedido',
-					);
-					return (
-						<View key={ride.id} className="mb-5">
-							<TripStripCard
-								ride={ride}
-								onPress={() =>
-									navigation.navigate('RideDetail', {
-										rideId: ride.id,
-									})
-								}
-							/>
-							{ride.status === 'programada' && (
-								<View
-									className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3 pt-2"
-									style={{
-										backgroundColor: themeColors.background,
-									}}
-								>
-									<BoleiaButton
-										title={
-											busy === ride.id
-												? 'A iniciar…'
-												: 'Iniciar viagem'
-										}
-										onPress={() => void begin(ride.id)}
-										disabled={busy === ride.id}
-									/>
-									<View className="mt-2">
+					{mine.map((apiRide) => {
+						const ride = toRide(apiRide);
+						const bookings = (
+							bookingsByRide?.[apiRide.id] ?? []
+						).map(toBooking);
+						const pending = bookings.filter(
+							(b) => b.status === 'pedido',
+						);
+						return (
+							<View key={ride.id} className="mb-5">
+								<TripStripCard
+									ride={ride}
+									onPress={() =>
+										navigation.navigate('RideDetail', {
+											rideId: ride.id,
+										})
+									}
+								/>
+								{ride.status === 'programada' && (
+									<View
+										className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3 pt-2"
+										style={{
+											backgroundColor:
+												themeColors.background,
+										}}
+									>
 										<BoleiaButton
-											title="Cancelar viagem"
-											variant="outline"
-											onPress={() => void abort(ride.id)}
+											title={
+												busy === ride.id
+													? 'A iniciar…'
+													: 'Iniciar viagem'
+											}
+											onPress={() => void begin(ride.id)}
 											disabled={busy === ride.id}
 										/>
-									</View>
-								</View>
-							)}
-							{ride.status === 'em_curso' && (
-								<View
-									className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3 pt-2"
-									style={{
-										backgroundColor: themeColors.background,
-									}}
-								>
-									{/*
-									 * "Gerir viagem", não "Acompanhar ao vivo": o
-									 * ecrã para onde vai tem os controlos de avançar
-									 * paragem e terminar. Dizer só "acompanhar"
-									 * descrevia metade do que se lá faz.
-									 */}
-									<BoleiaButton
-										title="Gerir viagem"
-										onPress={() =>
-											navigation.navigate('ActiveRide', {
-												rideId: ride.id,
-											})
-										}
-									/>
-								</View>
-							)}
-							{bookings.length > 0 && (
-								<View
-									className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3"
-									style={{
-										backgroundColor: themeColors.background,
-									}}
-								>
-									{pending.length > 0 ? (
-										pending.map((b) => (
-											<BookingRequest
-												key={b.id}
-												booking={b}
-												ride={ride}
-												busy={busy === b.id}
-												onAccept={() =>
-													decideById(
-														b.id,
-														'CONFIRMED',
-													)
+										<View className="mt-2">
+											<BoleiaButton
+												title="Cancelar viagem"
+												variant="outline"
+												onPress={() =>
+													void abort(ride.id)
 												}
-												onDecline={() =>
-													decideById(b.id, 'REJECTED')
-												}
+												disabled={busy === ride.id}
 											/>
-										))
-									) : (
-										<View className="flex-row items-center justify-between pt-2">
-											<Text
-												className="font-sans text-body-xs"
-												style={{
-													color: themeColors.secondary,
-												}}
-											>
-												Reservas desta viagem
-											</Text>
-											<View className="flex-row items-center">
-												{bookings.map((b) => (
-													<View
-														key={b.id}
-														className="mr-2"
-													>
-														<StatusStamp
-															status={b.status}
-														/>
-													</View>
-												))}
-											</View>
 										</View>
-									)}
-								</View>
-							)}
-						</View>
-					);
-				})}
-			</ScrollView>
+									</View>
+								)}
+								{ride.status === 'em_curso' && (
+									<View
+										className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3 pt-2"
+										style={{
+											backgroundColor:
+												themeColors.background,
+										}}
+									>
+										{/*
+										 * "Gerir viagem", não "Acompanhar ao vivo": o
+										 * ecrã para onde vai tem os controlos de avançar
+										 * paragem e terminar. Dizer só "acompanhar"
+										 * descrevia metade do que se lá faz.
+										 */}
+										<BoleiaButton
+											title="Gerir viagem"
+											onPress={() =>
+												navigation.navigate(
+													'ActiveRide',
+													{
+														rideId: ride.id,
+													},
+												)
+											}
+										/>
+									</View>
+								)}
+								{bookings.length > 0 && (
+									<View
+										className="mx-1 -mt-1 rounded-b-2xl px-3 pb-3"
+										style={{
+											backgroundColor:
+												themeColors.background,
+										}}
+									>
+										{pending.length > 0 ? (
+											pending.map((b) => (
+												<BookingRequest
+													key={b.id}
+													booking={b}
+													ride={ride}
+													busy={busy === b.id}
+													onAccept={() =>
+														decideById(
+															b.id,
+															'CONFIRMED',
+														)
+													}
+													onDecline={() =>
+														decideById(
+															b.id,
+															'REJECTED',
+														)
+													}
+												/>
+											))
+										) : (
+											<View className="flex-row items-center justify-between pt-2">
+												<Text
+													className="font-sans text-body-xs"
+													style={{
+														color: themeColors.secondary,
+													}}
+												>
+													Reservas desta viagem
+												</Text>
+												<View className="flex-row items-center">
+													{bookings.map((b) => (
+														<View
+															key={b.id}
+															className="mr-2"
+														>
+															<StatusStamp
+																status={
+																	b.status
+																}
+															/>
+														</View>
+													))}
+												</View>
+											</View>
+										)}
+									</View>
+								)}
+							</View>
+						);
+					})}
+				</ScrollView>
+			</View>
 		</SafeAreaView>
 	);
 }

@@ -310,6 +310,7 @@ export default function VehicleScreen() {
 			<ScrollView
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
+				showsVerticalScrollIndicator={false}
 			>
 				<View className="flex-row items-center pt-1 pb-4">
 					<BackButton onPress={() => navigation.goBack()} />

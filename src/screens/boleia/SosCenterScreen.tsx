@@ -44,6 +44,7 @@ export default function SosCenterScreen() {
 			<ScrollView
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
+				showsVerticalScrollIndicator={false}
 			>
 				<Card>
 					<View className="items-center py-4">

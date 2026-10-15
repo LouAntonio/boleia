@@ -104,6 +104,7 @@ export default function NotificationsScreen() {
 			<ScrollView
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
+				showsVerticalScrollIndicator={false}
 			>
 				{notifications.length === 0 ? (
 					<>

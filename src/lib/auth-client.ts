@@ -44,6 +44,7 @@ export function sessionUserFrom(raw: unknown): ApiUser {
 				: String(data.name),
 		surname: (data.surname as string | null) ?? null,
 		email: String(data.email ?? ''),
+		emailVerified: data.emailVerified === true,
 		phone: (data.phone as string | null) ?? null,
 		image: (data.image as string | null) ?? null,
 		bio: (data.bio as string | null) ?? null,

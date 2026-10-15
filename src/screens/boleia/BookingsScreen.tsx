@@ -193,216 +193,221 @@ export default function BookingsScreen() {
 
 	return (
 		<SafeAreaView
-			className="flex-1 px-5"
+			className="flex-1"
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<AppHeader />
 
-			<ScreenHeader
-				title="As tuas reservas"
-				meta={
-					all.length > 0
-						? `${upcoming.length} próxima${upcoming.length === 1 ? '' : 's'} · ${history.length} no histórico`
-						: null
-				}
-			/>
+			<View className="flex-1 px-5">
+				<ScreenHeader
+					title="As tuas reservas"
+					meta={
+						all.length > 0
+							? `${upcoming.length} próxima${upcoming.length === 1 ? '' : 's'} · ${history.length} no histórico`
+							: null
+					}
+				/>
 
-			{isLoading ? (
-				<View className="flex-1 justify-center pb-10">
-					<Text
-						className="font-sans text-body-small text-center"
-						style={{ color: themeColors.secondary }}
+				{isLoading ? (
+					<View className="flex-1 justify-center pb-10">
+						<Text
+							className="font-sans text-body-small text-center"
+							style={{ color: themeColors.secondary }}
+						>
+							A carregar as tuas reservas…
+						</Text>
+					</View>
+				) : all.length === 0 ? (
+					<View className="flex-1 justify-center pb-10">
+						<EmptyState
+							icon="car-outline"
+							title="Ainda não tens reservas"
+							copy="Pesquisa uma viagem e pede a tua boleia. A reserva aparece aqui."
+							actionTitle="Ver viagens ativas"
+							onAction={() =>
+								tabNavigation.navigate('PassengerExplore')
+							}
+						/>
+					</View>
+				) : (
+					<ScrollView
+						className="flex-1"
+						contentContainerStyle={{ paddingBottom: 40 }}
+						showsVerticalScrollIndicator={false}
 					>
-						A carregar as tuas reservas…
-					</Text>
-				</View>
-			) : all.length === 0 ? (
-				<View className="flex-1 justify-center pb-10">
-					<EmptyState
-						icon="car-outline"
-						title="Ainda não tens reservas"
-						copy="Pesquisa uma viagem e pede a tua boleia. A reserva aparece aqui."
-						actionTitle="Ver viagens ativas"
-						onAction={() =>
-							tabNavigation.navigate('PassengerExplore')
-						}
-					/>
-				</View>
-			) : (
-				<ScrollView
-					className="flex-1"
-					contentContainerStyle={{ paddingBottom: 40 }}
-				>
-					<View
-						className="flex-row rounded-xl p-1 mt-4 mb-4"
-						style={{ backgroundColor: themeColors.card }}
-					>
-						{(
-							[
-								{ key: 'upcoming', label: 'Próximas' },
-								{ key: 'history', label: 'Histórico' },
-							] as const
-						).map((opt) => {
-							const active = tab === opt.key;
-							const count =
-								opt.key === 'upcoming'
-									? upcoming.length
-									: history.length;
-							return (
-								<Pressable
-									key={opt.key}
-									onPress={() => setTab(opt.key)}
-									className="flex-1 rounded-xl min-h-[44px] items-center justify-center"
-									style={{
-										backgroundColor: active
-											? themeColors.primary
-											: 'transparent',
-									}}
-								>
-									<Text
-										className="font-sansBold text-body-small"
+						<View
+							className="flex-row rounded-xl p-1 mt-4 mb-4"
+							style={{ backgroundColor: themeColors.card }}
+						>
+							{(
+								[
+									{ key: 'upcoming', label: 'Próximas' },
+									{ key: 'history', label: 'Histórico' },
+								] as const
+							).map((opt) => {
+								const active = tab === opt.key;
+								const count =
+									opt.key === 'upcoming'
+										? upcoming.length
+										: history.length;
+								return (
+									<Pressable
+										key={opt.key}
+										onPress={() => setTab(opt.key)}
+										className="flex-1 rounded-xl min-h-[44px] items-center justify-center"
 										style={{
-											color: active
-												? themeColors.onPrimary
-												: themeColors.secondary,
+											backgroundColor: active
+												? themeColors.primary
+												: 'transparent',
 										}}
 									>
-										{opt.label}
-										{count > 0 ? ` · ${count}` : ''}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
+										<Text
+											className="font-sansBold text-body-small"
+											style={{
+												color: active
+													? themeColors.onPrimary
+													: themeColors.secondary,
+											}}
+										>
+											{opt.label}
+											{count > 0 ? ` · ${count}` : ''}
+										</Text>
+									</Pressable>
+								);
+							})}
+						</View>
 
-					{tab === 'upcoming' ? (
-						upcoming.length === 0 ? (
+						{tab === 'upcoming' ? (
+							upcoming.length === 0 ? (
+								<EmptyState
+									icon="car-outline"
+									title="Nenhuma reserva próxima"
+									copy="Vê as viagens ativas em Explorar e pede a tua boleia."
+								/>
+							) : (
+								upcoming.map(({ booking, ride }, i) => {
+									return (
+										<Animated.View
+											key={booking.id}
+											entering={FadeInDown.delay(
+												i * 70,
+											).duration(260)}
+											className="mb-4"
+										>
+											<BookingStub
+												booking={booking}
+												ride={ride}
+												onPress={() =>
+													navigation.navigate(
+														'RideDetail',
+														{ rideId: ride.id },
+													)
+												}
+												onCancel={() =>
+													confirmCancel(booking.id)
+												}
+												cancelling={
+													cancellingId === booking.id
+												}
+												footer={
+													booking.status ===
+													'em_viagem' ? (
+														<BoleiaButton
+															title="Acompanhar ao vivo"
+															onPress={() =>
+																navigation.navigate(
+																	'ActiveRide',
+																	{
+																		rideId: ride.id,
+																	},
+																)
+															}
+														/>
+													) : booking.status ===
+													  'concluida' ? (
+														<BoleiaButton
+															title="Avaliar motorista"
+															variant="outline"
+															onPress={() =>
+																navigation.navigate(
+																	'Review',
+																	{
+																		rideId: ride.id,
+																		toUserId:
+																			ride.driverId,
+																		subject:
+																			'driver',
+																	},
+																)
+															}
+														/>
+													) : undefined
+												}
+											/>
+										</Animated.View>
+									);
+								})
+							)
+						) : history.length === 0 ? (
 							<EmptyState
-								icon="car-outline"
-								title="Nenhuma reserva próxima"
-								copy="Vê as viagens ativas em Explorar e pede a tua boleia."
+								icon="receipt-outline"
+								title="Nenhuma viagem concluída"
+								copy="O teu histórico de boleias aparece aqui."
 							/>
 						) : (
-							upcoming.map(({ booking, ride }, i) => {
-								return (
-									<Animated.View
-										key={booking.id}
-										entering={FadeInDown.delay(
-											i * 70,
-										).duration(260)}
-										className="mb-4"
-									>
-										<BookingStub
-											booking={booking}
-											ride={ride}
-											onPress={() =>
-												navigation.navigate(
-													'RideDetail',
-													{ rideId: ride.id },
-												)
-											}
-											onCancel={() =>
-												confirmCancel(booking.id)
-											}
-											cancelling={
-												cancellingId === booking.id
-											}
-											footer={
-												booking.status ===
-												'em_viagem' ? (
-													<BoleiaButton
-														title="Acompanhar ao vivo"
-														onPress={() =>
-															navigation.navigate(
-																'ActiveRide',
-																{
-																	rideId: ride.id,
-																},
-															)
-														}
-													/>
-												) : booking.status ===
-												  'concluida' ? (
-													<BoleiaButton
-														title="Avaliar motorista"
-														variant="outline"
-														onPress={() =>
-															navigation.navigate(
-																'Review',
-																{
-																	rideId: ride.id,
-																	toUserId:
-																		ride.driverId,
-																	subject:
-																		'driver',
-																},
-															)
-														}
-													/>
-												) : undefined
-											}
-										/>
-									</Animated.View>
-								);
-							})
-						)
-					) : history.length === 0 ? (
-						<EmptyState
-							icon="receipt-outline"
-							title="Nenhuma viagem concluída"
-							copy="O teu histórico de boleias aparece aqui."
-						/>
-					) : (
-						groups.map(([month, items]) => (
-							<View key={month} className="mb-5">
-								<View className="flex-row items-center mb-3">
-									<View className="flex-1">
-										<GroupLabel>{month}</GroupLabel>
+							groups.map(([month, items]) => (
+								<View key={month} className="mb-5">
+									<View className="flex-row items-center mb-3">
+										<View className="flex-1">
+											<GroupLabel>{month}</GroupLabel>
+										</View>
+										<Text
+											className="font-sansMedium text-body-xs ml-3"
+											style={{
+												color: themeColors.secondary,
+											}}
+										>
+											{items.length}
+										</Text>
 									</View>
-									<Text
-										className="font-sansMedium text-body-xs ml-3"
-										style={{ color: themeColors.secondary }}
-									>
-										{items.length}
-									</Text>
+									{items.map(({ booking, ride }, i) => (
+										<View
+											key={booking.id}
+											className={i > 0 ? 'mt-3' : ''}
+										>
+											<BookingStub
+												booking={booking}
+												ride={ride}
+												footer={
+													booking.status ===
+													'concluida' ? (
+														<BoleiaButton
+															title="Avaliar motorista"
+															variant="outline"
+															onPress={() =>
+																navigation.navigate(
+																	'Review',
+																	{
+																		rideId: ride.id,
+																		toUserId:
+																			ride.driverId,
+																		subject:
+																			'driver',
+																	},
+																)
+															}
+														/>
+													) : undefined
+												}
+											/>
+										</View>
+									))}
 								</View>
-								{items.map(({ booking, ride }, i) => (
-									<View
-										key={booking.id}
-										className={i > 0 ? 'mt-3' : ''}
-									>
-										<BookingStub
-											booking={booking}
-											ride={ride}
-											footer={
-												booking.status ===
-												'concluida' ? (
-													<BoleiaButton
-														title="Avaliar motorista"
-														variant="outline"
-														onPress={() =>
-															navigation.navigate(
-																'Review',
-																{
-																	rideId: ride.id,
-																	toUserId:
-																		ride.driverId,
-																	subject:
-																		'driver',
-																},
-															)
-														}
-													/>
-												) : undefined
-											}
-										/>
-									</View>
-								))}
-							</View>
-						))
-					)}
-				</ScrollView>
-			)}
+							))
+						)}
+					</ScrollView>
+				)}
+			</View>
 		</SafeAreaView>
 	);
 }

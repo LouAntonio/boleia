@@ -211,7 +211,10 @@ export default function RideDetailScreen() {
 					title={ride.routeName}
 					onBack={() => navigation.goBack()}
 				/>
-				<ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+				<ScrollView
+					contentContainerStyle={{ paddingBottom: 40 }}
+					showsVerticalScrollIndicator={false}
+				>
 					{/*
 					 * Os índices vêm do servidor. `cleanStopIndexes` valida
 					 * contra o número de paragens que o servidor tem, e esse
@@ -284,6 +287,7 @@ export default function RideDetailScreen() {
 			<ScrollView
 				className="flex-1 px-5"
 				contentContainerStyle={{ paddingBottom: 48 }}
+				showsVerticalScrollIndicator={false}
 			>
 				<Card padded={false}>
 					<View className="p-4">

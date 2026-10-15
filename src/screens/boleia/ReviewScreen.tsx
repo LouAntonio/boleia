@@ -60,6 +60,7 @@ export default function ReviewScreen() {
 			<ScrollView
 				className="flex-1 px-5"
 				contentContainerStyle={{ paddingBottom: 40 }}
+				showsVerticalScrollIndicator={false}
 			>
 				<Card>
 					<View className="items-center py-4">

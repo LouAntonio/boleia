@@ -144,113 +144,128 @@ export default function ExploreScreen() {
 		</Pressable>
 	);
 
+	let content: React.ReactNode;
+	if (isLoading) {
+		content = (
+			<View className="flex-1 justify-center pb-10">
+				<Text
+					className="font-sans text-body-small text-center"
+					style={{ color: themeColors.secondary }}
+				>
+					A procurar viagens…
+				</Text>
+			</View>
+		);
+	} else if (filtered.length === 0) {
+		content = (
+			<View className="flex-1 justify-center pb-10">
+				<EmptyState
+					icon="compass-outline"
+					title="Sem viagens ativas por agora"
+					copy="Quando alguém publicar uma viagem, aparece aqui. Usa a pesquisa na Home para afinar a tua rota."
+					actionTitle="Pesquisar na Home"
+					onAction={() => tabNavigation.navigate('PassengerHome')}
+				/>
+			</View>
+		);
+	} else {
+		content = (
+			<ScrollView
+				className="flex-1"
+				contentContainerStyle={{ paddingBottom: 40 }}
+				showsVerticalScrollIndicator={false}
+			>
+				{grouped.map(([day, items]) => (
+					<View key={day}>
+						<View className="flex-row items-center mt-4 mb-3">
+							<View className="flex-1">
+								<GroupLabel>{day}</GroupLabel>
+							</View>
+							<Text
+								className="font-sansMedium text-body-xs ml-3"
+								style={{ color: themeColors.secondary }}
+							>
+								{items.length}
+							</Text>
+						</View>
+						{items.map(({ ride, reserved }) => (
+							<View key={ride.id} className="mb-4">
+								<TripListingCard
+									ride={ride}
+									reserved={reserved}
+									onPress={() =>
+										navigation.navigate('RideDetail', {
+											rideId: ride.id,
+										})
+									}
+								/>
+							</View>
+						))}
+					</View>
+				))}
+			</ScrollView>
+		);
+	}
+
 	return (
 		<SafeAreaView
-			className="flex-1 px-5"
+			className="flex-1"
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<AppHeader />
 
-			<ScreenHeader
-				title="Viagens a bater certo"
-				meta={
-					upcoming.length > 0
-						? `${upcoming.length} embarque${upcoming.length === 1 ? '' : 's'} a seguir`
-						: null
-				}
-			/>
+			<View className="flex-1 px-5">
+				<ScreenHeader
+					title="Viagens a bater certo"
+					meta={
+						upcoming.length > 0
+							? `${upcoming.length} embarque${upcoming.length === 1 ? '' : 's'} a seguir`
+							: null
+					}
+				/>
 
-			<View className="flex-row mt-4 mb-2">
-				{chip('Com lugares', onlyWithSeats, () =>
-					setOnlyWithSeats((v) => !v),
-				)}
-				{chip('Direto, sem paragens', onlyDirect, () =>
-					setOnlyDirect((v) => !v),
-				)}
-			</View>
-			<View className="flex-row items-center mb-1">
-				<Text
-					className="font-sansMedium text-body-xs mr-2"
-					style={{ color: themeColors.secondary }}
-				>
-					Ordenar
-				</Text>
-				{(
-					[
-						{ key: 'soon', label: 'Mais cedo' },
-						{ key: 'cheap', label: 'Mais barato' },
-					] as const
-				).map((opt) => (
-					<Pressable key={opt.key} onPress={() => setSort(opt.key)}>
-						<Text
-							className="font-sansBold text-body-xs mr-3"
-							style={{
-								color:
-									sort === opt.key
-										? themeColors.primary
-										: themeColors.secondary,
-							}}
-						>
-							{opt.label}
-						</Text>
-					</Pressable>
-				))}
-			</View>
-
-			{isLoading ? (
-				<View className="flex-1 justify-center pb-10">
+				<View className="flex-row mt-4 mb-2">
+					{chip('Com lugares', onlyWithSeats, () =>
+						setOnlyWithSeats((v) => !v),
+					)}
+					{chip('Direto, sem paragens', onlyDirect, () =>
+						setOnlyDirect((v) => !v),
+					)}
+				</View>
+				<View className="flex-row items-center mb-1">
 					<Text
-						className="font-sans text-body-small text-center"
+						className="font-sansMedium text-body-xs mr-2"
 						style={{ color: themeColors.secondary }}
 					>
-						A procurar viagens…
+						Ordenar
 					</Text>
-				</View>
-			) : filtered.length === 0 ? (
-				<View className="flex-1 justify-center pb-10">
-					<EmptyState
-						icon="compass-outline"
-						title="Sem viagens ativas por agora"
-						copy="Quando alguém publicar uma viagem, aparece aqui. Usa a pesquisa na Home para afinar a tua rota."
-						actionTitle="Pesquisar na Home"
-						onAction={() => tabNavigation.navigate('PassengerHome')}
-					/>
-				</View>
-			) : (
-				<ScrollView
-					className="flex-1"
-					contentContainerStyle={{ paddingBottom: 40 }}
-				>
-					{grouped.map(([day, items]) => (
-						<View key={day}>
-							<View className="flex-row items-center mt-4 mb-3">
-								<View className="flex-1">
-									<GroupLabel>{day}</GroupLabel>
-								</View>
-								<Text
-									className="font-sansMedium text-body-xs ml-3"
-									style={{ color: themeColors.secondary }}
-								>
-									{items.length}
-								</Text>
-							</View>
-							{items.map(({ ride, reserved }) => (
-								<View key={ride.id} className="mb-4">
-									<TripListingCard
-										ride={ride}
-										reserved={reserved}
-										onPress={() =>
-											navigation.navigate('RideDetail', {
-												rideId: ride.id,
-											})
-										}
-									/>
-								</View>
-							))}
-						</View>
+					{(
+						[
+							{ key: 'soon', label: 'Mais cedo' },
+							{ key: 'cheap', label: 'Mais barato' },
+						] as const
+					).map((opt) => (
+						<Pressable
+							key={opt.key}
+							onPress={() => setSort(opt.key)}
+						>
+							<Text
+								className="font-sansBold text-body-xs mr-3"
+								style={{
+									color:
+										sort === opt.key
+											? themeColors.primary
+											: themeColors.secondary,
+								}}
+							>
+								{opt.label}
+							</Text>
+						</Pressable>
 					))}
-				</ScrollView>
-			)}
+				</View>
+
+				{content}
+			</View>
 		</SafeAreaView>
 	);
 }

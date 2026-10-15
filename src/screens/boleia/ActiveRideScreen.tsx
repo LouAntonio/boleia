@@ -291,6 +291,7 @@ export default function ActiveRideScreen() {
 			<ScrollView
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 48 }}
+				showsVerticalScrollIndicator={false}
 			>
 				{ride.status === 'em_curso' && (
 					<Text

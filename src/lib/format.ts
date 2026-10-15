@@ -9,8 +9,20 @@
 import { MONTHS_PT } from '../utils/date';
 
 /** Iniciais para o avatar: "Lourenço António" -> "LA". */
+/**
+ * Iniciais a partir do nome e do apelido, **sem os inventar**.
+ *
+ * Antes devolvia `'?'.charAt(0)` para a parte em falta, o que punha um
+ * interrogação no avatar de quem tem nome e não tem apelido — muito comum,
+ * porque o registo só exige o primeiro nome. Uma interrogação não é uma
+ * inicial: é um sinal de erro do sistema numa superfície que ninguém está a
+ * ler como mensagem de erro.
+ *
+ * Sem nome nenhum devolve cadeia vazia, e é o `Avatar` que decide o que
+ * desenhar nesse caso. Aqui só se Montgomery, ou a falta dela.
+ */
 export function initials(firstName: string, lastName: string): string {
-	return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+	return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase().trim();
 }
 
 /** 1234567 -> "1 234 567 Kz". */
