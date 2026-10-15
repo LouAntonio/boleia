@@ -105,11 +105,24 @@ export default function PhotoSlot({
 	);
 }
 
-// Rail de progresso do dossiê — a pista enche (success) à medida que as fotos entram.
-export function ProgressRail({ done, total }: { done: number; total: number }) {
+// Rail de progresso do dossiê — a pista enche (success) à medida que os
+// elementos entram. `unit` existe porque o mesmo rail conta fotos no formulário
+// e requisitos no ecrã; a gramática tem de acompanhar a palavra.
+export function ProgressRail({
+	done,
+	total,
+	unit = 'foto',
+	unitPlural,
+}: {
+	done: number;
+	total: number;
+	unit?: string;
+	unitPlural?: string;
+}) {
 	const { themeColors } = useThemeColors();
 	const p = Math.max(0, Math.min(1, done / total));
 	const complete = done >= total;
+	const many = unitPlural ?? `${unit}s`;
 
 	return (
 		<View>
@@ -118,7 +131,7 @@ export function ProgressRail({ done, total }: { done: number; total: number }) {
 					className="font-sansMedium text-body-xs"
 					style={{ color: themeColors.secondary }}
 				>
-					{done} de {total} {total === 1 ? 'foto' : 'fotos'}
+					{done} de {total} {total === 1 ? unit : many}
 				</Text>
 				<Text
 					className="font-sansMedium text-body-xs"

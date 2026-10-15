@@ -9,6 +9,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import GroupLabel from '../../components/GroupLabel';
+import AppHeader from '../../components/AppHeader';
 
 import Card from '../../components/Card';
 import StatusStamp from '../../components/StatusStamp';
@@ -60,6 +61,8 @@ export default function PublishScreen() {
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
+			<AppHeader />
+
 			<View className="mt-2">
 				<GroupLabel>Motorista verificado</GroupLabel>
 				<Text

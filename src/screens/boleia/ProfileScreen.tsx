@@ -1,19 +1,15 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-	View,
-	Text,
-	Pressable,
-	ScrollView,
-	Alert,
-	TextInput,
-	ActivityIndicator,
-} from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
 import { qk } from '../../lib/queryKeys';
+import { queryClient as appQueryClient } from '../../lib/queryClient';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { onBand } from '../../store/colors';
 import {
 	useSessionUser,
 	useSessionUserId,
@@ -21,64 +17,61 @@ import {
 } from '../../hooks/useSessionUser';
 import { useAppStore } from '../../store/appStore';
 import { useThemeStore, ThemeMode } from '../../store/themeStore';
-import { useQuery } from '@tanstack/react-query';
-import { listMyBookings, listMyRides } from '../../lib/api';
+import {
+	apiErrorMessage,
+	getEmergencyContact,
+	listMyBookings,
+	listMyRides,
+	saveEmergencyContact,
+} from '../../lib/api';
 import { toBooking, toRide } from '../../lib/rideMapper';
 import { fmtKz } from '../../lib/format';
 import { MONTHS_PT } from '../../utils/date';
 import { maskPhone } from '../../utils/phone';
-import { statusMeta, StatusTone } from '../../utils/status';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { BoleiaMainStackParamList } from '../../types/navigation';
-import SectionTitle from '../../components/SectionTitle';
-import { Ionicons } from '@expo/vector-icons';
 import { navigationRef } from '../../lib/navigationRef';
 import { authClient } from '../../lib/auth-client';
-import {
-	apiErrorMessage,
-	getEmergencyContact,
-	saveEmergencyContact,
-} from '../../lib/api';
 import { Eligibility, fetchEligibility } from '../../lib/eligibility';
-import BoleiaButton from '../../components/BoleiaButton';
+import { BoleiaMainStackParamList } from '../../types/navigation';
 
-const THEMES: { mode: ThemeMode; label: string }[] = [
-	{ mode: 'light', label: 'Claro' },
-	{ mode: 'dark', label: 'Escuro' },
-	{ mode: 'system', label: 'Sistema' },
+import Avatar from '../../components/Avatar';
+import BoleiaButton from '../../components/BoleiaButton';
+import Card from '../../components/Card';
+import Input from '../../components/Input';
+import SectionTitle from '../../components/SectionTitle';
+import SegmentedControl from '../../components/SegmentedControl';
+import StatusStamp from '../../components/StatusStamp';
+
+const THEMES: readonly { value: ThemeMode; label: string }[] = [
+	{ value: 'light', label: 'Claro' },
+	{ value: 'dark', label: 'Escuro' },
+	{ value: 'system', label: 'Sistema' },
 ];
 
-function PanelStat({
-	value,
-	label,
-	first,
-}: {
-	value: string;
-	label: string;
-	first?: boolean;
-}) {
+const ROLES = [
+	{ value: 'passenger' as const, label: 'Passageiro' },
+	{ value: 'driver' as const, label: 'Motorista' },
+];
+
+/**
+ * Um número dentro de um painel.
+ *
+ * Existia em versão com divisórias laterais à esquerda e era usado duas vezes
+ * no ecrã, uma em cada painel de papel. Agora é uma vez: o ecrã mostra só o
+ * papel activo, e as réguas entre dois números iguais deixavam de ser
+ * informação para passar a ser ruído.
+ */
+function PanelStat({ value, label }: { value: string; label: string }) {
 	const { themeColors } = useThemeColors();
 	return (
-		<View
-			className="flex-1 items-center"
-			style={
-				first
-					? undefined
-					: {
-							borderLeftWidth: 1,
-							borderLeftColor: themeColors.border,
-						}
-			}
-		>
+		<View className="flex-1">
 			<Text
-				className="font-sansMedium text-body-small"
+				className="font-sansExtraBold text-title-tertiary"
 				style={{ color: themeColors.text }}
 			>
 				{value}
 			</Text>
 			<Text
-				className="font-sansMedium text-body-xs mt-1"
+				className="font-sans text-body-xs mt-0.5"
 				style={{ color: themeColors.secondary }}
 			>
 				{label}
@@ -87,148 +80,73 @@ function PanelStat({
 	);
 }
 
-const STAMP_TONE: Record<StatusTone, string> = {
-	pending: 'laterite',
-	active: 'primary',
-	done: 'success',
-	failed: 'error',
-	neutral: 'secondary',
-};
-
-function VerificationStamp({ status }: { status: string }) {
+/**
+ * Linha de navegação: círculo de ícone, rótulo, e o que vier à direita.
+ *
+ * Substitui quatro versões quase iguais que apareciam no ecrã (reservas, KYC,
+ * viatura, central de segurança), com metades ligeiramente diferentes — altura
+ * do `py`, tom do ícone, presença de divisória.
+ */
+function NavRow({
+	icon,
+	label,
+	trailing,
+	onPress,
+	tone = 'default',
+}: {
+	icon: keyof typeof Ionicons.glyphMap;
+	label: string;
+	trailing?: React.ReactNode;
+	onPress: () => void;
+	tone?: 'default' | 'danger';
+}) {
 	const { themeColors } = useThemeColors();
-	const meta = statusMeta(status);
-	const tint = themeColors[STAMP_TONE[meta.tone] as keyof typeof themeColors];
+	const danger = tone === 'danger';
+	const ink = danger ? themeColors.error : themeColors.primary;
+	const wash = danger ? themeColors.dangerWeak : themeColors.accentWeak;
+
 	return (
-		<View
-			className="flex-row items-center self-start rounded-full px-2.5 py-1 border"
-			style={{ borderColor: `${tint}66` }}
+		<Pressable
+			onPress={onPress}
+			accessibilityRole="button"
+			className="flex-row items-center justify-between px-4 py-3"
+			style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
 		>
-			<View
-				className="w-[7px] h-[7px] rounded-full mr-1.5"
-				style={{ backgroundColor: tint }}
-			/>
-			<Text
-				className="font-sansMedium text-body-xs"
-				style={{ color: themeColors.secondary }}
-			>
-				{meta.label}
-			</Text>
-		</View>
+			<View className="flex-row items-center flex-1">
+				<View
+					className="w-9 h-9 rounded-full items-center justify-center"
+					style={{ backgroundColor: wash }}
+				>
+					<Ionicons name={icon} size={18} color={ink} />
+				</View>
+				<Text
+					className="flex-1 ml-3 font-sansMedium text-body-small"
+					style={{
+						color: danger ? themeColors.error : themeColors.text,
+					}}
+				>
+					{label}
+				</Text>
+			</View>
+			{trailing ?? (
+				<Ionicons
+					name="chevron-forward"
+					size={16}
+					color={themeColors.secondary}
+				/>
+			)}
+		</Pressable>
 	);
 }
 
-function RolePanel({
-	active,
-	band,
-	icon,
-	title,
-	subtitle,
-	stats,
-	onActivate,
-	children,
-	delay,
-}: {
-	active: boolean;
-	band: string;
-	icon: keyof typeof Ionicons.glyphMap;
-	title: string;
-	subtitle: string;
-	stats: { value: string; label: string }[];
-	onActivate: () => void;
-	children: React.ReactNode;
-	delay: number;
-}) {
+/** Divisória dentro de um cartão agrupado. */
+function Divider() {
 	const { themeColors } = useThemeColors();
-	const bandBg = active ? band : themeColors.border;
-	const bandFg = active ? onBand(themeColors, band) : themeColors.secondary;
-
 	return (
-		<Animated.View
-			entering={FadeInDown.delay(delay).duration(260)}
-			className="mb-4"
-		>
-			<View
-				className="rounded-xl overflow-hidden"
-				style={{
-					backgroundColor: themeColors.card,
-					shadowColor: '#000',
-					shadowOpacity: 0.08,
-					shadowOffset: { width: 0, height: 4 },
-					shadowRadius: 12,
-					elevation: 3,
-				}}
-			>
-				<Pressable
-					onPress={onActivate}
-					className="flex-row items-center px-4 py-3"
-					style={({ pressed }) => ({
-						backgroundColor: bandBg,
-						opacity: pressed ? 0.9 : 1,
-					})}
-				>
-					<View
-						className="w-10 h-10 rounded-full items-center justify-center"
-						style={{ backgroundColor: `${bandFg}26` }}
-					>
-						<Ionicons name={icon} size={20} color={bandFg} />
-					</View>
-					<View className="flex-1 ml-3">
-						<Text
-							className="font-sansExtraBold text-label"
-							style={{ color: bandFg }}
-						>
-							{title}
-						</Text>
-						<Text
-							className="font-sansMedium text-body-xs mt-0.5"
-							style={{ color: bandFg, opacity: 0.85 }}
-						>
-							{subtitle}
-						</Text>
-					</View>
-					{active ? (
-						<View
-							className="rounded-lg border-2 px-2.5 py-1"
-							style={{
-								borderColor: bandFg,
-								transform: [{ rotate: '-12deg' }],
-							}}
-						>
-							<Text
-								className="font-sansMedium text-body-xs"
-								style={{ color: bandFg }}
-							>
-								Ativo
-							</Text>
-						</View>
-					) : (
-						<Text
-							className="font-sansMedium text-body-xs"
-							style={{ color: themeColors.secondary }}
-						>
-							Toca para ativar
-						</Text>
-					)}
-				</Pressable>
-				<View
-					className="border-t px-4 py-3.5"
-					style={{ borderColor: themeColors.border }}
-				>
-					<View className="flex-row">
-						{stats.map((s, i) => (
-							<PanelStat
-								key={s.label}
-								first={i === 0}
-								value={s.value}
-								label={s.label}
-							/>
-						))}
-					</View>
-					{children}
-				</View>
-			</View>
-		</Animated.View>
+		<View
+			style={{ height: 1, backgroundColor: themeColors.border }}
+			className="ml-[60px]"
+		/>
 	);
 }
 
@@ -242,21 +160,15 @@ function ReciboRow({
 	muted?: boolean;
 }) {
 	const { themeColors } = useThemeColors();
+	const ink = muted ? themeColors.secondary : themeColors.text;
 	return (
 		<View className="flex-row items-center justify-between py-1.5">
-			<Text
-				className="font-sans text-body-small"
-				style={{
-					color: muted ? themeColors.secondary : themeColors.text,
-				}}
-			>
+			<Text className="font-sans text-body-small" style={{ color: ink }}>
 				{label}
 			</Text>
 			<Text
 				className="font-sansMedium text-body-small"
-				style={{
-					color: muted ? themeColors.secondary : themeColors.text,
-				}}
+				style={{ color: ink }}
 			>
 				{value}
 			</Text>
@@ -270,6 +182,7 @@ export default function ProfileScreen() {
 		useNavigation<
 			NativeStackNavigationProp<BoleiaMainStackParamList, 'Main'>
 		>();
+	const queryClient = useQueryClient();
 	const currentRole = useAppStore((s) => s.currentRole);
 	const setRole = useAppStore((s) => s.setRole);
 	const theme = useThemeStore((s) => s.theme);
@@ -278,8 +191,6 @@ export default function ProfileScreen() {
 	const initialsLabel = useSessionInitials();
 	const sessionUserId = useSessionUserId();
 
-	// Reservas e corridas vêm da API: o perfil conta as viagens reais do
-	// utilizador, não as de uma base local.
 	const { data: apiBookings } = useQuery({
 		queryKey: qk.myBookings.all,
 		queryFn: listMyBookings,
@@ -299,8 +210,6 @@ export default function ProfileScreen() {
 		[myRidesPage],
 	);
 
-	// Estado real (API) de KYC/viaturas — os gates de pedir/registar
-	// corrida leem daqui, não do mock.
 	const [elig, setElig] = useState<Eligibility | null>(null);
 	const [emgName, setEmgName] = useState('');
 	const [emgPhone, setEmgPhone] = useState('');
@@ -348,9 +257,6 @@ export default function ProfileScreen() {
 		}
 	};
 
-	// KYC e viaturas vêm da API. O `me` do mock já não é fonte de verdade: um
-	// estado guardado localmente diria "verificado" a quem foi recusado no
-	// servidor.
 	const kycStamp = !elig?.loaded
 		? 'nao_submetido'
 		: !elig.kycDriver
@@ -379,7 +285,6 @@ export default function ProfileScreen() {
 	const publicadas = myRides.length;
 	const concluidas = myRides.filter((r) => r.status === 'concluida').length;
 
-	// Recibo do motorista: total das viagens − 10% de comissão da plataforma
 	const totalViagens = bookings
 		.filter(
 			(b) =>
@@ -390,14 +295,13 @@ export default function ProfileScreen() {
 	const comissao = Math.round(totalViagens * 0.1);
 	const aReceber = totalViagens - comissao;
 
-	// Não há backend de reviews, por isso não há classificação a mostrar. Exibir
-	// "novo" ou uma nota do mock seria inventar reputação de alguém.
-	const rating = '—';
 	const since = me?.createdAt
 		? `${MONTHS_PT[new Date(me.createdAt).getMonth()].slice(0, 3).toUpperCase()}.${String(
 				new Date(me.createdAt).getFullYear(),
 			).slice(2)}`
 		: '—';
+
+	const isDriver = currentRole === 'driver';
 
 	const goToBookings = () => {
 		const tab =
@@ -405,6 +309,40 @@ export default function ProfileScreen() {
 		(
 			navigation as unknown as { navigate: (name: string) => void }
 		).navigate(tab);
+	};
+
+	const logout = () => {
+		Alert.alert(
+			'Terminar sessão',
+			'Tens a certeza que queres sair? Voltar a entrar é rápido.',
+			[
+				{ text: 'Cancelar', style: 'cancel' },
+				{
+					text: 'Terminar sessão',
+					style: 'destructive',
+					onPress: () => {
+						void authClient.signOut().catch(() => {});
+						useAppStore.getState().resetAfterLogout();
+						// A cache é da conta que está a sair. Sem isto, as
+						// reservas e viagens de quem saiu ficam em memória para
+						// o próximo que entrar no mesmo aparelho. O `AGENTS.md`
+						// descrevia isto no fluxo de 401, mas o logout manual não
+						// o fazia.
+						queryClient.clear();
+						appQueryClient.clear();
+						navigationRef.reset({
+							index: 0,
+							routes: [
+								{
+									name: 'Auth',
+									params: { screen: 'Login' },
+								},
+							],
+						});
+					},
+				},
+			],
+		);
 	};
 
 	return (
@@ -415,322 +353,184 @@ export default function ProfileScreen() {
 			<ScrollView
 				className="flex-1"
 				contentContainerStyle={{ paddingBottom: 40 }}
+				keyboardShouldPersistTaps="handled"
 			>
-				<View
-					className="-mx-5 px-5 pt-3 pb-12"
-					style={{ backgroundColor: themeColors.text }}
-				>
-					<View className="flex-row items-center">
-						<View
-							className="w-16 h-16 rounded-full items-center justify-center"
-							style={{
-								backgroundColor: themeColors.primary,
-								borderWidth: 2,
-								borderColor: themeColors.border,
-							}}
-						>
+				{/*
+				 * Bloco de identidade — a assinatura do ecrã.
+				 *
+				 * Substitui a banda escura invertida e o cartão branco sobreposto
+				 * com `-mt-7` que ocupavam 120 linhas entre os dois. A banda
+				 * invertida violava a regra do próprio sistema (ink só existe
+				 * sobre surfaces normais) e o par dark-hero-mais-cartão-sobreposto
+				 * é o reflexo automático de qualquer geração de interface.
+				 *
+				 * Uma superfície, uma ideia: quem é a pessoa, e que uso é que ela
+				 * está a dar à Boleia agora. A comutação de papel vive dentro do
+				 * bloco porque é a mesma pergunta, não uma secção ao lado.
+				 */}
+				<Card padded={false}>
+					<View className="p-4 flex-row items-center">
+						<Avatar
+							initials={initialsLabel}
+							image={me?.image ?? null}
+							size={64}
+						/>
+						<View className="flex-1 ml-4">
 							<Text
-								className="font-sansExtraBold text-title-secondary"
-								style={{ color: themeColors.onPrimary }}
+								className="font-sans text-body-small"
+								style={{ color: themeColors.secondary }}
 							>
-								{initialsLabel}
-							</Text>
-						</View>
-						<View className="flex-1 ml-3">
-							<Text
-								className="font-sansMedium text-body-xs"
-								style={{ color: themeColors.card }}
-							>
-								Sócio Boleia
+								{me?.phone
+									? maskPhone(me.phone)
+									: 'Sem número associado'}
 							</Text>
 							<Text
-								className="font-sansExtraBold text-title-secondary -mt-0.5"
-								style={{ color: themeColors.card }}
+								className="font-sansExtraBold text-title-tertiary mt-0.5"
+								style={{ color: themeColors.text }}
 								numberOfLines={1}
 							>
 								{me
 									? [me.name, me.surname]
 											.filter(Boolean)
-											.join(' ')
+											.join(' ') || 'Sem nome'
 									: '—'}
 							</Text>
+							<Text
+								className="font-sans text-body-xs mt-0.5"
+								style={{ color: themeColors.secondary }}
+							>
+								Sócio desde {since}
+							</Text>
 						</View>
 					</View>
-					<View className="flex-row items-center mt-3">
-						<Text
-							className="font-sansMedium text-label-small mr-1.5"
-							style={{ color: themeColors.primary }}
-						>
-							★
-						</Text>
-						<Text
-							className="font-sansMedium text-body-small"
-							style={{ color: themeColors.card }}
-						>
-							{rating}
-						</Text>
-						<Text
-							className="font-sansMedium text-body-xs ml-3"
-							style={{ color: themeColors.card, opacity: 0.7 }}
-						>
-							desde {since}
-						</Text>
+					<Divider />
+					<View className="p-3">
+						<SegmentedControl
+							options={ROLES}
+							value={currentRole}
+							onChange={setRole}
+							accessibilityLabel="Modo de uso"
+						/>
 					</View>
-				</View>
+				</Card>
 
-				{/* Cartão de sócio */}
-				<Animated.View entering={FadeInDown.duration(260)}>
-					<View
-						className="rounded-xl overflow-hidden -mt-7"
-						style={{
-							backgroundColor: themeColors.card,
-							shadowColor: '#000',
-							shadowOpacity: 0.1,
-							shadowOffset: { width: 0, height: 6 },
-							shadowRadius: 16,
-							elevation: 4,
-						}}
-					>
-						<View className="px-4 py-4">
-							<View className="flex-row items-center">
-								<View
-									className="w-9 h-9 rounded-full items-center justify-center"
-									style={{
-										backgroundColor: themeColors.accentWeak,
-									}}
-								>
-									<Ionicons
-										name="shield-checkmark-outline"
-										size={18}
-										color={themeColors.primary}
+				{/* Painel do papel activo */}
+				<View className="mt-6">
+					<SectionTitle>
+						{isDriver ? 'As tuas viagens' : 'As tuas reservas'}
+					</SectionTitle>
+					<Card padded={false} className="mt-1">
+						<View className="flex-row p-4">
+							{isDriver ? (
+								<>
+									<PanelStat
+										value={String(publicadas)}
+										label="Publicadas"
 									/>
-								</View>
-								<View className="flex-1 ml-3">
-									<Text
-										className="font-sansMedium text-body-xs"
-										style={{ color: themeColors.secondary }}
-									>
-										Sócio desde
-									</Text>
-									<Text
-										className="font-sansMedium text-body-xs mt-0.5"
-										style={{ color: themeColors.text }}
-									>
-										{since}
-									</Text>
-								</View>
-								<View className="items-end">
-									<Text
-										className="font-sansMedium text-body-xs"
-										style={{ color: themeColors.secondary }}
-									>
-										Nº
-									</Text>
-									<Text
-										className="font-sansMedium text-body-xs mt-0.5"
-										style={{ color: themeColors.text }}
-									>
-										{me?.phone ? maskPhone(me.phone) : '—'}
-									</Text>
-								</View>
-							</View>
+									<PanelStat
+										value={String(concluidas)}
+										label="Concluídas"
+									/>
+								</>
+							) : (
+								<>
+									<PanelStat
+										value={String(feitas)}
+										label="Feitas"
+									/>
+									<PanelStat
+										value={String(proximas)}
+										label="Próximas"
+									/>
+								</>
+							)}
 						</View>
-					</View>
-				</Animated.View>
 
-				{/* Papéis */}
-				<View className="mt-6 mb-4">
-					<SectionTitle>Uma conta · dois papéis</SectionTitle>
+						{isDriver ? (
+							<>
+								<Divider />
+								<NavRow
+									icon="document-text-outline"
+									label="BI e carta de condução"
+									trailing={<StatusStamp status={kycStamp} />}
+									onPress={() => navigation.navigate('Kyc')}
+								/>
+								<Divider />
+								<NavRow
+									icon="car-outline"
+									label="Viatura"
+									trailing={
+										<StatusStamp status={vehicleStamp} />
+									}
+									onPress={() =>
+										navigation.navigate('Vehicle')
+									}
+								/>
+								{vehicleStamp !== 'verificado' ? (
+									<View className="px-4 pt-3 pb-4">
+										<Text
+											className="font-sans text-body-xs"
+											style={{
+												color: themeColors.secondary,
+											}}
+										>
+											Regista a viatura para publicar
+											viagens.
+										</Text>
+									</View>
+								) : null}
+							</>
+						) : (
+							<>
+								<Divider />
+								<NavRow
+									icon="card-outline"
+									label="Ver reservas"
+									onPress={goToBookings}
+								/>
+							</>
+						)}
+					</Card>
 				</View>
 
-				{/* Passageiro */}
-				<RolePanel
-					active={currentRole === 'passenger'}
-					band={themeColors.laterite}
-					icon="person"
-					title="Passageiro"
-					subtitle="Viagens e reservas"
-					delay={80}
-					stats={[
-						{ value: rating, label: 'Avaliação' },
-						{ value: String(feitas), label: 'Feitas' },
-						{ value: String(proximas), label: 'Próximas' },
-					]}
-					onActivate={() => setRole('passenger')}
-				>
-					<Pressable
-						onPress={goToBookings}
-						className="flex-row items-center mt-3 pt-3 border-t"
-						style={({ pressed }) => ({
-							borderColor: themeColors.border,
-							opacity: pressed ? 0.7 : 1,
-						})}
-					>
-						<Ionicons
-							name="card-outline"
-							size={15}
-							color={themeColors.text}
-						/>
-						<Text
-							className="font-sansMedium text-body-xs flex-1 ml-2"
-							style={{ color: themeColors.text }}
-						>
-							Ver reservas
-						</Text>
-						<Ionicons
-							name="chevron-forward"
-							size={15}
-							color={themeColors.secondary}
-						/>
-					</Pressable>
-				</RolePanel>
-
-				{/* Motorista */}
-				<RolePanel
-					active={currentRole === 'driver'}
-					band={themeColors.success}
-					icon="car"
-					title="Motorista"
-					subtitle="Documentos e viatura"
-					delay={160}
-					stats={[
-						{ value: String(publicadas), label: 'Publicadas' },
-						{ value: String(concluidas), label: 'Concluídas' },
-						{ value: rating, label: 'Avaliação' },
-					]}
-					onActivate={() => setRole('driver')}
-				>
-					<View
-						className="mt-3 rounded-xl overflow-hidden"
-						style={{ backgroundColor: themeColors.background }}
-					>
-						<Pressable
-							onPress={() => navigation.navigate('Kyc')}
-							className="flex-row items-center justify-between px-3.5 py-3 border-b"
-							style={({ pressed }) => ({
-								borderColor: themeColors.border,
-								opacity: pressed ? 0.7 : 1,
-							})}
-						>
-							<Text
-								className="font-sansMedium text-body-small"
-								style={{ color: themeColors.text }}
-							>
-								BI e carta de condução
-							</Text>
-							<VerificationStamp status={kycStamp} />
-						</Pressable>
-						<Pressable
-							onPress={() => navigation.navigate('Vehicle')}
-							className="flex-row items-center justify-between px-3.5 py-3"
-							style={({ pressed }) => ({
-								opacity: pressed ? 0.7 : 1,
-							})}
-						>
-							<Text
-								className="font-sansMedium text-body-small"
-								style={{ color: themeColors.text }}
-							>
-								Viatura
-							</Text>
-							<VerificationStamp status={vehicleStamp} />
-						</Pressable>
-					</View>
-					{vehicleStamp !== 'verificado' ? (
-						<Text
-							className="font-sans text-body-xs mt-2"
-							style={{ color: themeColors.secondary }}
-						>
-							Regista a viatura para publicar viagens.
-						</Text>
-					) : null}
-				</RolePanel>
-
-				{/* Recibo de ganhos — só aparece no papel de motorista */}
-				{currentRole === 'driver' ? (
-					<Animated.View
-						entering={FadeInDown.delay(200).duration(260)}
-					>
-						<SectionTitle>Recibo de ganhos</SectionTitle>
-						<View
-							className="rounded-xl overflow-hidden mt-4"
-							style={{
-								backgroundColor: themeColors.card,
-								shadowColor: '#000',
-								shadowOpacity: 0.08,
-								shadowOffset: { width: 0, height: 4 },
-								shadowRadius: 12,
-								elevation: 3,
-							}}
-						>
-							<View
-								className="px-4 py-3"
-								style={{ backgroundColor: themeColors.primary }}
-							>
-								<Text
-									className="font-sansMedium text-body-xs"
-									style={{
-										color: themeColors.onPrimary,
-										opacity: 0.75,
-									}}
-								>
-									Carteira do motorista
-								</Text>
-								<Text
-									className="font-sansExtraBold text-title-primary mt-1"
-									style={{ color: themeColors.onPrimary }}
-								>
-									{fmtKz(aReceber)}
-								</Text>
-								<Text
-									className="font-sansMedium text-body-xs mt-0.5"
-									style={{
-										color: themeColors.onPrimary,
-										opacity: 0.75,
-									}}
-								>
-									Por receber
-								</Text>
-							</View>
-							<View
-								className="border-t"
-								style={{ borderColor: themeColors.border }}
-							/>
+				{/* Recibo — só no papel de motorista */}
+				{isDriver ? (
+					<View className="mt-6">
+						<SectionTitle>Ganhos</SectionTitle>
+						<Card padded={false} className="mt-1">
 							{totalViagens > 0 ? (
-								<View className="px-4 pt-3 pb-4">
+								<View className="p-4">
 									<ReciboRow
 										label="Total das viagens"
 										value={fmtKz(totalViagens)}
 									/>
 									<ReciboRow
-										label="Comissão Boleia · 10%"
+										label="Comissão Boleia (10%)"
 										value={`-${fmtKz(comissao)}`}
 										muted
 									/>
-									<View
-										className="flex-row items-center justify-between pt-2.5 mt-1.5 border-t"
-										style={{
-											borderColor: themeColors.border,
-										}}
-									>
+									<Divider />
+									<View className="flex-row items-center justify-between pt-3.5">
 										<Text
-											className="font-sansBold text-body-small"
+											className="font-sansExtraBold text-label"
 											style={{ color: themeColors.text }}
 										>
 											A receber
 										</Text>
 										<Text
-											className="font-sansMedium text-body-small"
-											style={{ color: themeColors.text }}
+											className="font-sansExtraBold text-title-tertiary"
+											style={{
+												color: themeColors.primary,
+											}}
 										>
 											{fmtKz(aReceber)}
 										</Text>
 									</View>
 								</View>
 							) : (
-								<View className="px-4 pt-3 pb-4">
+								<View className="p-4">
 									<Text
-										className="font-sans text-body-xs leading-4"
+										className="font-sans text-body-small"
 										style={{ color: themeColors.secondary }}
 									>
 										Ainda sem valores por receber. Publica a
@@ -738,291 +538,85 @@ export default function ProfileScreen() {
 									</Text>
 								</View>
 							)}
-						</View>
-					</Animated.View>
+						</Card>
+					</View>
 				) : null}
 
-				{/* Pessoa de confiança — usada pelo SOS */}
+				{/*
+				 * Pessoa de confiança.
+				 *
+				 * O texto não promete uma central que não existe. Não há
+				 * `SosEvent` em lado nenhum — o modelo existe no esquema e não
+				 * tem uma linha de código. Dizer isso a alguém que guardou o
+				 * número de um familiar numa viagem entre províncias é o pior
+				 * sítio para uma promessa falsa. O que a app faz mesmo: guarda
+				 * o número, e fica disponível para mostrar a quem estiver com
+				 * a pessoa.
+				 */}
 				<View className="mt-6">
-					<SectionTitle>Segurança</SectionTitle>
-					<View
-						className="rounded-xl overflow-hidden mt-4"
-						style={{
-							backgroundColor: themeColors.card,
-							shadowColor: '#000',
-							shadowOpacity: 0.08,
-							shadowOffset: { width: 0, height: 4 },
-							shadowRadius: 12,
-							elevation: 3,
-						}}
+					<SectionTitle>Pessoa de confiança</SectionTitle>
+					<Text
+						className="font-sans text-body-small mb-4"
+						style={{ color: themeColors.secondary }}
 					>
-						<View className="px-4 py-3 flex-row items-center">
-							<View
-								className="w-9 h-9 rounded-full items-center justify-center"
-								style={{
-									backgroundColor: themeColors.accentWeak,
-								}}
-							>
-								<Ionicons
-									name="shield-checkmark-outline"
-									size={19}
-									color={themeColors.primary}
-								/>
-							</View>
-							<View className="flex-1 ml-3">
-								<Text
-									className="font-sansMedium text-body-small"
-									style={{ color: themeColors.text }}
-								>
-									Pessoa de confiança
-								</Text>
-								<Text
-									className="font-sans text-body-xs mt-0.5"
-									style={{ color: themeColors.secondary }}
-								>
-									{/*
-									 * Dizia "A central Boleia liga a esta pessoa numa
-									 * emergência". Não há central, nem há `SosEvent` em
-									 * lado nenhum — o modelo existe no esquema e não tem
-									 * uma linha de código. Dizer isto a alguém que guardou
-									 * o número de um familiar numa viagem entre províncias
-									 * é o pior sítio para uma promessa falsa.
-									 *
-									 * O que a app faz mesmo: guarda o número, e fica
-									 * disponível para a pessoa mostrar a quem estiver com
-									 * ela.
-									 */}
-									A central Boleia ainda não está activa. O
-									número fica guardado para o levares connosco
-									se precisares de ajuda.
-								</Text>
-							</View>
-						</View>
-						<View className="px-4 pb-4">
-							<Text
-								className="font-sansMedium text-body-xs mb-1.5"
-								style={{ color: themeColors.secondary }}
-							>
-								Nome
-							</Text>
-							<View
-								className="rounded-xl px-3.5 mb-3"
-								style={{
-									backgroundColor: themeColors.background,
-								}}
-							>
-								<TextInput
-									value={emgName}
-									onChangeText={(t) => {
-										setEmgName(t);
-										setEmgSaved(false);
-									}}
-									placeholder="Ex.: Marta António"
-									placeholderTextColor={themeColors.border}
-									className="py-3 font-sans text-label-small"
-									style={{ color: themeColors.text }}
-								/>
-							</View>
-							<Text
-								className="font-sansMedium text-body-xs mb-1.5"
-								style={{ color: themeColors.secondary }}
-							>
-								Telefone
-							</Text>
-							<View
-								className="rounded-xl px-3.5 mb-3"
-								style={{
-									backgroundColor: themeColors.background,
-								}}
-							>
-								<TextInput
-									value={emgPhone}
-									onChangeText={(t) => {
-										setEmgPhone(t.replace(/[^\d+\s]/g, ''));
-										setEmgSaved(false);
-									}}
-									placeholder="Ex.: 923000111"
-									placeholderTextColor={themeColors.border}
-									keyboardType="phone-pad"
-									className="py-3 font-sansMedium text-label-small"
-									style={{ color: themeColors.text }}
-								/>
-							</View>
-							{emgSaving ? (
-								<View className="items-center py-2">
-									<ActivityIndicator
-										color={themeColors.primary}
-									/>
-								</View>
-							) : (
-								<BoleiaButton
-									title={
-										emgSaved
-											? 'Guardado ✓'
-											: 'Guardar contacto'
-									}
-									onPress={saveEmergency}
-									disabled={emgName.trim().length < 2}
-								/>
-							)}
-						</View>
-					</View>
+						A central Boleia ainda não está activa. O número fica
+						guardado para o levares connosco se precisares de ajuda.
+					</Text>
+					<Input
+						label="Nome"
+						value={emgName}
+						onChangeText={(t) => {
+							setEmgName(t);
+							setEmgSaved(false);
+						}}
+						placeholder="Ex.: Marta António"
+					/>
+					<Input
+						label="Telefone"
+						value={emgPhone}
+						onChangeText={(t) => {
+							setEmgPhone(t.replace(/[^\d+\s]/g, ''));
+							setEmgSaved(false);
+						}}
+						placeholder="Ex.: 923000111"
+						keyboardType="phone-pad"
+						containerStyle={{ marginBottom: 4 }}
+					/>
+					<BoleiaButton
+						title={emgSaved ? 'Guardado' : 'Guardar contacto'}
+						onPress={saveEmergency}
+						loading={emgSaving}
+						disabled={emgName.trim().length < 2}
+					/>
 				</View>
 
 				{/* Definições */}
 				<View className="mt-6">
-					<SectionTitle>Definições</SectionTitle>
-					<View
-						className="flex-row rounded-full p-1 mt-4"
-						style={{ backgroundColor: themeColors.card }}
-					>
-						{THEMES.map((t) => {
-							const active = theme === t.mode;
-							return (
-								<Pressable
-									key={t.mode}
-									onPress={() => setTheme(t.mode)}
-									className="flex-1 rounded-full py-2 items-center"
-									style={{
-										backgroundColor: active
-											? themeColors.text
-											: 'transparent',
-									}}
-								>
-									<Text
-										className="font-sansMedium text-body-xs"
-										style={{
-											color: active
-												? themeColors.card
-												: themeColors.secondary,
-										}}
-									>
-										{t.label}
-									</Text>
-								</Pressable>
-							);
-						})}
-					</View>
+					<SectionTitle>Aparência</SectionTitle>
+					<SegmentedControl
+						className="mt-1"
+						options={THEMES}
+						value={theme}
+						onChange={setTheme}
+						accessibilityLabel="Tema"
+					/>
+				</View>
 
-					<View
-						className="mt-4 rounded-xl overflow-hidden"
-						style={{
-							backgroundColor: themeColors.card,
-							shadowColor: '#000',
-							shadowOpacity: 0.08,
-							shadowOffset: { width: 0, height: 4 },
-							shadowRadius: 12,
-							elevation: 3,
-						}}
-					>
-						<Pressable
+				<View className="mt-6">
+					<Card padded={false}>
+						<NavRow
+							icon="shield-checkmark-outline"
+							label="Central de segurança"
 							onPress={() => navigation.navigate('SosCenter')}
-							className="flex-row items-center justify-between px-4 py-3.5 border-b"
-							style={({ pressed }) => ({
-								borderColor: themeColors.border,
-								backgroundColor: themeColors.card,
-								opacity: pressed ? 0.7 : 1,
-							})}
-						>
-							<View className="flex-row items-center">
-								<View
-									className="w-9 h-9 rounded-full items-center justify-center"
-									style={{
-										backgroundColor: themeColors.accentWeak,
-									}}
-								>
-									<Ionicons
-										name="shield-checkmark-outline"
-										size={19}
-										color={themeColors.primary}
-									/>
-								</View>
-								<Text
-									className="font-sansMedium text-body-small ml-3"
-									style={{ color: themeColors.text }}
-								>
-									Central de segurança
-								</Text>
-							</View>
-							<Ionicons
-								name="chevron-forward"
-								size={18}
-								color={themeColors.secondary}
-							/>
-						</Pressable>
-						<Pressable
-							onPress={() => {
-								Alert.alert(
-									'Terminar sessão',
-									'Tens a certeza que queres sair? Voltar a entrar é rápido.',
-									[
-										{ text: 'Cancelar', style: 'cancel' },
-										{
-											text: 'Terminar sessão',
-											style: 'destructive',
-											onPress: () => {
-												/*
-												 * O `signOut` é do `authClient` e
-												 * **revoga a sessão no servidor**.
-												 * Antes isto só apagava o token
-												 * local: a sessão continuava viva
-												 * no backend, e voltar a abrir a
-												 * app num ecrã que não passasse
-												 * pela verificação voltava a
-												 * autenticar. É também o que
-												 * limpa os cookies no SecureStore.
-												 */
-												void authClient
-													.signOut()
-													.catch(() => {});
-												useAppStore
-													.getState()
-													.resetAfterLogout();
-												navigationRef.reset({
-													index: 0,
-													routes: [
-														{
-															name: 'Auth',
-															params: {
-																screen: 'Login',
-															},
-														},
-													],
-												});
-											},
-										},
-									],
-								);
-							}}
-							className="flex-row items-center justify-between px-4 py-3.5"
-							style={({ pressed }) => ({
-								borderColor: themeColors.border,
-								backgroundColor: themeColors.card,
-								opacity: pressed ? 0.7 : 1,
-							})}
-						>
-							<View className="flex-row items-center">
-								<View
-									className="w-9 h-9 rounded-full items-center justify-center"
-									style={{
-										backgroundColor: `${themeColors.error}1A`,
-									}}
-								>
-									<Ionicons
-										name="log-out-outline"
-										size={19}
-										color={themeColors.error}
-									/>
-								</View>
-								<Text
-									className="font-sansBold text-body-small ml-3"
-									style={{ color: themeColors.text }}
-								>
-									Terminar sessão
-								</Text>
-							</View>
-						</Pressable>
-					</View>
+						/>
+						<Divider />
+						<NavRow
+							icon="log-out-outline"
+							label="Terminar sessão"
+							tone="danger"
+							onPress={logout}
+						/>
+					</Card>
 				</View>
 			</ScrollView>
 		</SafeAreaView>

@@ -9,6 +9,7 @@ import { useSessionUserId } from '../../hooks/useSessionUser';
 import BookingStub from '../../components/BookingStub';
 import BoleiaButton from '../../components/BoleiaButton';
 import ScreenHeader from '../../components/ScreenHeader';
+import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
 import GroupLabel from '../../components/GroupLabel';
 import { listMyBookings, getRide, cancelBooking } from '../../lib/api';
@@ -195,6 +196,8 @@ export default function BookingsScreen() {
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
+			<AppHeader />
+
 			<ScreenHeader
 				title="As tuas reservas"
 				meta={

@@ -11,10 +11,13 @@ export default function Card({
 	children,
 	tone = 'none',
 	padded = true,
+	className,
 }: {
 	children: React.ReactNode;
 	tone?: 'warning' | 'success' | 'danger' | 'none';
 	padded?: boolean;
+	/** Margem ou posição externa. A geometria do cartão não muda por aqui. */
+	className?: string;
 }) {
 	const { themeColors } = useThemeColors();
 	const borderColor =
@@ -27,11 +30,7 @@ export default function Card({
 					: 'transparent';
 	return (
 		<View
-			className={
-				padded
-					? 'rounded-xl overflow-hidden p-4'
-					: 'rounded-xl overflow-hidden'
-			}
+			className={`${padded ? 'rounded-xl overflow-hidden p-4' : 'rounded-xl overflow-hidden'} ${className ?? ''}`}
 			style={{
 				backgroundColor: themeColors.card,
 				borderColor,

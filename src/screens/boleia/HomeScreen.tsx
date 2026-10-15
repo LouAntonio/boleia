@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { qk } from '../../lib/queryKeys';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { useSessionUser, useSessionInitials } from '../../hooks/useSessionUser';
+import { useSessionUser } from '../../hooks/useSessionUser';
 import {
 	getRide,
 	listMyBookings,
@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
 import TripSearch from '../../components/TripSearch';
+import AppHeader from '../../components/AppHeader';
 import Card from '../../components/Card';
 import SectionTitle from '../../components/SectionTitle';
 
@@ -28,63 +29,39 @@ import { fmtDayMonth, fmtWeekdayShort, dateOf } from '../../lib/format';
 
 // Viagens que o passageiro pode ainda embarcar.
 
-function BrandHeader({
+/**
+ * Saudação, abaixo do cabeçalho.
+ *
+ * Ficou aqui o que era do `BrandHeader` local: a wordmark e o avatar passaram
+ * para o `AppHeader` partilhado, e a saudação é conteúdo, não chrome — só
+ * existe no ecrã inicial.
+ */
+function Greeting({
 	role,
 	name,
-	initialsLabel,
-	onProfile,
 }: {
 	role: 'passenger' | 'driver';
 	name?: string;
-	initialsLabel: string;
-	onProfile: () => void;
 }) {
 	const { themeColors } = useThemeColors();
 	const hour = new Date().getHours();
 	const greeting =
 		hour < 12 ? 'Bom dia' : hour < 19 ? 'Boa tarde' : 'Boa noite';
+
 	return (
-		<View className="mb-5 flex-row items-start justify-between">
-			<View className="flex-1 mr-3">
-				<View className="flex-row items-baseline">
-					<Text
-						className="font-sansExtraBold text-title-primary"
-						style={{ color: themeColors.text }}
-					>
-						Boleia
-					</Text>
-					<Text
-						className="font-sansMedium text-body-xs ml-2"
-						style={{ color: themeColors.secondary }}
-					>
-						{role === 'passenger' ? 'PASSAGEIRO' : 'MOTORISTA'}
-					</Text>
-				</View>
-				<Text
-					className="font-sansExtraBold text-title-secondary mt-0.5"
-					style={{ color: themeColors.text }}
-				>
-					{greeting}, {name ?? 'viajante'}.
-				</Text>
-			</View>
-			<Pressable
-				onPress={onProfile}
-				accessibilityRole="button"
-				accessibilityLabel="Abrir perfil"
-				className="w-12 h-12 rounded-full items-center justify-center"
-				style={{
-					backgroundColor: themeColors.accentWeak,
-					borderWidth: 1,
-					borderColor: themeColors.border,
-				}}
+		<View className="mb-5">
+			<Text
+				className="font-sansBold text-body-small"
+				style={{ color: themeColors.secondary }}
 			>
-				<Text
-					className="font-sansExtraBold text-label"
-					style={{ color: themeColors.primary }}
-				>
-					{initialsLabel}
-				</Text>
-			</Pressable>
+				{role === 'passenger' ? 'Passageiro' : 'Motorista'}
+			</Text>
+			<Text
+				className="font-sansExtraBold text-title-secondary mt-0.5"
+				style={{ color: themeColors.text }}
+			>
+				{greeting}, {name ?? 'viajante'}.
+			</Text>
 		</View>
 	);
 }
@@ -157,7 +134,6 @@ export default function HomeScreen() {
 		>();
 	const currentRole = useAppStore((s) => s.currentRole);
 	const me = useSessionUser();
-	const initialsLabel = useSessionInitials();
 	const [elig, setElig] = useState<Eligibility | null>(null);
 
 	// Reservas e próximos embarques vêm do backend. A cache do React Query
@@ -255,21 +231,15 @@ export default function HomeScreen() {
 				contentContainerStyle={{ paddingBottom: 40 }}
 				keyboardShouldPersistTaps="handled"
 			>
-				<BrandHeader
+				<AppHeader />
+
+				<Greeting
 					role={currentRole}
 					name={
 						me
 							? [me.name, me.surname].filter(Boolean).join(' ') ||
 								undefined
 							: undefined
-					}
-					initialsLabel={initialsLabel}
-					onProfile={() =>
-						goToTab(
-							currentRole === 'passenger'
-								? 'PassengerProfile'
-								: 'DriverProfile',
-						)
 					}
 				/>
 

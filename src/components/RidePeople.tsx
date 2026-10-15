@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { initials } from '../lib/format';
+import Avatar from './Avatar';
 import { Ride, BoleiaUser } from '../types/boleia';
 
 export default function RidePeople({
@@ -40,23 +41,14 @@ export default function RidePeople({
 						opacity: pressed ? 0.7 : 1,
 					})}
 				>
-					<View
-						className="w-11 h-11 rounded-full items-center justify-center"
-						style={{
-							backgroundColor: themeColors.primary,
-							borderWidth: 2,
-							borderColor: themeColors.border,
-						}}
-					>
-						<Text
-							className="font-sansExtraBold text-label-small"
-							style={{ color: themeColors.text }}
-						>
-							{driver
+					<Avatar
+						initials={
+							driver
 								? initials(driver.firstName, driver.lastName)
-								: '?'}
-						</Text>
-					</View>
+								: '?'
+						}
+						size={44}
+					/>
 					<View className="flex-1 ml-3">
 						<Text
 							className="font-sansBold text-body-small"
@@ -132,19 +124,10 @@ export default function RidePeople({
 									opacity: pressed ? 0.7 : 1,
 								})}
 							>
-								<View
-									className="w-9 h-9 rounded-full items-center justify-center"
-									style={{
-										backgroundColor: themeColors.border,
-									}}
-								>
-									<Text
-										className="font-sansBold text-body-xs"
-										style={{ color: themeColors.text }}
-									>
-										{initials(u.firstName, u.lastName)}
-									</Text>
-								</View>
+								<Avatar
+									initials={initials(u.firstName, u.lastName)}
+									size={36}
+								/>
 								<Text
 									className="font-sansMedium text-body-small flex-1 ml-3"
 									style={{ color: themeColors.text }}

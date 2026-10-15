@@ -17,6 +17,7 @@ import { fmtDayMonth, fmtWeekdayShort } from '../../lib/format';
 import { toRide } from '../../lib/rideMapper';
 import TripListingCard from '../../components/TripListingCard';
 import ScreenHeader from '../../components/ScreenHeader';
+import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
 import GroupLabel from '../../components/GroupLabel';
 
@@ -148,6 +149,8 @@ export default function ExploreScreen() {
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
+			<AppHeader />
+
 			<ScreenHeader
 				title="Viagens a bater certo"
 				meta={

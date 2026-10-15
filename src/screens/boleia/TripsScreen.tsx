@@ -9,6 +9,7 @@ import TripStripCard from '../../components/TripStripCard';
 import StatusStamp from '../../components/StatusStamp';
 import BoleiaButton from '../../components/BoleiaButton';
 import ScreenHeader from '../../components/ScreenHeader';
+import AppHeader from '../../components/AppHeader';
 import EmptyState from '../../components/EmptyState';
 import {
 	apiErrorMessage,
@@ -142,6 +143,8 @@ export default function TripsScreen() {
 				className="flex-1 px-5"
 				style={{ backgroundColor: themeColors.background }}
 			>
+				<AppHeader />
+
 				<ScreenHeader
 					title="As tuas viagens"
 					meta="Viagens publicadas e pedidos de boleia"
@@ -164,6 +167,8 @@ export default function TripsScreen() {
 			className="flex-1 px-5"
 			style={{ backgroundColor: themeColors.background }}
 		>
+			<AppHeader />
+
 			<ScreenHeader
 				title="As tuas viagens"
 				meta={`${mine.length} viagem${mine.length === 1 ? '' : 's'} publicada${mine.length === 1 ? '' : 's'}`}
