@@ -3,7 +3,6 @@ import { API_URL } from '@env';
 import { useAppStore } from '../store/appStore';
 import { queryClient } from './queryClient';
 import { navigationRef } from './navigationRef';
-import { authClient } from './auth-client';
 import { sessionCookieHeader } from './auth-cookie';
 
 const API_TIMEOUT_MS = 15000;
@@ -67,13 +66,20 @@ client.interceptors.request.use(async (config) => {
  *    para mostrar: o Splash resolve pelo seu caminho.
  * 2. **limpar a cache** — as queries antigas de quem saiu podem ficar no
  *    ecrã quando outro utilizador entrar no mesmo aparelho.
- * 3. **terminar a sessão** — o `authClient` é o dono dela; este ficheiro
- *    limpa o estado local e avisa-o.
+ * 3. **limpar o estado local** — e só isso.
+ *
+ * **Não se chama `authClient.signOut()` aqui, de propósito.** Um 401 é um sinal,
+ * não um veredicto: um arranque em rede fraca, um backend a reiniciar ou uma
+ * corrida logo a seguir ao login podem produzir um sem que a sessão esteja
+ * morta. Revogar aqui destruía a sessão no servidor por causa de uma falha de
+ * transporte — a pessoa saía e, ao entrar outra vez, nem se lembrava de ter
+ * estado dentro. Quem decide se a sessão morreu é o `useSession()`, que vai
+ * perguntar ao servidor; um cookie inválido expira sozinho e é substituído no
+ * login seguinte.
  */
 function endSessionAfter401(): void {
 	useAppStore.getState().resetAfterLogout();
 	queryClient.clear();
-	void authClient.signOut().catch(() => {});
 
 	if (navigationRef.isReady()) {
 		navigationRef.reset({
