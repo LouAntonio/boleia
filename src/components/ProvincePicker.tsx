@@ -1,24 +1,31 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Pressable, Modal } from 'react-native';
+import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
-import { useProvinces } from '../hooks/useLocalities';
+import { PROVINCES } from '../lib/locations';
 import { MIN_TAP } from '../store/type';
-import type { ApiProvince } from '../lib/api';
 
 /**
  * Escolha de uma província.
  *
  * É o picker do modo **interprovincial**, onde a origem e o destino são
- * províncias e não municípios. Só existe porque o `GET /api/rides` ganhou
- * `originProvinceId` / `destinationProvinceId`: sem eles, escolher uma província
- * seria um selector que não filtra nada, e o rótulo "interprovincial" seria uma
- * promessa que o servidor não cumpre.
+ * províncias e não municípios. O valor devolvido é o **código** da província
+ * (`cuanza-norte`), que é o que o `GET /api/rides` aceita em
+ * `originProvinceId`/`destinationProvinceId` — o UUID continua aceito, mas a
+ * app já não o conhece.
+ *
+ * A lista é local (`lib/locations.ts`), gerada da seed do backend: são 21
+ * províncias que não mudam e não justificam um pedido. Antes, abrir este
+ * picker ia buscar as províncias à API.
+ *
+ * **Em chips que quebram para a linha seguinte**, e não numa coluna: 21 nomes
+ * curtos leem-se melhor lado a lado, e a lista deixa de parecer um menu. É o
+ * mesmo desenho das províncias dentro do `LocalityPicker`, mas com quebra de
+ * linha em vez de scroll horizontal.
  *
  * **Não tem caixa de pesquisa, ao contrário do `LocalityPicker`.** São 21
- * províncias contra 306 localidades: uma lista cabe num ecrã e a pesquisa seria
- * um campo a mais para escrever. É a mesma razão pela qual o modal é mais
- * baixo e não ocupa 88% da altura.
+ * províncias contra 306 municípios: a lista cabe num ecrã e a pesquisa seria
+ * um campo a mais para escrever.
  */
 export default function ProvincePicker({
 	label,
@@ -30,9 +37,9 @@ export default function ProvincePicker({
 	disabled = false,
 }: {
 	label: string;
-	/** Id da província escolhida, ou `''`. */
+	/** Código da província escolhida, ou `''`. */
 	value: string;
-	onChange: (provinceId: string) => void;
+	onChange: (provinceCode: string) => void;
 	/** Província a esconder, para não permitir origem igual a destino. */
 	exclude?: string;
 	placeholder?: string;
@@ -42,25 +49,23 @@ export default function ProvincePicker({
 }) {
 	const { themeColors } = useThemeColors();
 	const [visible, setVisible] = useState(false);
-	const provinces = useProvinces();
 
-	const nameOf = useMemo(() => {
-		const index = new Map(
-			(provinces.data ?? []).map((p) => [p.id, p.name]),
-		);
-		return (id: string) => (id ? (index.get(id) ?? null) : null);
-	}, [provinces.data]);
-
-	const options = useMemo(
+	const nameOf = useMemo(
 		() =>
-			(provinces.data ?? []).filter((p: ApiProvince) => p.id !== exclude),
-		[provinces.data, exclude],
+			new Map(
+				PROVINCES.map((province) => [province.code, province.name]),
+			),
+		[],
+	);
+	const options = useMemo(
+		() => PROVINCES.filter((province) => province.code !== exclude),
+		[exclude],
 	);
 
-	const selectedName = nameOf(value);
+	const selectedName = value ? (nameOf.get(value) ?? null) : null;
 
-	const pick = (provinceId: string) => {
-		onChange(provinceId);
+	const pick = (provinceCode: string) => {
+		onChange(provinceCode);
 		setVisible(false);
 	};
 
@@ -131,8 +136,6 @@ export default function ProvincePicker({
 						style={{
 							backgroundColor: themeColors.card,
 							borderColor: themeColors.border,
-							// Menos alto que o modal das localidades: 21 itens cabem
-							// sem ocuparem o ecrã todo.
 							maxHeight: '75%',
 						}}
 						onPress={(e) => e.stopPropagation()}
@@ -167,65 +170,69 @@ export default function ProvincePicker({
 							</Pressable>
 						</View>
 
-						{provinces.isPending ? (
-							<Text
-								className="font-sans text-body-small py-6 text-center"
-								style={{ color: themeColors.secondary }}
-							>
-								A carregar províncias…
-							</Text>
-						) : (
-							<>
+						<ScrollView showsVerticalScrollIndicator={false}>
+							<View className="flex-row flex-wrap gap-2 pb-2">
 								<Pressable
 									onPress={() => pick('')}
-									className="flex-row items-center px-3 py-3 rounded-xl mb-1"
-									style={{ minHeight: MIN_TAP }}
+									hitSlop={6}
+									accessibilityRole="button"
+									accessibilityState={{
+										selected: value === '',
+									}}
+									className="rounded-full px-3 py-1.5 border justify-center"
+									style={{
+										minHeight: MIN_TAP,
+										borderColor:
+											value === ''
+												? themeColors.text
+												: themeColors.border,
+										backgroundColor:
+											value === ''
+												? themeColors.text
+												: themeColors.card,
+									}}
 								>
 									<Text
-										className="font-sans text-body-small"
-										style={{ color: themeColors.secondary }}
+										className="font-sansMedium text-body-xs"
+										style={{
+											color:
+												value === ''
+													? themeColors.card
+													: themeColors.secondary,
+										}}
 									>
-										Todas as províncias
+										{placeholder}
 									</Text>
 								</Pressable>
 
 								{options.map((province) => {
-									const active = value === province.id;
+									const active = value === province.code;
 									return (
 										<Pressable
-											key={province.id}
-											onPress={() => pick(province.id)}
+											key={province.code}
+											onPress={() => pick(province.code)}
+											hitSlop={6}
 											accessibilityRole="button"
 											accessibilityState={{
 												selected: active,
 											}}
-											className="flex-row items-center px-3 py-3 rounded-xl mb-1"
+											className="rounded-full px-3 py-1.5 border justify-center"
 											style={{
 												minHeight: MIN_TAP,
+												borderColor: active
+													? themeColors.text
+													: themeColors.border,
 												backgroundColor: active
-													? themeColors.background
-													: 'transparent',
+													? themeColors.text
+													: themeColors.card,
 											}}
 										>
-											<Ionicons
-												name="map-outline"
-												size={16}
-												color={
-													active
-														? themeColors.primary
-														: themeColors.secondary
-												}
-											/>
 											<Text
-												className={
-													active
-														? 'font-sansBold text-body-small ml-3'
-														: 'font-sans text-body-small ml-3'
-												}
+												className="font-sansMedium text-body-xs"
 												style={{
 													color: active
-														? themeColors.text
-														: themeColors.text,
+														? themeColors.card
+														: themeColors.secondary,
 												}}
 											>
 												{province.name}
@@ -233,8 +240,8 @@ export default function ProvincePicker({
 										</Pressable>
 									);
 								})}
-							</>
-						)}
+							</View>
+						</ScrollView>
 					</Pressable>
 				</Pressable>
 			</Modal>

@@ -212,10 +212,6 @@ export async function getKycMe(): Promise<ApiKycMe> {
 }
 
 export async function submitDriverKyc(input: {
-	fullName: string;
-	biNumber: string;
-	licenseNumber?: string;
-	licenseExpiry?: string;
 	mediaIds: KycMediaIds;
 }): Promise<{ id: string; status: KycStatus }> {
 	const { data } = await client.put<{ id: string; status: KycStatus }>(
@@ -226,8 +222,6 @@ export async function submitDriverKyc(input: {
 }
 
 export async function submitPassengerKyc(input: {
-	fullName: string;
-	biNumber: string;
 	mediaIds: KycMediaIds;
 }): Promise<{ id: string; status: KycStatus }> {
 	const { data } = await client.put<{ id: string; status: KycStatus }>(
@@ -273,37 +267,6 @@ export async function createVehicle(input: {
 export async function deleteVehicle(id: string): Promise<{ status: boolean }> {
 	const { data } = await client.delete<{ status: boolean }>(
 		`/api/vehicles/${id}`,
-	);
-	return data;
-}
-
-// ---------- Provincias / municipios ----------
-
-export interface ApiProvince {
-	id: string;
-	name: string;
-	latitude: number | null;
-	longitude: number | null;
-}
-
-export interface ApiLocality {
-	id: string;
-	municipality: string;
-	name: string;
-	/** Necessário para agrupar as localidades por província no selector. */
-	provinceId: string;
-}
-
-export async function listProvinces(): Promise<ApiProvince[]> {
-	const { data } = await client.get<ApiProvince[]>('/api/locality/provinces');
-	return data;
-}
-
-export async function listLocalities(
-	provinceId: string,
-): Promise<ApiLocality[]> {
-	const { data } = await client.get<ApiLocality[]>(
-		`/api/locality/provinces/${provinceId}/localities`,
 	);
 	return data;
 }
@@ -453,6 +416,7 @@ export interface ApiBooking {
 
 /** Paragem a publicar, com hora e distância opcionais. */
 export interface CreateRideStopInput {
+	/** Código da localidade da paragem. Opcional. */
 	localityId?: string;
 	name?: string;
 	time?: string;
@@ -461,7 +425,9 @@ export interface CreateRideStopInput {
 
 export interface CreateRideInput {
 	vehicleId: string;
+	/** Código da localidade de origem (`luanda.talatona`). */
 	originLocalityId: string;
+	/** Código da localidade de destino (`luanda.viana`). */
 	destinationLocalityId: string;
 	departureAt: string;
 	arrivalAt: string;
@@ -482,20 +448,26 @@ export interface PagedRides {
 	total: number;
 }
 
+/*
+ * Os filtros de lugar aceitam o **código** da província ou do município
+ * (`huambo.catabola`), e não o UUID. A lista é local (`lib/locations.ts`): a
+ * app deixou de pedir `/api/locality/*`. O backend ainda aceita o UUID, para
+ * não partir um link antigo.
+ */
 export interface ListRidesQuery {
-	/** Id da localidade de origem. Modo "intermunicipal". */
+	/** Código do município de origem. Modo "intermunicipal". */
 	origin?: string;
-	/** Id da localidade de destino. Modo "intermunicipal". */
+	/** Código do município de destino. Modo "intermunicipal". */
 	destination?: string;
 	/**
-	 * Id da província de origem. Modo "interprovincial".
+	 * Código da província de origem. Modo "interprovincial".
 	 *
 	 * O backend trata município e província como predicados **independentes**:
 	 * mandar os dois obriga a que a paragem esteja naquela província **e** seja
 	 * aquele município. Cada modo manda só o seu, e o outro fica por omissão.
 	 */
 	originProvinceId?: string;
-	/** Id da província de destino. Modo "interprovincial". */
+	/** Código da província de destino. Modo "interprovincial". */
 	destinationProvinceId?: string;
 	/** Dia inteiro, em `AAAA-MM-DD`. */
 	date?: string;

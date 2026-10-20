@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useNavigation } from '@react-navigation/native';
@@ -14,7 +14,11 @@ import Card from './Card';
 import { listRides, apiErrorMessage, type ApiRide } from '../lib/api';
 import { toRide } from '../lib/rideMapper';
 import { fmtDayMonth } from '../lib/format';
-import { useAllLocalities, useProvinces } from '../hooks/useLocalities';
+import {
+	MUNICIPALITY_BY_CODE,
+	PROVINCES,
+	PROVINCE_BY_CODE,
+} from '../lib/locations';
 import {
 	loadRecentSearches,
 	saveRecentSearch,
@@ -32,7 +36,8 @@ export default function TripSearch() {
 	const [mode, setMode] = useState<'intermunicipal' | 'interprovincial'>(
 		'interprovincial',
 	);
-	const [provinceId, setProvinceId] = useState('');
+	/** Código da província que restringe os municípios (modo intermunicipal). */
+	const [province, setProvince] = useState('');
 	const [from, setFrom] = useState('');
 	const [to, setTo] = useState('');
 	/**
@@ -40,9 +45,9 @@ export default function TripSearch() {
 	 * interprovincial.
 	 *
 	 * São estado à parte de propósito, e não a reinterpretação de `from`/`to`:
-	 * um id de província e um id de município vivem em espaços diferentes e
+	 * um código de província e um de município vivem em espaços diferentes e
 	 * guardar os dois no mesmo campo obriga a lembrar a cada linha qual dos dois
-	 * está lá. Trocar de modo limpa os quatro, e não três.
+	 * está lá. Trocar de modo limpa os quatro.
 	 */
 	const [fromProvince, setFromProvince] = useState('');
 	const [toProvince, setToProvince] = useState('');
@@ -54,37 +59,31 @@ export default function TripSearch() {
 	const [error, setError] = useState<string | null>(null);
 	const [recents, setRecents] = useState<RecentSearch[]>([]);
 
-	const provinces = useProvinces();
-	const localities = useAllLocalities();
-
 	useEffect(() => {
 		loadRecentSearches()
 			.then(setRecents)
 			.catch(() => undefined);
 	}, []);
 
-	const localityName = useCallback(
-		(id: string): string => {
-			if (!id) return '—';
-			const found = localities.find((l) => l.id === id);
-			return found ? found.municipality : '—';
-		},
-		[localities],
-	);
+	/*
+	 * Os nomes saem da lista local (`lib/locations.ts`). Antes vinham de dois
+	 * pedidos à API — as províncias e as 306 localidades — só para escrever
+	 * "Luanda → Benguela" numa pesquisa recente.
+	 */
+	const localityName = useCallback((code: string): string => {
+		if (!code) return '—';
+		return MUNICIPALITY_BY_CODE.get(code)?.name ?? '—';
+	}, []);
 
-	const provinceName = useCallback(
-		(id: string): string => {
-			if (!id) return '—';
-			const found = (provinces.data ?? []).find((p) => p.id === id);
-			return found ? found.name : '—';
-		},
-		[provinces.data],
-	);
+	const provinceName = useCallback((code: string): string => {
+		if (!code) return '—';
+		return PROVINCE_BY_CODE.get(code)?.name ?? '—';
+	}, []);
 
 	const changeMode = (m: 'intermunicipal' | 'interprovincial') => {
 		if (m === mode) return;
 		setMode(m);
-		setProvinceId('');
+		setProvince('');
 		setFrom('');
 		setTo('');
 		setFromProvince('');
@@ -93,8 +92,8 @@ export default function TripSearch() {
 		setError(null);
 	};
 
-	const selectProvince = (id: string) => {
-		setProvinceId(id);
+	const selectProvince = (code: string) => {
+		setProvince(code);
 		setFrom('');
 		setTo('');
 		setResults(null);
@@ -140,10 +139,10 @@ export default function TripSearch() {
 	 * Os dois modos filtram coisas diferentes, e o backend trata município e
 	 * província como predicados independentes sobre a mesma paragem:
 	 *
-	 * - **intermunicipal** manda `origin`/`destination` (municípios) e a
-	 *   `provinceId` só restringe o que se pode escolher;
-	 * - **interprovincial** manda `originProvinceId`/`destinationProvinceId` e
-	 *   deixa os municípios a null.
+	 * - **intermunicipal** manda `origin`/`destination` (códigos de município) e
+	 *   a `province` só restringe o que se pode escolher;
+	 * - **interprovincial** manda `originProvinceId`/`destinationProvinceId`
+	 *   (códigos de província) e deixa os municípios a null.
 	 *
 	 * Mandar os dois ao mesmo tempo obrigaria a que a paragem estivesse na
 	 * província **e** fosse aquele município — que é a intersecção, não a
@@ -151,7 +150,7 @@ export default function TripSearch() {
 	 */
 	const runSearch = useCallback(
 		async (p: {
-			provinceId: string;
+			province: string;
 			from: string;
 			to: string;
 			fromProvince: string;
@@ -192,7 +191,7 @@ export default function TripSearch() {
 
 	const search = () => {
 		void runSearch({
-			provinceId,
+			province,
 			from,
 			to,
 			fromProvince,
@@ -203,7 +202,7 @@ export default function TripSearch() {
 		});
 		saveRecentSearch({
 			mode,
-			provinceId,
+			province,
 			from,
 			to,
 			fromProvince,
@@ -226,7 +225,7 @@ export default function TripSearch() {
 	const applyRecent = (r: RecentSearch) => {
 		const inter = r.mode === 'interprovincial';
 		setMode(r.mode);
-		setProvinceId(r.provinceId ?? '');
+		setProvince(r.province ?? '');
 		setFrom(inter ? '' : r.from);
 		setTo(inter ? '' : r.to);
 		setFromProvince(inter ? r.fromProvince : '');
@@ -234,7 +233,7 @@ export default function TripSearch() {
 		setDateFrom(r.dateFrom);
 		setDateTo(r.dateTo);
 		void runSearch({
-			provinceId: r.provinceId ?? '',
+			province: r.province ?? '',
 			from: inter ? '' : r.from,
 			to: inter ? '' : r.to,
 			fromProvince: inter ? r.fromProvince : '',
@@ -250,14 +249,14 @@ export default function TripSearch() {
 	 * dela.
 	 *
 	 * Interprovincial resolve províncias, intermunicipal resolve municípios —
-	 * os dois espaços de ids não se misturam. Fora do modo certo o id não
-	 * estaria sequer preenchido.
+	 * os dois espaços de códigos não se misturam. Fora do modo certo o código
+	 * não estaria sequer preenchido.
 	 */
-	const placeName = (id: string, searchMode: SearchMode): string => {
-		if (!id) return '—';
+	const placeName = (code: string, searchMode: SearchMode): string => {
+		if (!code) return '—';
 		return searchMode === 'interprovincial'
-			? provinceName(id)
-			: localityName(id);
+			? provinceName(code)
+			: localityName(code);
 	};
 
 	const recentDateLabel = (r: RecentSearch): string => {
@@ -296,7 +295,7 @@ export default function TripSearch() {
 			exclude={kind === 'from' ? to : from}
 			// No modo intermunicipal só faz sentido escolher dentro da província
 			// escolhida, senão a pesquisa devolveria rotas que a UI promete não ter.
-			restrictToProvinceId={mode === 'intermunicipal' ? provinceId : null}
+			restrictToProvince={mode === 'intermunicipal' ? province : null}
 		/>
 	);
 
@@ -451,23 +450,36 @@ export default function TripSearch() {
 									>
 										Província
 									</Text>
-									<ScrollView
-										horizontal
-										showsHorizontalScrollIndicator={false}
-										className="mt-1"
-									>
-										{(provinces.data ?? []).map((p) => {
-											const active = provinceId === p.id;
+									{/*
+									 * Chips em quebra de linha, e não numa
+									 * linha horizontal com scroll: os 21
+									 * nomes cabem em duas ou três linhas, e
+									 * uma linha horizontal esconderia metade
+									 * das províncias sem que nada indicasse
+									 * que há mais. É o mesmo desenho do
+									 * `ProvincePicker`.
+									 */}
+									<View className="flex-row flex-wrap gap-2 mt-1">
+										{PROVINCES.map((p) => {
+											const active = province === p.code;
 											return (
 												<Pressable
-													key={p.id}
+													key={p.code}
 													onPress={() =>
 														selectProvince(
-															active ? '' : p.id,
+															active
+																? ''
+																: p.code,
 														)
 													}
-													className="rounded-full px-3 py-1 border mr-2 min-h-[32px] justify-center"
+													hitSlop={6}
+													accessibilityRole="button"
+													accessibilityState={{
+														selected: active,
+													}}
+													className="rounded-full px-3 py-1 border justify-center"
 													style={{
+														minHeight: 32,
 														borderColor: active
 															? themeColors.primary
 															: themeColors.border,
@@ -489,7 +501,7 @@ export default function TripSearch() {
 												</Pressable>
 											);
 										})}
-									</ScrollView>
+									</View>
 								</View>
 							</View>
 							{connector}
@@ -500,11 +512,21 @@ export default function TripSearch() {
 						<View className="flex-1">{connector}</View>
 						<Pressable
 							onPress={swapEnds}
-							disabled={!from && !to}
+							disabled={
+								inter
+									? !fromProvince && !toProvince
+									: !from && !to
+							}
 							className="w-11 h-11 rounded-full items-center justify-center"
 							style={{
 								backgroundColor: themeColors.background,
-								opacity: !from && !to ? 0.4 : 1,
+								opacity: (
+									inter
+										? !fromProvince && !toProvince
+										: !from && !to
+								)
+									? 0.4
+									: 1,
 							}}
 						>
 							<Ionicons

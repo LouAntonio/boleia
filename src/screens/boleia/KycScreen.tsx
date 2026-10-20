@@ -18,7 +18,6 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import BackButton from '../../components/BackButton';
 import BoleiaButton from '../../components/BoleiaButton';
 import Card from '../../components/Card';
-import Input from '../../components/Input';
 import PhotoSlot, { ProgressRail } from '../../components/PhotoSlot';
 import PhotoLightbox from '../../components/PhotoLightbox';
 import SegmentedControl from '../../components/SegmentedControl';
@@ -165,9 +164,6 @@ export default function KycScreen() {
 	const [kyc, setKyc] = useState<ApiKycMe | null>(null);
 	const [loading, setLoading] = useState(true);
 
-	const [fullName, setFullName] = useState('');
-	const [biNumber, setBiNumber] = useState('');
-	const [licenseNumber, setLicenseNumber] = useState('');
 	const [selfies, setSelfies] = useState<string[]>(['', '', '']);
 	const [biFront, setBiFront] = useState<string | null>(null);
 	const [biBack, setBiBack] = useState<string | null>(null);
@@ -224,19 +220,15 @@ export default function KycScreen() {
 	 * seis campos e três condições escondidas, e a pessoa não sabia se faltava
 	 * uma selfie ou o verso do BI. A lista é a mesma que governa o botão, por
 	 * isso não podem divergir.
+	 *
+	 * Passou a ser **só** documentos: o nome, o número do BI e os dados da
+	 * carta deixaram de se escrever à mão. Nada os validava contra o
+	 * documento, e a fotografia é a fonte que o revisor usa.
 	 */
 	const requirements = useMemo(
 		() =>
 			mode === 'passenger'
 				? [
-						{
-							label: 'Nome completo',
-							done: fullName.trim().length >= 3,
-						},
-						{
-							label: 'Número do BI',
-							done: biNumber.trim().length >= 5,
-						},
 						{
 							label: 'BI (frente e verso)',
 							done: !!biFront && !!biBack,
@@ -246,20 +238,12 @@ export default function KycScreen() {
 					]
 				: [
 						{
-							label: 'Nome completo',
-							done: fullName.trim().length >= 3,
-						},
-						{
-							label: 'Número do BI',
-							done: biNumber.trim().length >= 5,
-						},
-						{
 							label: 'BI (frente e verso)',
 							done: !!biFront && !!biBack,
 						},
 						{ label: 'Uma selfie', done: selfieCount >= 1 },
 					],
-		[mode, fullName, biNumber, biFront, biBack, selfieCount, bodyPhoto],
+		[mode, biFront, biBack, selfieCount, bodyPhoto],
 	);
 	const missing = requirements.filter((r) => !r.done);
 	const canSubmit = missing.length === 0;
@@ -359,18 +343,9 @@ export default function KycScreen() {
 			};
 
 			if (mode === 'driver') {
-				await submitDriverKyc({
-					fullName: fullName.trim(),
-					biNumber: biNumber.trim(),
-					licenseNumber: licenseNumber.trim() || undefined,
-					mediaIds,
-				});
+				await submitDriverKyc({ mediaIds });
 			} else {
-				await submitPassengerKyc({
-					fullName: fullName.trim(),
-					biNumber: biNumber.trim(),
-					mediaIds,
-				});
+				await submitPassengerKyc({ mediaIds });
 			}
 			setKyc(await getKycMe());
 		} catch (error) {
@@ -396,9 +371,6 @@ export default function KycScreen() {
 	const switchMode = (next: Mode) => {
 		if (next === mode || submitting) return;
 		const filled = Boolean(
-			fullName ||
-			biNumber ||
-			licenseNumber ||
 			biFront ||
 			biBack ||
 			licensePhoto ||
@@ -407,9 +379,6 @@ export default function KycScreen() {
 		);
 		const drop = () => {
 			setMode(next);
-			setFullName('');
-			setBiNumber('');
-			setLicenseNumber('');
 			setSelfies(['', '', '']);
 			setBiFront(null);
 			setBiBack(null);
@@ -422,7 +391,7 @@ export default function KycScreen() {
 		}
 		Alert.alert(
 			'Mudar de modo',
-			'As fotos e os dados que já preencheste são apagados. Queres continuar?',
+			'As fotos que já escolheste são apagadas. Queres continuar?',
 			[
 				{ text: 'Ficar aqui', style: 'cancel' },
 				{ text: 'Mudar', style: 'destructive', onPress: drop },
@@ -486,31 +455,13 @@ export default function KycScreen() {
 				</Card>
 			) : null}
 
-			{/* Identidade: campos primeiro, documento logo abaixo. */}
-			<Group title="Identidade" hint="Como está escrito no teu documento">
-				<View className="px-4">
-					<Input
-						label="Nome completo"
-						value={fullName}
-						onChangeText={setFullName}
-						placeholder="Ex.: Lourenço António"
-						autoCapitalize="words"
-					/>
-					<Input
-						label="N.º do BI"
-						value={biNumber}
-						onChangeText={(t) =>
-							setBiNumber(
-								t.toUpperCase().replace(/[^A-Z0-9]/g, ''),
-							)
-						}
-						placeholder="Ex.: 001234567LA040"
-						autoCapitalize="characters"
-						containerStyle={{ marginBottom: 4 }}
-					/>
-				</View>
+			{/* Identidade: só o documento, sem campos escritos à mão. */}
+			<Group
+				title="Identidade"
+				hint="A fotografia do BI é o que o revisor confere."
+			>
 				<View
-					className="flex-row px-4 pb-4"
+					className="flex-row px-4 pt-1 pb-4"
 					style={{ justifyContent: 'space-between' }}
 				>
 					<PhotoSlot
@@ -601,17 +552,7 @@ export default function KycScreen() {
 					title="Carta de condução"
 					hint="Só para publicar viagens"
 				>
-					<View className="px-4">
-						<Input
-							label="Número da carta (opcional)"
-							value={licenseNumber}
-							onChangeText={setLicenseNumber}
-							placeholder="Ex.: AO123456"
-							autoCapitalize="characters"
-							containerStyle={{ marginBottom: 4 }}
-						/>
-					</View>
-					<View className="px-4 pb-4">
+					<View className="px-4 pt-1 pb-4">
 						<PhotoSlot
 							uri={licensePhoto}
 							label="Carta"

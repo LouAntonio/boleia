@@ -31,7 +31,7 @@ import {
 	listMyVehicles,
 	type CreateRideStopInput,
 } from '../../lib/api';
-import { useAllLocalities } from '../../hooks/useLocalities';
+import { MUNICIPALITY_BY_CODE } from '../../lib/locations';
 import type { SearchMode } from '../../lib/recentSearches';
 import { fmtKz, formatKzInput, parseKzInput } from '../../lib/format';
 import { useQueryClient } from '@tanstack/react-query';
@@ -157,15 +157,15 @@ export default function PublishTripScreen() {
 		setStops((prev) => prev.filter((_, j) => j !== i));
 
 	/**
-	 * Localidades escolhidas, para o resumo e para validar as paragens.
+	 * Municípios escolhidos, para o resumo e para validar as paragens.
 	 *
-	 * O `LocalityPicker` já devolve UUIDs reais, por isso não há conversão de
-	 * nome para id: o que o formulário escolhe é o que vai para o backend.
+	 * O `LocalityPicker` devolve o **código** (`huambo.catabola`), e é isso que
+	 * vai para o backend em `originLocalityId`/`destinationLocalityId`. A lista
+	 * é local: já não há um pedido para traduzir código em nome.
 	 */
-	const localities = useAllLocalities();
-	const localityById = useCallback(
-		(id: string) => localities.find((l) => l.id === id),
-		[localities],
+	const localityByCode = useCallback(
+		(code: string) => MUNICIPALITY_BY_CODE.get(code),
+		[],
 	);
 
 	const stopsInput: CreateRideStopInput[] = stops
@@ -178,17 +178,17 @@ export default function PublishTripScreen() {
 		}))
 		.filter(
 			(s) =>
-				(s.localityId && localityById(s.localityId)) ||
+				(s.localityId && localityByCode(s.localityId)) ||
 				s.name.length > 0,
 		);
 
 	const price = parseKzInput(priceStr);
 	// O tipo de viagem é deduzido das províncias reais das localidades escolhidas.
-	const fromLoc = from ? localityById(from) : null;
-	const toLoc = to ? localityById(to) : null;
+	const fromLoc = from ? localityByCode(from) : null;
+	const toLoc = to ? localityByCode(to) : null;
 	const derived: SearchMode | null =
 		fromLoc && toLoc
-			? fromLoc.provinceId === toLoc.provinceId
+			? fromLoc.province.code === toLoc.province.code
 				? 'intermunicipal'
 				: 'interprovincial'
 			: null;
@@ -519,7 +519,7 @@ export default function PublishTripScreen() {
 										value={from}
 										onChange={setFrom}
 										exclude={to}
-										restrictToProvinceId={
+										restrictToProvince={
 											mode === 'intermunicipal'
 												? province
 												: null
@@ -533,7 +533,7 @@ export default function PublishTripScreen() {
 										value={to}
 										onChange={setTo}
 										exclude={from}
-										restrictToProvinceId={
+										restrictToProvince={
 											mode === 'intermunicipal'
 												? province
 												: null
@@ -1137,7 +1137,7 @@ export default function PublishTripScreen() {
 								label="Rota"
 								value={
 									fromLoc && toLoc
-										? `${fromLoc.municipality} → ${toLoc.municipality}`
+										? `${fromLoc.name} → ${toLoc.name}`
 										: '—'
 								}
 							/>

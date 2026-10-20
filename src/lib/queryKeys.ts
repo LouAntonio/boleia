@@ -82,10 +82,4 @@ export const qk = {
 	},
 
 	eligibility: ['eligibility'] as const,
-
-	localities: {
-		all: ['localities'] as const,
-		provinces: ['provinces'] as const,
-		of: (provinceId: string) => ['localities', provinceId] as const,
-	},
 } as const;

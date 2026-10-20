@@ -7,19 +7,20 @@ export type SearchMode = 'intermunicipal' | 'interprovincial';
  * Pesquisas recentes — conveniência 100% local (AsyncStorage), sem backend.
  * Guarda as últimas 5 pesquisas para os cartões "Recentes" na Home.
  *
- * `provinceId` é o UUID da província, `from`/`to` são UUIDs de localidades e
- * `fromProvince`/`toProvince` são UUIDs de províncias — porque são esses os
- * identificadores que `GET /api/rides` filtra.
+ * Os valores são **códigos**, não UUIDs: `province` é o código da província que
+ * restringe os municípios, `from`/`to` são códigos de município
+ * (`huambo.catabola`) e `fromProvince`/`toProvince` são códigos de província
+ * (`cuanza-norte`). São esses os identificadores que `GET /api/rides` aceita.
  *
  * **Os dois pares existem os dois, e não um campo reaproveitado.** No modo
  * intermunicipal `fromProvince`/`toProvince` ficam vazios; no interprovincial
  * é `from`/`to` que ficam. Guardar províncias em `from` faria uma recente
- * interprovincial ser reposta como uma pesquisa de município, com ids que o
- * backend recusa.
+ * interprovincial ser reposta como uma pesquisa de município, com códigos que
+ * o backend procura no espaço errado.
  */
 export type RecentSearch = {
 	mode: SearchMode;
-	provinceId: string;
+	province: string;
 	from: string;
 	to: string;
 	fromProvince: string;
@@ -28,16 +29,25 @@ export type RecentSearch = {
 	dateTo: string;
 };
 
-const KEY = 'boleia.recentSearches';
+/*
+ * A chave leva `v2` de propósito.
+ *
+ * As pesquisas gravadas antes disto guardavam UUIDs. A lista local deixou de
+ * os conhecer, e repor uma recente antiga mandaria UUIDs que o backend ainda
+ * aceita — a pesquisa funcionaria, mas o formulário mostrava códigos vazios e
+ * os campos pareciam por preencher. Perder cinco recentes locais é melhor do
+ * que repor um formulário em branco.
+ */
+const KEY = 'boleia.recentSearches.v2';
 const MAX = 5;
 
 /**
  * Uma pesquisa só vale se tiver os dois lados que o seu modo pede.
  *
- * As gravadas antes deste campo existir não têm províncias, por isso uma
- * recente interprovincial antiga não tem como ser reposta: `from`/`to` estão
- * vazios e `fromProvince`/`toProvince` não existem. Descartá-la é melhor do
- * que repor um formulário vazio e uma pesquisa que devolve tudo — a pessoa
+ * As gravadas antes do campo das províncias existir não têm províncias, por
+ * isso uma recente interprovincial antiga não tem como ser reposta: `from`/`to`
+ * estão vazios e `fromProvince`/`toProvince` não existem. Descartá-la é melhor
+ * do que repor um formulário vazio e uma pesquisa que devolve tudo — a pessoa
  * carregava na recente e via rotas que nunca escolheu.
  */
 function isComplete(entry: Partial<RecentSearch>): boolean {
@@ -53,9 +63,6 @@ export async function loadRecentSearches(): Promise<RecentSearch[]> {
 		if (!raw) return [];
 		const parsed: unknown = JSON.parse(raw);
 		if (!Array.isArray(parsed)) return [];
-		// Pesquisas gravadas antes dos identificadores reais usavam o nome da
-		// província em `province`. Descartá-las é melhor do que tentar adivinhar
-		// o UUID: uma pesquisa que devolve rotas erradas é pior do que nenhuma.
 		return parsed
 			.filter((entry): entry is RecentSearch => {
 				if (!entry || typeof entry !== 'object') return false;
@@ -70,7 +77,7 @@ export async function loadRecentSearches(): Promise<RecentSearch[]> {
 			})
 			.map((entry) => ({
 				...entry,
-				provinceId: entry.provinceId ?? '',
+				province: entry.province ?? '',
 				fromProvince: entry.fromProvince ?? '',
 				toProvince: entry.toProvince ?? '',
 			}))
@@ -85,7 +92,7 @@ export async function saveRecentSearch(
 ): Promise<RecentSearch[]> {
 	const same = (a: RecentSearch, b: RecentSearch) =>
 		a.mode === b.mode &&
-		a.provinceId === b.provinceId &&
+		a.province === b.province &&
 		a.from === b.from &&
 		a.to === b.to &&
 		a.fromProvince === b.fromProvince &&

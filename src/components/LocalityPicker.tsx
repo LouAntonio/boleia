@@ -6,114 +6,102 @@ import {
 	Modal,
 	TextInput,
 	ScrollView,
-	ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { toAscii } from '../lib/format';
-import { useAllLocalities, useProvinces } from '../hooks/useLocalities';
-import type { ApiLocality } from '../lib/api';
+import { PROVINCES } from '../lib/locations';
 
 /**
  * Escolha de local por bottom-sheet com pesquisa.
  *
- * O valor devolvido é sempre o `id` da localidade, que é o que o backend
- * espera em `originLocalityId`/`destinationLocalityId`. Anteriormente o
- * picker devolvia o nome da província no modo interprovincial, o que não
- * corresponde a nenhum identificador do servidor.
+ * O valor devolvido é o **código** do município (`huambo.catabola`), que é o
+ * que o `GET /api/rides` aceita em `origin`/`destination` e o que o
+ * `POST /api/rides` aceita em `originLocalityId`/`destinationLocalityId`. O
+ * UUID continua aceito pelo backend, mas a app já não o conhece.
  *
- * A lista vem da API. São ~306 municípios, por isso a grelha de chips não
- * escala e a escolha é sempre por pesquisa com filtro de província.
+ * A lista é local (`lib/locations.ts`), gerada da seed do backend. Antes, abrir
+ * este picker disparava 22 pedidos à API — as 21 províncias e uma chamada por
+ * província — para montar 306 municípios que nunca mudam.
+ *
+ * O código leva a província à frente porque há três nomes repetidos no país
+ * (Canacassala, Catabola e Quizenga): o nome sozinho não identifica nada.
  */
 export default function LocalityPicker({
 	value,
 	onChange,
 	exclude,
-	restrictToProvinceId,
+	restrictToProvince,
 	variant = 'box',
 	label,
 	dotColor,
 }: {
 	value: string;
-	onChange: (localityId: string) => void;
+	onChange: (municipalityCode: string) => void;
 	/** Local a esconder, para não permitir origem igual a destino. */
 	exclude?: string;
 	/** Restringe a escolha a uma província (pesquisa intermunicipal). */
-	restrictToProvinceId?: string | null;
+	restrictToProvince?: string | null;
 	variant?: 'row' | 'box';
 	label?: string;
 	dotColor?: string;
 }) {
 	const { themeColors } = useThemeColors();
 	const [visible, setVisible] = useState(false);
-	const [provinceId, setProvinceId] = useState('');
+	const [province, setProvince] = useState('');
 	const [query, setQuery] = useState('');
 
-	const provinces = useProvinces();
-	const localities = useAllLocalities();
-
-	const byId = useMemo(
-		() => new Map(localities.map((l) => [l.id, l])),
-		[localities],
-	);
-	const provinceName = useMemo(() => {
-		const map = new Map((provinces.data ?? []).map((p) => [p.id, p.name]));
-		return (id: string) => map.get(id) ?? '';
-	}, [provinces.data]);
-
-	const selected = value ? byId.get(value) : undefined;
-
-	// A lista de províncias offered é a união das províncias que têm
-	// localidades, para não oferecer uma província vazia.
-	const provincesWithLocalities = useMemo(() => {
-		const present = new Set(localities.map((l) => l.provinceId));
-		return (provinces.data ?? []).filter((p) => present.has(p.id));
-	}, [provinces.data, localities]);
+	const selected = useMemo(() => {
+		for (const candidate of PROVINCES) {
+			const found = candidate.municipalities.find(
+				(municipality) => municipality.code === value,
+			);
+			if (found) return { ...found, province: candidate };
+		}
+		return undefined;
+	}, [value]);
 
 	const options = useMemo(() => {
 		const q = toAscii(query.trim());
-		return localities
-			.filter((l) => l.id !== exclude)
-			.filter(
-				(l) =>
-					!restrictToProvinceId ||
-					l.provinceId === restrictToProvinceId,
+		return PROVINCES.filter(
+			(candidate) =>
+				(!restrictToProvince ||
+					candidate.code === restrictToProvince) &&
+				(!province || candidate.code === province),
+		)
+			.flatMap((candidate) =>
+				candidate.municipalities.map((municipality) => ({
+					...municipality,
+					province: candidate,
+				})),
 			)
-			.filter((l) => !provinceId || l.provinceId === provinceId)
-			.filter((l) => {
+			.filter((municipality) => municipality.code !== exclude)
+			.filter((municipality) => {
 				if (!q) return true;
 				return (
-					toAscii(l.municipality).includes(q) ||
-					toAscii(l.name).includes(q) ||
-					toAscii(provinceName(l.provinceId)).includes(q)
+					toAscii(municipality.name).includes(q) ||
+					toAscii(municipality.province.name).includes(q)
 				);
 			})
 			.slice(0, 200);
-	}, [
-		localities,
-		exclude,
-		restrictToProvinceId,
-		provinceId,
-		query,
-		provinceName,
-	]);
+	}, [exclude, restrictToProvince, province, query]);
 
 	const open = () => {
 		// Se a escolha está restrita a uma província, não faz sentido oferecer
 		// os chips de província: pré-selecciona-a e esconde-os.
-		setProvinceId(restrictToProvinceId ?? '');
+		setProvince(restrictToProvince ?? '');
 		setQuery('');
 		setVisible(true);
 	};
 
-	const pick = (locality: ApiLocality) => {
-		onChange(locality.id);
+	const pick = (municipalityCode: string) => {
+		onChange(municipalityCode);
 		setVisible(false);
 	};
 
 	const hasValue = !!selected;
 	const triggerLabel = selected
-		? `${selected.municipality} · ${provinceName(selected.provinceId)}`
+		? `${selected.name} · ${selected.province.name}`
 		: 'Escolher local';
 
 	const trigger =
@@ -186,7 +174,7 @@ export default function LocalityPicker({
 			</Pressable>
 		);
 
-	const showProvinceChips = !restrictToProvinceId;
+	const showProvinceChips = !restrictToProvince;
 
 	return (
 		<>
@@ -276,23 +264,32 @@ export default function LocalityPicker({
 							) : null}
 						</View>
 
+						{/*
+						 * Chips em quebra de linha, não em scroll horizontal: os
+						 * 21 nomes cabem em duas ou três linhas, e uma linha
+						 * horizontal esconderia metade das províncias sem que
+						 * nada indicasse que há mais.
+						 */}
 						{showProvinceChips ? (
-							<ScrollView
-								horizontal
-								showsHorizontalScrollIndicator={false}
-								className="mb-2"
-							>
-								{provincesWithLocalities.map((p) => {
-									const active = provinceId === p.id;
+							<View className="flex-row flex-wrap gap-2 mb-2">
+								{PROVINCES.map((candidate) => {
+									const active = province === candidate.code;
 									return (
 										<Pressable
-											key={p.id}
+											key={candidate.code}
 											onPress={() =>
-												setProvinceId(
-													active ? '' : p.id,
+												setProvince(
+													active
+														? ''
+														: candidate.code,
 												)
 											}
-											className="rounded-full px-3 py-1.5 border mr-2 min-h-[32px] justify-center"
+											hitSlop={6}
+											accessibilityRole="button"
+											accessibilityState={{
+												selected: active,
+											}}
+											className="rounded-full px-3 py-1.5 border min-h-[32px] justify-center"
 											style={{
 												borderColor: active
 													? themeColors.text
@@ -310,12 +307,12 @@ export default function LocalityPicker({
 														: themeColors.secondary,
 												}}
 											>
-												{p.name}
+												{candidate.name}
 											</Text>
 										</Pressable>
 									);
 								})}
-							</ScrollView>
+							</View>
 						) : null}
 
 						<ScrollView
@@ -323,13 +320,7 @@ export default function LocalityPicker({
 							style={{ maxHeight: 380 }}
 							showsVerticalScrollIndicator={false}
 						>
-							{provinces.isLoading ? (
-								<View className="py-10 items-center">
-									<ActivityIndicator
-										color={themeColors.primary}
-									/>
-								</View>
-							) : options.length === 0 ? (
+							{options.length === 0 ? (
 								<View className="py-10 items-center">
 									<Text
 										className="font-sans text-body-small"
@@ -339,12 +330,14 @@ export default function LocalityPicker({
 									</Text>
 								</View>
 							) : (
-								options.map((l) => {
-									const active = value === l.id;
+								options.map((municipality) => {
+									const active = value === municipality.code;
 									return (
 										<Pressable
-											key={l.id}
-											onPress={() => pick(l)}
+											key={municipality.code}
+											onPress={() =>
+												pick(municipality.code)
+											}
 											className="flex-row items-center px-1 py-3 border-b min-h-[44px]"
 											style={{
 												borderColor: themeColors.border,
@@ -357,7 +350,7 @@ export default function LocalityPicker({
 														color: themeColors.text,
 													}}
 												>
-													{l.municipality}
+													{municipality.name}
 												</Text>
 												<Text
 													className="font-sans text-body-xs"
@@ -365,7 +358,7 @@ export default function LocalityPicker({
 														color: themeColors.secondary,
 													}}
 												>
-													{provinceName(l.provinceId)}
+													{municipality.province.name}
 												</Text>
 											</View>
 											{active ? (
