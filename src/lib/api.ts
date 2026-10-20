@@ -384,6 +384,21 @@ export interface ApiRideStop {
 	 * localizar a paragem ao metro.
 	 */
 	provinceCoordinates: { latitude: number; longitude: number } | null;
+	/**
+	 * O que o `select` do backend traz de facto, **aninhado**.
+	 *
+	 * `provinceId` é o que a pesquisa interprovincial precisa para saber de que
+	 * província é uma paragem — num resultado Luanda → Benguela, o "Benguela" que
+	 * a pessoa vê no destino tem de ser lido de um id real, e não adivinhado
+	 * pelas coordenadas da sede (a sede não é a província).
+	 *
+	 * Vem `null` quando a paragem é só um nome livre ("Cruzamento da X") e não
+	 * tem localidade por trás.
+	 */
+	locality?: {
+		provinceId: string | null;
+		province?: { latitude: number | null; longitude: number | null } | null;
+	} | null;
 }
 
 export interface ApiRide {
@@ -468,8 +483,20 @@ export interface PagedRides {
 }
 
 export interface ListRidesQuery {
+	/** Id da localidade de origem. Modo "intermunicipal". */
 	origin?: string;
+	/** Id da localidade de destino. Modo "intermunicipal". */
 	destination?: string;
+	/**
+	 * Id da província de origem. Modo "interprovincial".
+	 *
+	 * O backend trata município e província como predicados **independentes**:
+	 * mandar os dois obriga a que a paragem esteja naquela província **e** seja
+	 * aquele município. Cada modo manda só o seu, e o outro fica por omissão.
+	 */
+	originProvinceId?: string;
+	/** Id da província de destino. Modo "interprovincial". */
+	destinationProvinceId?: string;
 	/** Dia inteiro, em `AAAA-MM-DD`. */
 	date?: string;
 	dateFrom?: string;

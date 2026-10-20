@@ -224,6 +224,7 @@ export default function HomeScreen() {
 	return (
 		<SafeAreaView
 			className="flex-1"
+			edges={['left', 'right', 'bottom']}
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<AppHeader />

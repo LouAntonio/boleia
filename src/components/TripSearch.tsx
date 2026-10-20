@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../types/navigation';
 import LocalityPicker from './LocalityPicker';
+import ProvincePicker from './ProvincePicker';
 import DateRangePicker from './DateRangePicker';
 import TripListingCard from './TripListingCard';
 import BoleiaButton from './BoleiaButton';
@@ -18,6 +19,7 @@ import {
 	loadRecentSearches,
 	saveRecentSearch,
 	RecentSearch,
+	SearchMode,
 } from '../lib/recentSearches';
 
 export default function TripSearch() {
@@ -33,6 +35,17 @@ export default function TripSearch() {
 	const [provinceId, setProvinceId] = useState('');
 	const [from, setFrom] = useState('');
 	const [to, setTo] = useState('');
+	/**
+	 * As províncias de origem e de destino, usadas **só** no modo
+	 * interprovincial.
+	 *
+	 * São estado à parte de propósito, e não a reinterpretação de `from`/`to`:
+	 * um id de província e um id de município vivem em espaços diferentes e
+	 * guardar os dois no mesmo campo obriga a lembrar a cada linha qual dos dois
+	 * está lá. Trocar de modo limpa os quatro, e não três.
+	 */
+	const [fromProvince, setFromProvince] = useState('');
+	const [toProvince, setToProvince] = useState('');
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
 	const [results, setResults] = useState<ApiRide[] | null>(null);
@@ -59,12 +72,23 @@ export default function TripSearch() {
 		[localities],
 	);
 
+	const provinceName = useCallback(
+		(id: string): string => {
+			if (!id) return '—';
+			const found = (provinces.data ?? []).find((p) => p.id === id);
+			return found ? found.name : '—';
+		},
+		[provinces.data],
+	);
+
 	const changeMode = (m: 'intermunicipal' | 'interprovincial') => {
 		if (m === mode) return;
 		setMode(m);
 		setProvinceId('');
 		setFrom('');
 		setTo('');
+		setFromProvince('');
+		setToProvince('');
 		setResults(null);
 		setError(null);
 	};
@@ -90,9 +114,22 @@ export default function TripSearch() {
 	};
 
 	const swapEnds = () => {
-		const f = from;
-		setFrom(to);
-		setTo(f);
+		/*
+		 * Troca o par que está no ecrã, não "o par de municípios" às cegas.
+		 *
+		 * Num ecrã interprovincial o que está à vista são as duas províncias;
+		 * trocar os municípios que ninguém vê não faria nada visível, e a
+		 * pessoa carregava no botão para nada.
+		 */
+		if (inter) {
+			const f = fromProvince;
+			setFromProvince(toProvince);
+			setToProvince(f);
+		} else {
+			const f = from;
+			setFrom(to);
+			setTo(f);
+		}
 		setResults(null);
 		setError(null);
 	};
@@ -100,25 +137,42 @@ export default function TripSearch() {
 	/**
 	 * Pesquisa no backend.
 	 *
-	 * O filtro é sempre por localidade, nos dois modos: `GET /api/rides`
-	 * compara o `localityId` da paragem de origem e de destino. O modo só muda
-	 * se a picker de origem fica restringida a uma província, que é a diferença
-	 * real entre uma viagem intermunicipal e uma interprovincial.
+	 * Os dois modos filtram coisas diferentes, e o backend trata município e
+	 * província como predicados independentes sobre a mesma paragem:
+	 *
+	 * - **intermunicipal** manda `origin`/`destination` (municípios) e a
+	 *   `provinceId` só restringe o que se pode escolher;
+	 * - **interprovincial** manda `originProvinceId`/`destinationProvinceId` e
+	 *   deixa os municípios a null.
+	 *
+	 * Mandar os dois ao mesmo tempo obrigaria a que a paragem estivesse na
+	 * província **e** fosse aquele município — que é a intersecção, não a
+	 * união. Por isso cada modo manda só o seu conjunto.
 	 */
 	const runSearch = useCallback(
 		async (p: {
 			provinceId: string;
 			from: string;
 			to: string;
+			fromProvince: string;
+			toProvince: string;
+			mode: 'intermunicipal' | 'interprovincial';
 			dateFrom: string;
 			dateTo: string;
 		}) => {
 			setSearching(true);
 			setError(null);
 			try {
+				const inter = p.mode === 'interprovincial';
 				const res = await listRides({
-					origin: p.from,
-					destination: p.to,
+					origin: inter ? undefined : p.from || undefined,
+					destination: inter ? undefined : p.to || undefined,
+					originProvinceId: inter
+						? p.fromProvince || undefined
+						: undefined,
+					destinationProvinceId: inter
+						? p.toProvince || undefined
+						: undefined,
 					dateFrom: p.dateFrom || undefined,
 					dateTo: p.dateTo || undefined,
 				});
@@ -137,37 +191,73 @@ export default function TripSearch() {
 	);
 
 	const search = () => {
-		void runSearch({ provinceId, from, to, dateFrom, dateTo });
-		saveRecentSearch({ mode, provinceId, from, to, dateFrom, dateTo })
+		void runSearch({
+			provinceId,
+			from,
+			to,
+			fromProvince,
+			toProvince,
+			mode,
+			dateFrom,
+			dateTo,
+		});
+		saveRecentSearch({
+			mode,
+			provinceId,
+			from,
+			to,
+			fromProvince,
+			toProvince,
+			dateFrom,
+			dateTo,
+		})
 			.then(setRecents)
 			.catch(() => undefined);
 	};
 
+	/**
+	 * Repõe uma pesquisa guardada.
+	 *
+	 * Cada modo restaura o seu par e limpa o outro: uma recente intermunicipal
+	 * não deve deixar duas províncias escolhidas da pesquisa anterior, e vice-
+	 * versa. `loadRecentSearches` já descarta as que não têm os dois lados que
+	 * o seu modo pede, por isso aqui os campos certos estão sempre preenchidos.
+	 */
 	const applyRecent = (r: RecentSearch) => {
+		const inter = r.mode === 'interprovincial';
 		setMode(r.mode);
 		setProvinceId(r.provinceId ?? '');
-		setFrom(r.from);
-		setTo(r.to);
+		setFrom(inter ? '' : r.from);
+		setTo(inter ? '' : r.to);
+		setFromProvince(inter ? r.fromProvince : '');
+		setToProvince(inter ? r.toProvince : '');
 		setDateFrom(r.dateFrom);
 		setDateTo(r.dateTo);
 		void runSearch({
 			provinceId: r.provinceId ?? '',
-			from: r.from,
-			to: r.to,
+			from: inter ? '' : r.from,
+			to: inter ? '' : r.to,
+			fromProvince: inter ? r.fromProvince : '',
+			toProvince: inter ? r.toProvince : '',
+			mode: r.mode,
 			dateFrom: r.dateFrom,
 			dateTo: r.dateTo,
 		});
 	};
 
-	const placeName = (
-		value: string,
-		m: 'intermunicipal' | 'interprovincial',
-	) => {
-		if (!value) return '—';
-		if (m === 'intermunicipal') {
-			return localityName(value);
-		}
-		return localityName(value);
+	/**
+	 * O nome de um dos lados de uma pesquisa guardada, no vocabulário do modo
+	 * dela.
+	 *
+	 * Interprovincial resolve províncias, intermunicipal resolve municípios —
+	 * os dois espaços de ids não se misturam. Fora do modo certo o id não
+	 * estaria sequer preenchido.
+	 */
+	const placeName = (id: string, searchMode: SearchMode): string => {
+		if (!id) return '—';
+		return searchMode === 'interprovincial'
+			? provinceName(id)
+			: localityName(id);
 	};
 
 	const recentDateLabel = (r: RecentSearch): string => {
@@ -178,7 +268,12 @@ export default function TripSearch() {
 			: fmt(r.dateFrom);
 	};
 
-	const canSearch = !!from && !!to && !searching;
+	const inter = mode === 'interprovincial';
+	// O botão só acende com o que este modo pede. Um único predicado para os
+	// dois modos, senão o botão fica cinzento por um campo que nem existe no
+	// ecrã à frente da pessoa.
+	const canSearch =
+		(inter ? !!(fromProvince && toProvince) : !!(from && to)) && !searching;
 
 	const connector = (
 		<View
@@ -205,10 +300,54 @@ export default function TripSearch() {
 		/>
 	);
 
-	// Nos dois modos a escolha é por município; o modo intermunicipal apenas
-	// restringe a picker a uma província.
-	const fromRow = munRow('from', 'De onde sais', from);
-	const toRow = munRow('to', 'Para onde vais', to);
+	/*
+	 * Cada modo tem o seu par de linhas, e são de instrumentos diferentes.
+	 *
+	 * **Interprovincial**: origem e destino são províncias. É a diferença real
+	 * entre Luanda → Benguela e Talatona → Viana, e o backend filtra por
+	 * `originProvinceId`/`destinationProvinceId`.
+	 *
+	 * **Intermunicipal**: origem e destino são municípios, com apicker de
+	 * origem restringida à província escolhida — porque o modo promete uma rota
+	 * dentro da província, e sem a restrição devolveria Luanda → Benguela com
+	 * o rótulo de "intermunicipal".
+	 *
+	 * Os dois `swapEnds`([from,to], [fromProvince,toProvince]) continuam a fazer
+	 * sentido porque ambos os pares são uma origem e um destino.
+	 */
+	const provRow = (
+		kind: 'from' | 'to',
+		label: string,
+		value: string,
+		exclude: string,
+	) => (
+		<ProvincePicker
+			label={label}
+			value={value}
+			onChange={
+				kind === 'from'
+					? (v) => {
+							setFromProvince(v);
+							setResults(null);
+							setError(null);
+						}
+					: (v) => {
+							setToProvince(v);
+							setResults(null);
+							setError(null);
+						}
+			}
+			exclude={exclude}
+			dotColor={kind === 'from' ? themeColors.text : themeColors.primary}
+		/>
+	);
+
+	const fromRow = inter
+		? provRow('from', 'De onde sais', fromProvince, toProvince)
+		: munRow('from', 'De onde sais', from);
+	const toRow = inter
+		? provRow('to', 'Para onde vais', toProvince, fromProvince)
+		: munRow('to', 'Para onde vais', to);
 
 	return (
 		<View>
@@ -396,6 +535,29 @@ export default function TripSearch() {
 						onPress={search}
 						disabled={!canSearch}
 					/>
+
+					{/*
+					 * Porquê o botão está cinzento.
+					 *
+					 * Um botão desactivado sem explicação obriga a pessoa a
+					 * procurar o que falta sozinha — e o que falta é diferente
+					 * conforme o modo: no interprovincial são duas províncias, no
+					 * intermunicipal dois municípios. O texto diz exactamente
+					 * isso, em vez de um genérico "escolhe a origem e o destino"
+					 * que no modo errado nem sequer nomeia os campos.
+					 */}
+					{!canSearch && !searching ? (
+						<Text
+							className="font-sans text-body-xs mt-2 text-center"
+							style={{ color: themeColors.secondary }}
+						>
+							{inter
+								? fromProvince && !toProvince
+									? 'Escolhe a província de destino.'
+									: 'Escolhe a província de origem e a de destino.'
+								: 'Escolhe o município de origem e o de destino.'}
+						</Text>
+					) : null}
 				</View>
 			</Card>
 
@@ -410,7 +572,7 @@ export default function TripSearch() {
 					</Text>
 					{recents.map((r) => (
 						<Pressable
-							key={`${r.mode}|${r.from}|${r.to}|${r.dateFrom}|${r.dateTo}`}
+							key={`${r.mode}|${r.fromProvince}|${r.from}|${r.toProvince}|${r.to}|${r.dateFrom}|${r.dateTo}`}
 							onPress={() => applyRecent(r)}
 							className="rounded-xl px-4 py-3 mb-2 flex-row items-center min-h-[44px]"
 							style={({ pressed }) => ({
@@ -426,8 +588,19 @@ export default function TripSearch() {
 									className="font-sansBold text-label-small"
 									style={{ color: themeColors.text }}
 								>
-									{placeName(r.from, r.mode)} →{' '}
-									{placeName(r.to, r.mode)}
+									{placeName(
+										r.mode === 'interprovincial'
+											? r.fromProvince
+											: r.from,
+										r.mode,
+									)}{' '}
+									→{' '}
+									{placeName(
+										r.mode === 'interprovincial'
+											? r.toProvince
+											: r.to,
+										r.mode,
+									)}
 								</Text>
 								<Text
 									className="font-sans text-body-xs mt-0.5"

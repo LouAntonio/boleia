@@ -210,6 +210,7 @@ export default function ExploreScreen() {
 	return (
 		<SafeAreaView
 			className="flex-1"
+			edges={['left', 'right', 'bottom']}
 			style={{ backgroundColor: themeColors.background }}
 		>
 			<AppHeader />
