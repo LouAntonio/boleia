@@ -121,6 +121,7 @@ export function toBooking(booking: ApiBooking): Booking {
 		reason: booking.reason,
 		createdAt: booking.createdAt,
 		updatedAt: booking.createdAt,
+		passenger: booking.passenger,
 	};
 }
 

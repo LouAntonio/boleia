@@ -9,6 +9,7 @@ import VehicleScreen from '../screens/boleia/VehicleScreen';
 import AccountScreen from '../screens/boleia/AccountScreen';
 import PublishTripScreen from '../screens/boleia/PublishTripScreen';
 import RideDetailScreen from '../screens/boleia/RideDetailScreen';
+import DriverTripScreen from '../screens/boleia/DriverTripScreen';
 import PublicProfileScreen from '../screens/boleia/PublicProfileScreen';
 import ActiveRideScreen from '../screens/boleia/ActiveRideScreen';
 import SosCenterScreen from '../screens/boleia/SosCenterScreen';
@@ -42,6 +43,7 @@ export default function BoleiaMainNavigator() {
 			<Stack.Screen name="Account" component={AccountScreen} />
 			<Stack.Screen name="PublishTrip" component={PublishTripScreen} />
 			<Stack.Screen name="RideDetail" component={RideDetailScreen} />
+			<Stack.Screen name="DriverTrip" component={DriverTripScreen} />
 			<Stack.Screen
 				name="PublicProfile"
 				component={PublicProfileScreen}

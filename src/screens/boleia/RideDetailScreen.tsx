@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, Pressable, ScrollView, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WEB_URL } from '@env';
 import { useFocusEffect } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { qk } from '../../lib/queryKeys';
@@ -133,6 +134,60 @@ export default function RideDetailScreen() {
 		);
 	}
 
+	const shareRide = () =>
+		void Share.share({
+			message: `${ride.routeName} · ${ride.origin.name} → ${ride.destination.name}\n${WEB_URL}/viagens/${ride.id}`,
+			title: 'Boleia',
+		});
+
+	if (sessionUserId && ride.driverId === sessionUserId) {
+		return (
+			<SafeAreaView
+				className="flex-1 px-5"
+				style={{ backgroundColor: themeColors.background }}
+			>
+				<Header
+					title={ride.routeName}
+					onBack={() => navigation.goBack()}
+					onShare={shareRide}
+				/>
+				<ScrollView
+					contentContainerStyle={{ paddingBottom: 40 }}
+					showsVerticalScrollIndicator={false}
+				>
+					<Card>
+						<View className="flex-row items-center justify-between">
+							<Text
+								className="font-sansBold text-label"
+								style={{ color: themeColors.text }}
+							>
+								Esta boleia é tua
+							</Text>
+							<StatusStamp status={ride.status} />
+						</View>
+						<Text
+							className="font-sans text-body-small mt-2"
+							style={{ color: themeColors.secondary }}
+						>
+							Os pedidos de lugar e os controlos da viagem estão
+							na página de gestão.
+						</Text>
+						<View className="mt-4">
+							<BoleiaButton
+								title="Gerir viagem"
+								onPress={() =>
+									navigation.navigate('DriverTrip', {
+										rideId: ride.id,
+									})
+								}
+							/>
+						</View>
+					</Card>
+				</ScrollView>
+			</SafeAreaView>
+		);
+	}
+
 	const available = seatsLeft(ride);
 	const total = seats * ride.pricePerSeat;
 	const stops = [ride.origin, ...ride.stops, ride.destination];
@@ -210,6 +265,7 @@ export default function RideDetailScreen() {
 				<Header
 					title={ride.routeName}
 					onBack={() => navigation.goBack()}
+					onShare={shareRide}
 				/>
 				<ScrollView
 					contentContainerStyle={{ paddingBottom: 40 }}
@@ -282,6 +338,7 @@ export default function RideDetailScreen() {
 				<Header
 					title="Detalhe da viagem"
 					onBack={() => navigation.goBack()}
+					onShare={shareRide}
 				/>
 			</View>
 			<ScrollView
@@ -327,6 +384,20 @@ export default function RideDetailScreen() {
 						>
 							{ride.origin.name} → {ride.destination.name}
 						</Text>
+						<View className="flex-row items-center mt-1.5">
+							<Ionicons
+								name="time-outline"
+								size={14}
+								color={themeColors.secondary}
+							/>
+							<Text
+								className="font-sansMedium text-body-xs ml-1"
+								style={{ color: themeColors.secondary }}
+							>
+								{hhmm(ride.departure)} → {hhmm(ride.arrival)} ·{' '}
+								{durationBetween(ride.departure, ride.arrival)}
+							</Text>
+						</View>
 						<View className="mt-3">
 							<RouteStrip
 								origin={stripOrigin}
@@ -356,8 +427,6 @@ export default function RideDetailScreen() {
 								className="font-sansMedium text-body-xs"
 								style={{ color: themeColors.secondary }}
 							>
-								{durationBetween(ride.departure, ride.arrival)}{' '}
-								·{' '}
 								{available > 0
 									? `${available} livre${available === 1 ? '' : 's'}`
 									: 'Lotada'}
@@ -728,7 +797,15 @@ export default function RideDetailScreen() {
 	);
 }
 
-function Header({ title, onBack }: { title: string; onBack: () => void }) {
+function Header({
+	title,
+	onBack,
+	onShare,
+}: {
+	title: string;
+	onBack: () => void;
+	onShare?: () => void;
+}) {
 	const { themeColors } = useThemeColors();
 	return (
 		<View className="flex-row items-center pt-2 pb-3">
@@ -757,6 +834,26 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
 					{title}
 				</Text>
 			</View>
+			{onShare ? (
+				<Pressable
+					onPress={onShare}
+					accessibilityRole="button"
+					accessibilityLabel="Partilhar viagem"
+					hitSlop={8}
+					className="w-11 h-11 items-center justify-center rounded-full"
+					style={({ pressed }) => ({
+						backgroundColor: pressed
+							? themeColors.background
+							: 'transparent',
+					})}
+				>
+					<Ionicons
+						name="share-outline"
+						size={22}
+						color={themeColors.text}
+					/>
+				</Pressable>
+			) : null}
 		</View>
 	);
 }

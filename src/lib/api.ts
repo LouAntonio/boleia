@@ -405,6 +405,12 @@ export interface ApiBooking {
 	/** Motivo de recusa ou cancelamento. É o que a app mostra ao passageiro. */
 	reason: string | null;
 	createdAt: string;
+	/**
+	 * Só vem em `GET /api/rides/:id/bookings` (painel do motorista). Sem o
+	 * nome, aceitar um pedido é uma decisão às cegas; o telefone é o que
+	 * permite combinar o embarque.
+	 */
+	passenger?: { id: string; name: string; phone?: string | null };
 	ride?: {
 		id: string;
 		routeName: string;

@@ -160,9 +160,12 @@ export function fmtKm(km: number | null | undefined): string {
 }
 
 export function durationBetween(fromISO: string, toISO: string): string {
-	return fmtDuration(
-		Math.round((Date.parse(toISO) - Date.parse(fromISO)) / 60000),
-	);
+	const from = Date.parse(fromISO);
+	const to = Date.parse(toISO);
+	if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) {
+		return 'Duração a confirmar';
+	}
+	return fmtDuration(Math.round((to - from) / 60000));
 }
 
 /** Remove acentos e baixa a caixa, para comparar nomes de localidades. */

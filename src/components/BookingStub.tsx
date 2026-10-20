@@ -16,6 +16,7 @@ import {
 	fmtKz,
 	fmtDayMonth,
 	fmtWeekdayShort,
+	durationBetween,
 	dateOf,
 } from '../lib/format';
 import BoleiaButton from './BoleiaButton';
@@ -245,7 +246,8 @@ export default function BookingStub({
 						className="font-sans text-body-small"
 						style={{ color: themeColors.secondary }}
 					>
-						{booking.seats} lugar{booking.seats > 1 ? 'es' : ''}
+						{booking.seats} lugar{booking.seats > 1 ? 'es' : ''} ·{' '}
+						{durationBetween(ride.departure, ride.arrival)}
 					</Text>
 					<Text
 						className="font-sansBold text-title-tertiary"

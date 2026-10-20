@@ -25,7 +25,12 @@ import Card from '../../components/Card';
 import SectionTitle from '../../components/SectionTitle';
 
 import TripListingCard from '../../components/TripListingCard';
-import { fmtDayMonth, fmtWeekdayShort, dateOf } from '../../lib/format';
+import {
+	durationBetween,
+	fmtDayMonth,
+	fmtWeekdayShort,
+	dateOf,
+} from '../../lib/format';
 
 // Viagens que o passageiro pode ainda embarcar.
 
@@ -298,7 +303,12 @@ export default function HomeScreen() {
 													{fmtWeekdayShort(
 														nextUpDate,
 													)}
-													, {fmtDayMonth(nextUpDate)}
+													, {fmtDayMonth(nextUpDate)}{' '}
+													·{' '}
+													{durationBetween(
+														nextUp.ride.departure,
+														nextUp.ride.arrival,
+													)}
 												</Text>
 											</View>
 											<Ionicons

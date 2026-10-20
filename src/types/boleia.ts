@@ -75,6 +75,8 @@ export type Booking = {
 	reason: string | null; // motivo de recusa/cancelamento/expiração
 	createdAt: string;
 	updatedAt: string;
+	/** Só no painel do motorista: nome e telefone de quem pediu. */
+	passenger?: { id: string; name: string; phone?: string | null };
 };
 
 export type KYC = {

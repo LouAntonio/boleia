@@ -33,7 +33,12 @@ import {
 } from '../../lib/api';
 import { MUNICIPALITY_BY_CODE } from '../../lib/locations';
 import type { SearchMode } from '../../lib/recentSearches';
-import { fmtKz, formatKzInput, parseKzInput } from '../../lib/format';
+import {
+	fmtDuration,
+	fmtKz,
+	formatKzInput,
+	parseKzInput,
+} from '../../lib/format';
 import { useQueryClient } from '@tanstack/react-query';
 import { qk } from '../../lib/queryKeys';
 import { toDateKey } from '../../utils/date';
@@ -125,6 +130,14 @@ export default function PublishTripScreen() {
 	const [to, setTo] = useState('');
 	const [date, setDate] = useState('');
 	const [hour, setHour] = useState('06:00');
+	/**
+	 * Duração estimada, em minutos.
+	 *
+	 * É a fonte da hora de chegada. Antes, sem um override, o formulário
+	 * enviava `partida + 4 minutos` para satisfazer o backend, e todas as
+	 * viagens publicadas no telemóvel apareciam com quatro minutos.
+	 */
+	const [durationMin, setDurationMin] = useState(240);
 	const [arrivalOverride, setArrivalOverride] = useState<{
 		date: string;
 		time: string;
@@ -198,26 +211,29 @@ export default function PublishTripScreen() {
 	/**
 	 * Hora de chegada.
 	 *
-	 * Só é mostrada quando o motorista a define. A estimativa automática
-	 * anterior/media a distância entre localidades num mock e produzia uma ETA
-	 * que o passageiro acreditava; o backend é que reparte a viagem pelas
-	 * paragens, e é essa estimativa que vale.
+	 * A duração é sempre conhecida, por isso a chegada também é. O motorista
+	 * pode ajustá-la no editor, mas o valor por omissão já é uma previsão real
+	 * em vez de um `+4 minutos` para o backend aceitar o payload.
 	 */
+	const computedArrival = departureDate
+		? new Date(departureDate.getTime() + durationMin * 60000)
+		: null;
 	const arrival =
 		arrivalOverride && date
 			? new Date(`${arrivalOverride.date}T${arrivalOverride.time}:00`)
-			: null;
+			: computedArrival;
 
 	const arrivalAfterDeparture =
 		!departureDate ||
 		!arrival ||
 		arrival.getTime() > departureDate.getTime();
 
-	// O horário de chegada só aparece quando o motorista o define. Não há
-	// estimativa automática no cliente: a distância real entre localidades é do
-	// backend, e uma ETA inventada no formulário seria a mesma que o passageiro
-	// veria.
-	const overrideActive = !!arrival;
+	const overrideActive = !!arrivalOverride;
+
+	const changeDuration = (delta: number) =>
+		setDurationMin((previous) =>
+			Math.min(24 * 60, Math.max(30, previous + delta)),
+		);
 
 	const openArrivalEditor = () => {
 		if (!arrival) return;
@@ -256,15 +272,14 @@ export default function PublishTripScreen() {
 			setPublishError('Escolhe uma viatura para publicar.');
 			return;
 		}
+		if (!arrival) {
+			setPublishError('Define a duração da viagem.');
+			return;
+		}
 		setPublishing(true);
 		setPublishError(null);
 
 		const departure = new Date(`${date}T${hour}:00`);
-		// Sem hora de chegada explícita, o backend estima-a a repartir a viagem
-		// pelas paragens. Sem `arrivalAt`, a corrida fica sem hora de chegada
-		// calculada, que é melhor do que mostrar ao passageiro uma ETA
-		// inventada a partir de uma distância que não conhecemos.
-		const arrivalISO = arrival ? arrival.toISOString() : undefined;
 
 		try {
 			const ride = await createRideApi({
@@ -272,9 +287,7 @@ export default function PublishTripScreen() {
 				originLocalityId: from,
 				destinationLocalityId: to,
 				departureAt: departure.toISOString(),
-				arrivalAt:
-					arrivalISO ??
-					new Date(departure.getTime() + 4 * 60000).toISOString(),
+				arrivalAt: arrival.toISOString(),
 				pricePerSeat: price,
 				seatsTotal: seats,
 				stops: stopsInput,
@@ -576,8 +589,8 @@ export default function PublishTripScreen() {
 										className="font-sans text-body-xs mt-0.5 mb-3"
 										style={{ color: themeColors.secondary }}
 									>
-										Escolhe o dia de partida e a hora. A
-										chegada é calculada sozinha.
+										Escolhe o dia, a hora e a duração. A
+										chegada é calculada a partir daí.
 									</Text>
 								</View>
 								<View className="px-4">
@@ -592,6 +605,85 @@ export default function PublishTripScreen() {
 										onChange={setHour}
 									/>
 								</View>
+
+								<View className="px-4 pt-3">
+									<Text
+										className="font-sansMedium text-body-xs"
+										style={{
+											color: themeColors.secondary,
+										}}
+									>
+										Duração estimada
+									</Text>
+									<View
+										className="flex-row items-center justify-between mt-2 rounded-xl border px-2 py-1"
+										style={{
+											borderColor: themeColors.border,
+											backgroundColor:
+												themeColors.background,
+										}}
+									>
+										<Pressable
+											onPress={() => changeDuration(-30)}
+											disabled={durationMin <= 30}
+											hitSlop={8}
+											className="w-11 h-11 items-center justify-center"
+											style={({ pressed }) => ({
+												opacity:
+													durationMin <= 30
+														? 0.35
+														: pressed
+															? 0.6
+															: 1,
+											})}
+										>
+											<Ionicons
+												name="remove"
+												size={20}
+												color={themeColors.text}
+											/>
+										</Pressable>
+										<View className="items-center">
+											<Text
+												className="font-sansExtraBold text-title-tertiary"
+												style={{
+													color: themeColors.text,
+												}}
+											>
+												{fmtDuration(durationMin)}
+											</Text>
+											<Text
+												className="font-sans text-body-xs"
+												style={{
+													color: themeColors.secondary,
+												}}
+											>
+												30 min a 24 h
+											</Text>
+										</View>
+										<Pressable
+											onPress={() => changeDuration(30)}
+											disabled={durationMin >= 24 * 60}
+											hitSlop={8}
+											className="w-11 h-11 items-center justify-center"
+											style={({ pressed }) => ({
+												opacity:
+													durationMin >= 24 * 60
+														? 0.35
+														: pressed
+															? 0.6
+															: 1,
+											})}
+										>
+											<Ionicons
+												name="add"
+												size={20}
+												color={themeColors.text}
+											/>
+										</Pressable>
+									</View>
+								</View>
+
 								{arrival ? (
 									<View className="px-4 pb-2">
 										<Pressable
@@ -1177,6 +1269,10 @@ export default function PublishTripScreen() {
 								}
 							/>
 							<ReviewRow
+								label="Duração"
+								value={fmtDuration(durationMin)}
+							/>
+							<ReviewRow
 								label="Preço"
 								value={`${fmtKz(price)} / lugar`}
 							/>
@@ -1232,7 +1328,8 @@ export default function PublishTripScreen() {
 									day: 'numeric',
 									month: 'long',
 								})}{' '}
-								às {hour} · {seats} lugares · {fmtKz(price)}
+								às {hour} · {fmtDuration(durationMin)} · {seats}{' '}
+								lugares · {fmtKz(price)}
 							</Text>
 						</Card>
 					</View>
