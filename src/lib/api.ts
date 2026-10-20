@@ -740,6 +740,12 @@ export interface UploadSignature {
 	signature: string;
 	publicId: string;
 	resourceType: string;
+	/**
+	 * `private`/`authenticated` quando o asset não é público. Vai **assinado**
+	 * no formulário — o Cloudinary recusa um `type` que não esteja na
+	 * assinatura. Ausente no upload público (é o valor por omissão).
+	 */
+	type?: 'upload' | 'private' | 'authenticated';
 	transformation: string;
 	eager: string;
 	allowedFormats: string;
@@ -772,11 +778,12 @@ export async function confirmUpload(publicId: string): Promise<{ id: string }> {
 /**
  * Os campos que o Cloudinary assina, e que têm de viajar no pedido.
  *
- * O backend assina cinco parâmetros (`cloudinary.service.ts`, `toSign`):
- * `timestamp`, `public_id`, `transformation`, `eager` e `allowed_formats`. O
- * Cloudinary recalcula a assinatura **sobre o que recebe**; um parâmetro que
- * foi assinado e não vai no pedido faz a assinatura não bater e o upload ser
- * recusado. Não há erro explicativo do lado do Cloudinary — é um 400.
+ * O backend assina seis parâmetros (`cloudinary.service.ts`, `toSign`):
+ * `timestamp`, `public_id`, `transformation`, `eager`, `allowed_formats` e,
+ * nos documentos de KYC, `type` (`private`). O Cloudinary recalcula a
+ * assinatura **sobre o que recebe**; um parâmetro que foi assinado e não vai
+ * no pedido faz a assinatura não bater e o upload ser recusado. Não há erro
+ * explicativo do lado do Cloudinary — é um 400.
  *
  * Era aqui que o KYC e o registo de viaturas morriam: o `eager` e o
  * `allowed_formats` ficavam de fora, em qualquer das duas apps. A assinatura
@@ -789,6 +796,7 @@ const SIGNED_UPLOAD_FIELDS = [
 	'transformation',
 	'eager',
 	'allowed_formats',
+	'type',
 ] as const;
 
 /** Metade do FormData que é a assinatura, derivada do objecto que o backend mandou. */
@@ -806,6 +814,28 @@ function appendSignedParams(form: FormData, signature: UploadSignature): void {
 			form.append(field, String(value));
 		}
 	}
+}
+
+/**
+ * A mensagem do Cloudinary, quando recusa o upload.
+ *
+ * "Falha no envio da foto" era verdadeiro e inútil: a causa (chave inválida,
+ * formato, tamanho) vinha no corpo da resposta e era deitada fora.
+ */
+async function uploadErrorMessage(response: Response): Promise<string> {
+	const fallback = 'Falha no envio da foto. Tenta de novo.';
+	try {
+		const body = (await response.json()) as {
+			error?: { message?: string };
+		};
+		const detail = body.error?.message?.trim();
+		if (detail) {
+			return `A foto não foi aceite: ${detail}.`;
+		}
+	} catch {
+		// Corpo não-JSON (proxy, página de erro): fica a mensagem genérica.
+	}
+	return fallback;
 }
 
 export async function uploadPhoto(
@@ -828,7 +858,7 @@ export async function uploadPhoto(
 		body: form,
 	});
 	if (!upload.ok) {
-		throw new Error('Falha no envio da foto. Tenta de novo.');
+		throw new Error(await uploadErrorMessage(upload));
 	}
 	const confirmed = await confirmUpload(signature.publicId);
 	return confirmed.id;
