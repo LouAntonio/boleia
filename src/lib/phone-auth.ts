@@ -27,6 +27,12 @@ export type OtpPurpose = 'signup' | 'reset';
 
 export interface StatusResponse {
 	status: boolean;
+	/**
+	 * Cópia temporária do OTP, só quando o backend tem
+	 * `OTP_PREVIEW_IN_RESPONSE` ligado. Com WAME a funcionar este campo não vem
+	 * e a app mantém o comportamento normal.
+	 */
+	otp?: string;
 }
 
 export interface SignUpInput {

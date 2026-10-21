@@ -12,6 +12,7 @@ import ConsentRow from '../../components/ConsentRow';
 import Input from '../../components/Input';
 import { apiErrorMessage } from '../../lib/api';
 import { signUp } from '../../lib/phone-auth';
+import { showOtpToast } from '../../lib/toast';
 import { maskPhone, normalizePhone } from '../../utils/phone';
 
 export default function RegisterScreen() {
@@ -49,7 +50,7 @@ export default function RegisterScreen() {
 		setPending(true);
 		setError(null);
 		try {
-			await signUp({
+			const result = await signUp({
 				phone: normalized,
 				password,
 				name: firstName.trim(),
@@ -58,6 +59,8 @@ export default function RegisterScreen() {
 				termsAccepted: terms && privacy,
 				marketingAccepted: news,
 			});
+			// Cópia temporária do OTP enquanto o WAME não entrega a mensagem.
+			showOtpToast(result.otp);
 			// O registo não abre sessão: primeiro confirma-se o telefone
 			// com o código enviado por WhatsApp.
 			navigation.navigate('OtpVerify', {

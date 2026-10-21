@@ -9,6 +9,7 @@ import BoleiaButton from '../../components/BoleiaButton';
 import Input from '../../components/Input';
 import { apiErrorMessage } from '../../lib/api';
 import { sendOtp } from '../../lib/phone-auth';
+import { showOtpToast } from '../../lib/toast';
 import { maskPhone, normalizePhone } from '../../utils/phone';
 
 export default function ForgotPasswordScreen() {
@@ -32,7 +33,8 @@ export default function ForgotPasswordScreen() {
 		setPending(true);
 		setError(null);
 		try {
-			await sendOtp(normalized, 'reset');
+			const result = await sendOtp(normalized, 'reset');
+			showOtpToast(result.otp);
 			navigation.navigate('OtpVerify', {
 				phone: normalized,
 				purpose: 'reset',

@@ -8,6 +8,7 @@ import AuthShell from '../../components/AuthShell';
 import BoleiaButton from '../../components/BoleiaButton';
 import { apiErrorMessage } from '../../lib/api';
 import { sendOtp, verifyOtpCode } from '../../lib/phone-auth';
+import { showOtpToast } from '../../lib/toast';
 
 export default function OtpVerifyScreen() {
 	const route = useRoute<RouteProp<BoleiaAuthStackParamList, 'OtpVerify'>>();
@@ -56,7 +57,8 @@ export default function OtpVerifyScreen() {
 	const resend = async () => {
 		setError(null);
 		try {
-			await sendOtp(phone, purpose);
+			const result = await sendOtp(phone, purpose);
+			showOtpToast(result.otp);
 			setResent(true);
 		} catch (e) {
 			setError(

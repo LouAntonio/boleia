@@ -24,6 +24,7 @@ import {
 } from './src/hooks/usePushRegistration';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import ToastHost from './src/components/ToastHost';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -80,6 +81,7 @@ export default function App() {
 						<RootNavigator />
 					</NavigationContainer>
 				</ErrorBoundary>
+				<ToastHost />
 			</SafeAreaProvider>
 		</QueryClientProvider>
 	);
