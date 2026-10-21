@@ -50,6 +50,8 @@ type StopDraft = {
 	kind: 'locality' | 'free';
 	localityId: string;
 	name: string;
+	/** Hora local `HH:MM`; vazia deixa o backend estimar. */
+	time: string;
 };
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
@@ -159,7 +161,15 @@ export default function PublishTripScreen() {
 	const addStop = () =>
 		setStops((prev) =>
 			prev.length < MAX_STOPS
-				? [...prev, { kind: 'locality', localityId: '', name: '' }]
+				? [
+						...prev,
+						{
+							kind: 'locality',
+							localityId: '',
+							name: '',
+							time: '',
+						},
+					]
 				: prev,
 		);
 
@@ -188,6 +198,9 @@ export default function PublishTripScreen() {
 					? s.localityId
 					: undefined,
 			name: s.kind === 'free' ? s.name.trim() : '',
+			// O backend lê a hora como hora local de Angola. Sem hora, estima
+			// entre a partida e a chegada.
+			time: s.time && date ? `${date}T${s.time}` : undefined,
 		}))
 		.filter(
 			(s) =>
@@ -1042,7 +1055,8 @@ export default function PublishTripScreen() {
 							className="font-sans text-body-xs mt-0.5 mb-3"
 							style={{ color: themeColors.secondary }}
 						>
-							Municípios ou pontos no caminho — opcional.
+							Municípios ou pontos no caminho — opcional. Podes
+							indicar a hora de cada paragem.
 						</Text>
 
 						{stops.length === 0 ? (
@@ -1094,6 +1108,7 @@ export default function PublishTripScreen() {
 														key={opt.kind}
 														onPress={() =>
 															updateStop(i, {
+																...s,
 																kind: opt.kind,
 																localityId:
 																	opt.kind ===
@@ -1149,6 +1164,7 @@ export default function PublishTripScreen() {
 											value={s.localityId}
 											onChange={(id) =>
 												updateStop(i, {
+													...s,
 													kind: 'locality',
 													localityId: id,
 													name: '',
@@ -1183,6 +1199,55 @@ export default function PublishTripScreen() {
 												}}
 											/>
 										</View>
+									)}
+
+									<View
+										className="mt-1 border-t"
+										style={{
+											borderColor: themeColors.border,
+										}}
+									>
+										<TimePicker
+											label="Hora da paragem (opcional)"
+											value={s.time}
+											onChange={(t) =>
+												updateStop(i, {
+													...s,
+													time: t,
+												})
+											}
+										/>
+									</View>
+									{s.time ? (
+										<Pressable
+											onPress={() =>
+												updateStop(i, {
+													...s,
+													time: '',
+												})
+											}
+											hitSlop={8}
+											className="self-start py-1"
+										>
+											<Text
+												className="font-sansMedium text-body-xs"
+												style={{
+													color: themeColors.primary,
+												}}
+											>
+												Limpar hora
+											</Text>
+										</Pressable>
+									) : (
+										<Text
+											className="font-sans text-body-xs pb-1"
+											style={{
+												color: themeColors.secondary,
+											}}
+										>
+											Sem hora, calculamos
+											automaticamente.
+										</Text>
 									)}
 								</View>
 							))
