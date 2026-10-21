@@ -303,6 +303,12 @@ export async function saveEmergencyContact(input: {
 export type RideStatus =
 	'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
+/**
+ * Distância administrativa da viagem, gravada pelo backend. Não se deriva das
+ * paragens no cliente.
+ */
+export type RideScope = 'INTERMUNICIPAL' | 'INTERPROVINCIAL';
+
 /** Estados de uma reserva, exactamente como o backend os guarda. */
 export type BookingStatus =
 	| 'REQUESTED'
@@ -369,6 +375,7 @@ export interface ApiRide {
 	driverId: string;
 	vehicleId: string | null;
 	routeName: string;
+	scope: RideScope;
 	departureAt: string;
 	arrivalAt: string;
 	seatsTotal: number;
@@ -435,6 +442,8 @@ export interface CreateRideInput {
 	originLocalityId: string;
 	/** Código da localidade de destino (`luanda.viana`). */
 	destinationLocalityId: string;
+	/** Modo declarado pelo motorista. */
+	scope: RideScope;
 	departureAt: string;
 	arrivalAt: string;
 	pricePerSeat: number;

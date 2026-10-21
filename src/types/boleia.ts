@@ -36,10 +36,13 @@ export type RouteStop = {
 	km: number | null;
 };
 
+export type RideScope = 'INTERMUNICIPAL' | 'INTERPROVINCIAL';
+
 export type Ride = {
 	id: string;
 	driverId: string;
 	routeName: string;
+	scope: RideScope;
 	origin: RouteStop;
 	stops: RouteStop[]; // paragens intermédias
 	destination: RouteStop;

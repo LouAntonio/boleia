@@ -267,7 +267,7 @@ export default function PublishTripScreen() {
 				: true;
 
 	const publish = async () => {
-		if (!canPublish || !from || !to || publishing) return;
+		if (!canPublish || !from || !to || !derived || publishing) return;
 		if (!vehicleId) {
 			setPublishError('Escolhe uma viatura para publicar.');
 			return;
@@ -286,6 +286,10 @@ export default function PublishTripScreen() {
 				vehicleId,
 				originLocalityId: from,
 				destinationLocalityId: to,
+				scope:
+					derived === 'intermunicipal'
+						? 'INTERMUNICIPAL'
+						: 'INTERPROVINCIAL',
 				departureAt: departure.toISOString(),
 				arrivalAt: arrival.toISOString(),
 				pricePerSeat: price,

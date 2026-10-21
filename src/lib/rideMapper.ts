@@ -74,6 +74,7 @@ export function toRide(ride: ApiRide): Ride {
 		id: ride.id,
 		driverId: ride.driverId,
 		routeName: ride.routeName,
+		scope: ride.scope,
 		// Uma corrida sem paragens é um dado incoerente do servidor, não uma
 		// corrida sem origem. Usar o `routeName` evita renderizar campos vazios.
 		origin: origin
