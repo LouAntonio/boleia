@@ -53,7 +53,7 @@ type TabRoute = keyof PassengerTabsParamList | keyof DriverTabsParamList;
 const GAP = 12;
 
 /**
- * `assets/images/lockup.png`: o glifo e a wordmark de `logo.png`, **sem a
+ * `assets/images/logo.png`: o glifo e a wordmark de `logo.png`, **sem a
  * tagline** ("Disponibilidade, Rapidez e Segurança").
  *
  * A tagline foi cortada por medição, não por gosto: medindo a imagem, a
@@ -66,7 +66,7 @@ const GAP = 12;
  * isso a marca é um bloco escuro no canto — que é o que o ficheiro de marca
  * é. O glifo lê-se; a wordmark, a este tamanho, é reforço e não leitura.
  */
-const LOCKUP = require('../../assets/images/lockup.png');
+const LOCKUP = require('../../assets/images/icon.png');
 
 export default function AppHeader() {
 	const { themeColors } = useThemeColors();

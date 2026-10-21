@@ -1233,7 +1233,9 @@ export default function PublishTripScreen() {
 								label="Rota"
 								value={
 									fromLoc && toLoc
-										? `${fromLoc.name} → ${toLoc.name}`
+										? mode === 'interprovincial'
+											? `${fromLoc.province.name} → ${toLoc.province.name}`
+											: `${fromLoc.name} → ${toLoc.name}`
 										: '—'
 								}
 							/>

@@ -484,6 +484,8 @@ export interface ListRidesQuery {
 	originProvinceId?: string;
 	/** Código da província de destino. Modo "interprovincial". */
 	destinationProvinceId?: string;
+	/** Restringe ao modo escolhido no separador. */
+	scope?: RideScope;
 	/** Dia inteiro, em `AAAA-MM-DD`. */
 	date?: string;
 	dateFrom?: string;

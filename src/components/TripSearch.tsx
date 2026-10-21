@@ -164,6 +164,7 @@ export default function TripSearch() {
 			try {
 				const inter = p.mode === 'interprovincial';
 				const res = await listRides({
+					scope: inter ? 'INTERPROVINCIAL' : 'INTERMUNICIPAL',
 					origin: inter ? undefined : p.from || undefined,
 					destination: inter ? undefined : p.to || undefined,
 					originProvinceId: inter
