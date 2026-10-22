@@ -15,12 +15,16 @@ import {
 	deleteAccount,
 	unlinkGoogle,
 	updateProfile,
+	requestPhoneChange,
+	confirmPhoneChange,
 } from '../../lib/api';
+import { showOtpToast } from '../../lib/toast';
 import { describeDevice, sessionDate } from '../../lib/device';
 import { navigationRef } from '../../lib/navigationRef';
 import { useAppStore } from '../../store/appStore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BoleiaMainStackParamList } from '../../types/navigation';
+import { maskPhone, normalizePhone } from '../../utils/phone';
 
 import BackButton from '../../components/BackButton';
 import BoleiaButton from '../../components/BoleiaButton';
@@ -31,17 +35,20 @@ import SectionTitle from '../../components/SectionTitle';
 /**
  * Conta e segurança.
  *
- * Seis blocos num scroll só, e não seis ecrãs. Um ecrã destes abre-se uma vez
+ * Blocos num scroll só, e não seis ecrãs. Um ecrã destes abre-se uma vez
  * de tempos em tempos e percorre-se de cima a baixo; obrigar a traversar seis
  * navegações para encontrar "terminar as outras sessões" faz as pessoas
  * desistirem pelo caminho.
  *
- * **Nada disto precisa de backend novo.** Cada bloco é um endpoint que já
- * existia — `PATCH /api/account/profile`, `POST /api/account/delete`,
+ * **Quase nada disto precisa de backend novo.** Cada bloco é um endpoint que
+ * já existia — `PATCH /api/account/profile`, `POST /api/account/delete`,
  * `POST /api/account/unlink-google`, e os stock do better-auth
  * (`change-email`, `send-verification-email`, `list-sessions`,
  * `revoke-session`, `revoke-other-sessions`, `change-password`,
- * `link-social`).
+ * `link-social`). A excepção é a troca de número, que vem da mesma grelha
+ * (`POST /api/account/phone/request|confirm`) — o plugin de telefone do
+ * better-auth não serve, porque aquele cria sessão, e trocar credencial
+ * mantendo a sessão é outra coisa.
  */
 
 /** Divisória dentro de um cartão agrupado, a indiciar o membro do grupo. */
@@ -195,6 +202,12 @@ export default function AccountScreen() {
 	const [newPassword, setNewPassword] = useState('');
 	const [savingPassword, setSavingPassword] = useState(false);
 
+	/* Número de telefone — dois tempos: pedir o código, depois confirmá-lo. */
+	const [phoneStep, setPhoneStep] = useState<'phone' | 'code'>('phone');
+	const [newPhone, setNewPhone] = useState('');
+	const [phoneCode, setPhoneCode] = useState('');
+	const [phoneBusy, setPhoneBusy] = useState(false);
+
 	/* Google e eliminação */
 	const [googleBusy, setGoogleBusy] = useState(false);
 	const [deleting, setDeleting] = useState(false);
@@ -295,6 +308,75 @@ export default function AccountScreen() {
 			);
 		} finally {
 			setSavingEmail(false);
+		}
+	}
+
+	/**
+	 * Pede o código de troca, enviado por WhatsApp ao número **novo**.
+	 *
+	 * Não é o plugin de telefone do better-auth: aquilo cria sessão; isto
+	 * troca credencial com sessão mantida. O `showOtpToast` é a muleta
+	 * temporária do backend em desenvolvimento — só aparece com a flag de
+	 * preview acesa, e desaparece no dia em que o WAME é entregue a sério.
+	 */
+	async function requestPhoneCode() {
+		if (phoneBusy) return;
+		const normalized = normalizePhone(newPhone.trim());
+		if (normalized.length < 9) {
+			Alert.alert('Número', 'Escreve um número válido de 9 dígitos.');
+			return;
+		}
+		if (me?.phone && normalized === normalizePhone(me.phone)) {
+			Alert.alert('Número', 'Este já é o teu número actual.');
+			return;
+		}
+		setPhoneBusy(true);
+		try {
+			const data = await requestPhoneChange(normalized);
+			showOtpToast(data.otp);
+			setPhoneStep('code');
+			Alert.alert(
+				'Código enviado',
+				`Enviámos um código por WhatsApp para ${normalized}. Não muda o teu número até o confirmares.`,
+			);
+			setNewPhone('');
+		} catch (error) {
+			Alert.alert(
+				'Número',
+				apiErrorMessage(error, 'Não foi possível pedir o código.'),
+			);
+		} finally {
+			setPhoneBusy(false);
+		}
+	}
+
+	/** Confirma o código e aplica o número novo. As outras sessões caem. */
+	async function confirmPhoneCode() {
+		if (phoneBusy) return;
+		if (!phoneCode.trim()) {
+			Alert.alert('Código', 'Escreve o código que recebeste.');
+			return;
+		}
+		setPhoneBusy(true);
+		try {
+			await confirmPhoneChange(phoneCode.trim());
+			setPhoneCode('');
+			setPhoneStep('phone');
+			await refresh();
+			Alert.alert(
+				'Número trocado',
+				'O teu número de entrada é agora este. As outras sessões foram terminadas.',
+			);
+		} catch (error) {
+			Alert.alert(
+				'Número',
+				apiErrorMessage(
+					error,
+					'Código inválido ou expirado. Pede outro.',
+				),
+			);
+		} finally {
+			setPhoneBusy(false);
 		}
 	}
 
@@ -520,6 +602,70 @@ export default function AccountScreen() {
 							loading={savingName}
 							disabled={!name.trim()}
 						/>
+					</Card>
+				</Block>
+
+				{/* ---------------- Número de telefone ---------------- */}
+				<Block
+					title="Número de telefone"
+					hint={
+						phoneStep === 'code'
+							? 'Escreve o código que chegou por WhatsApp ao número novo.'
+							: 'É a tua entrada na conta. Troca-lo manda um código por WhatsApp ao número novo — quem recebe é que prova que é dono.'
+					}
+				>
+					<Card padded={false} className="p-4">
+						{phoneStep === 'code' ? (
+							<>
+								<Input
+									label="Código do WhatsApp"
+									value={phoneCode}
+									onChangeText={(t) => setPhoneCode(t)}
+									keyboardType="number-pad"
+									maxLength={6}
+									autoFocus
+									containerStyle={{ marginBottom: 4 }}
+								/>
+								<BoleiaButton
+									title="Confirmar e trocar"
+									onPress={confirmPhoneCode}
+									loading={phoneBusy}
+									disabled={!phoneCode.trim()}
+								/>
+								<BoleiaButton
+									title="Voltar ao número"
+									variant="outline"
+									onPress={() => {
+										setPhoneStep('phone');
+										setPhoneCode('');
+									}}
+									disabled={phoneBusy}
+								/>
+							</>
+						) : (
+							<>
+								<Input
+									label="Número novo"
+									value={newPhone}
+									onChangeText={(t) => {
+										setNewPhone(maskPhone(t));
+									}}
+									keyboardType="phone-pad"
+									maxLength={11}
+									placeholder="9XX XXX XXX"
+									containerStyle={{ marginBottom: 4 }}
+								/>
+								<BoleiaButton
+									title="Pedir código"
+									onPress={requestPhoneCode}
+									loading={phoneBusy}
+									disabled={
+										normalizePhone(newPhone.trim()).length <
+										9
+									}
+								/>
+							</>
+						)}
 					</Card>
 				</Block>
 

@@ -44,7 +44,17 @@ import { qk } from '../../lib/queryKeys';
 import { toDateKey } from '../../utils/date';
 
 const PRICE_SUGGEST = [12000, 15000, 18000, 22000];
-const MAX_STOPS = 4;
+/**
+ * Tecto técnico de paragens intermédias — igual ao do backend (50).
+ *
+ * **Não é um limite de produto, e não aparece na UI.** Não há contador
+ * "restam X paragens" nem um número para o motorista escolher: quem publica
+ * adiciona paragens até ao percurso que quer fazer. O tecto existe para que
+ * um motorista distraído não consiga submeter 200 paragens por acidente —
+ * nem nenhum, nem mil. Se um dia a rota precisar de mais que 50, o backend
+ * muda primeiro e este número acompanha.
+ */
+const MAX_STOPS = 50;
 
 type StopDraft = {
 	kind: 'locality' | 'free';

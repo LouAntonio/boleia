@@ -69,6 +69,12 @@ export const qk = {
 		of: (rideId: string) => ['ride', rideId] as const,
 	},
 
+	/** Perfil público de quem vai numa boleia. */
+	people: {
+		all: ['people'] as const,
+		of: (id: string) => child(['people'], 'profile', { id }),
+	},
+
 	notifications: {
 		all: ['notifications'] as const,
 	},

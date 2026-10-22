@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WEB_URL } from '@env';
@@ -15,6 +15,7 @@ import { BoleiaMainStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import BoleiaButton from '../../components/BoleiaButton';
 import Card from '../../components/Card';
+import Avatar from '../../components/Avatar';
 import StickyCta from '../../components/StickyCta';
 import SectionTitle from '../../components/SectionTitle';
 import RouteStrip, { StripStop } from '../../components/RouteStrip';
@@ -25,6 +26,7 @@ import {
 	bookRide,
 	getRide,
 	listMyBookings,
+	type ApiRidePassenger,
 } from '../../lib/api';
 import {
 	toRide,
@@ -39,6 +41,7 @@ import {
 	fmtKm,
 	fmtDayMonth,
 	initials,
+	fullName,
 	dateOf,
 } from '../../lib/format';
 
@@ -100,6 +103,19 @@ export default function RideDetailScreen() {
 	>(null);
 	const [pending, setPending] = useState(false);
 	const [elig, setElig] = useState<Eligibility | null>(null);
+	/*
+	 * Os lugares livres caem a meio deste ecrã sem ninguém tocar nele —
+	 * alguém confirmou noutro telemóvel, ou o WebSocket entregou o
+	 * `ride:snapshot`, ou uma nova refetch devolveu menos vagas. Sem este
+	 * ajuste a escolha podia ficar acima do que há: o `+` impede subir, mas
+	 * não empurra um valor já alto de volta para dentro, e o servidor
+	 * respondia 400 por pedir lugar que não existe.
+	 */
+	useEffect(() => {
+		if (!ride) return;
+		const free = seatsLeft(ride);
+		if (seats > free) setSeats(Math.max(1, free));
+	}, [ride, seats]);
 	useFocusEffect(
 		useCallback(() => {
 			let alive = true;
@@ -191,9 +207,8 @@ export default function RideDetailScreen() {
 	const available = seatsLeft(ride);
 	const total = seats * ride.pricePerSeat;
 	const stops = [ride.origin, ...ride.stops, ride.destination];
-	// Quantas pessoas já reservaram lugar, sem dizer quem. Os dados de outros
-	// utilizadores não são públicos: só o próprio passageiro e o motorista
-	// devem ver a identidade de quem embarca.
+	// Reservas confirmadas até agora. Com passageiros reais em baixo o
+	// número é redundante — por isso só aparece quando a lista não existe.
 	const onBoardCount = Math.max(0, ride.seatsTaken);
 
 	const stripOrigin: StripStop = {
@@ -439,28 +454,20 @@ export default function RideDetailScreen() {
 					<View className="mt-4">
 						<Card>
 							<View className="flex-row items-center">
-								<View
-									className="w-11 h-11 rounded-full items-center justify-center"
-									style={{
-										backgroundColor: themeColors.accentWeak,
-										borderWidth: 1,
-										borderColor: themeColors.border,
-									}}
-								>
-									<Text
-										className="font-sansExtraBold text-body-small"
-										style={{ color: themeColors.primary }}
-									>
-										{initials(driver.name, '')}
-									</Text>
-								</View>
+								<Avatar
+									initials={initials(
+										driver.name,
+										driver.surname ?? '',
+									)}
+									size={44}
+								/>
 								<View className="flex-1 ml-3">
 									<Text
 										className="font-sansBold text-body-small"
 										style={{ color: themeColors.text }}
 										numberOfLines={1}
 									>
-										{driver.name}
+										{fullName(driver.name, driver.surname)}
 									</Text>
 									<Text
 										className="font-sansMedium text-body-xs mt-0.5"
@@ -492,28 +499,77 @@ export default function RideDetailScreen() {
 					</View>
 				) : null}
 
-				{/* Quantas pessoas já reservaram. A identidade de quem vai
-				    embarcar não é pública: só o passageiro e o motorista a
-				    devem ver. */}
-				<View className="mt-4">
-					<Card>
-						<View className="flex-row items-center">
-							<Ionicons
-								name="people-outline"
-								size={20}
-								color={themeColors.secondary}
-							/>
+				{apiRide?.passengers && apiRide.passengers.length > 0 ? (
+					<View className="mt-4">
+						<Card>
 							<Text
-								className="font-sans text-body-small ml-2 flex-1"
+								className="font-sansMedium text-body-xs"
 								style={{ color: themeColors.secondary }}
 							>
-								{onBoardCount === 0
-									? 'Ainda ninguém reservou lugar.'
-									: `${onBoardCount} pessoa${onBoardCount === 1 ? '' : 's'} já reservou${onBoardCount === 1 ? '' : 'am'}.`}
+								Já vão contigo
 							</Text>
-						</View>
-					</Card>
-				</View>
+							<View className="mt-3">
+								{apiRide.passengers.map((person, index) => (
+									<RidePersonRow
+										key={person.id}
+										person={person}
+										first={index === 0}
+										onPress={() =>
+											navigation.navigate(
+												'PublicProfile',
+												{
+													userId: person.id,
+												},
+											)
+										}
+									/>
+								))}
+							</View>
+							<View
+								className="mt-3 pt-3 border-t flex-row items-center"
+								style={{ borderColor: themeColors.border }}
+							>
+								<Ionicons
+									name="lock-closed-outline"
+									size={14}
+									color={themeColors.secondary}
+								/>
+								<Text
+									className="font-sans text-body-xs ml-1.5 flex-1"
+									style={{ color: themeColors.secondary }}
+								>
+									Nome e perfil públicos. Contacto e
+									documentos, nunca.
+								</Text>
+							</View>
+						</Card>
+					</View>
+				) : null}
+
+				{/* Sem dados reais de quem vai — porque não há reservas — resta
+				    a contagem. Inventar nomes aqui era o pior dos dois
+				    mundos: parecia aberto e mentia. */}
+				{!apiRide?.passengers?.length ? (
+					<View className="mt-4">
+						<Card>
+							<View className="flex-row items-center">
+								<Ionicons
+									name="people-outline"
+									size={20}
+									color={themeColors.secondary}
+								/>
+								<Text
+									className="font-sans text-body-small ml-2 flex-1"
+									style={{ color: themeColors.secondary }}
+								>
+									{onBoardCount === 0
+										? 'Ainda ninguém reservou lugar.'
+										: `${onBoardCount} pessoa${onBoardCount === 1 ? '' : 's'} já reservou${onBoardCount === 1 ? '' : 'am'}.`}
+								</Text>
+							</View>
+						</Card>
+					</View>
+				) : null}
 
 				{/* Reserva */}
 				<View className="mt-6">
@@ -855,6 +911,66 @@ function Header({
 				</Pressable>
 			) : null}
 		</View>
+	);
+}
+
+/**
+ * Uma linha de "Quem vai", com dados reais do backend.
+ *
+ * O nome completo e o link ao perfil. O `seats` aparece só quando não é 1 —
+ * a mesma pessoa a ocupar dois lugares é uma linha com "2 lugares", não
+ * duas entradas de nomes repetidos.
+ */
+function RidePersonRow({
+	person,
+	first,
+	onPress,
+}: {
+	person: ApiRidePassenger;
+	first: boolean;
+	onPress: () => void;
+}) {
+	const { themeColors } = useThemeColors();
+	return (
+		<Pressable
+			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={`Perfil público de ${fullName(person.name, person.surname)}`}
+			className="flex-row items-center"
+			style={({ pressed }) => ({
+				paddingTop: first ? 0 : 8,
+				paddingBottom: 8,
+				borderTopWidth: first ? 0 : 1,
+				borderTopColor: themeColors.border,
+				opacity: pressed ? 0.7 : 1,
+			})}
+		>
+			<Avatar
+				initials={initials(person.name, person.surname ?? '')}
+				size={36}
+			/>
+			<Text
+				className="font-sansMedium text-body-small flex-1 ml-3"
+				style={{ color: themeColors.text }}
+				numberOfLines={1}
+			>
+				{fullName(person.name, person.surname)}
+			</Text>
+			{person.seats > 1 ? (
+				<Text
+					className="font-sansMedium text-body-xs"
+					style={{ color: themeColors.secondary }}
+				>
+					{person.seats} lugares
+				</Text>
+			) : null}
+			<Ionicons
+				name="chevron-forward"
+				size={14}
+				color={themeColors.border}
+				style={{ marginLeft: 6 }}
+			/>
+		</Pressable>
 	);
 }
 

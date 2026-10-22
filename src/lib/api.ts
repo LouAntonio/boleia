@@ -388,7 +388,8 @@ export interface ApiRide {
 	 */
 	progressIndex: number;
 	stops?: ApiRideStop[];
-	driver?: { id: string; name: string };
+	// Nome completo: a ligação ao perfil público precisa do apelido também.
+	driver?: { id: string; name: string; surname?: string | null };
 	vehicle?: {
 		id: string;
 		make: string;
@@ -396,6 +397,35 @@ export interface ApiRide {
 		color: string;
 		plate: string;
 	} | null;
+	/**
+	 * Só em `GET /api/rides/:id` — "Quem vai". Pessoas com reserva confirmada,
+	 * na ordem em que entraram; pedidos pendentes não são presença.
+	 */
+	passengers?: ApiRidePassenger[];
+}
+
+/** Pessoas confirmadas numa corrida, como o backend as projecta. */
+export interface ApiRidePassenger {
+	id: string;
+	name: string;
+	surname: string | null;
+	/** Um lugar por pessoa, quase sempre; pode ser 2 quando reserva a mais. */
+	seats: number;
+}
+
+/**
+ * Perfil público de quem vai numa boleia (`GET /api/people/:id`).
+ *
+ * A projecção é toda do backend — se um dia trouxer mais um campo, o tipo
+ * morre no `typecheck` antes de o ecrã mostrar `undefined`.
+ */
+export interface ApiPublicProfile {
+	id: string;
+	name: string;
+	surname: string | null;
+	bio: string | null;
+	/** `createdAt` do utilizador, para "membro desde …". */
+	createdAt: string;
 }
 
 /** Paragem de recolha ou destino escolhida pelo passageiro. */
@@ -534,6 +564,49 @@ export async function listRides(
 
 export async function getRide(id: string): Promise<ApiRide> {
 	const { data } = await client.get<ApiRide>(`/api/rides/${id}`);
+	return data;
+}
+
+/**
+ * Perfil público de quem vai numa boleia.
+ *
+ * Chega aqui também sem sessão? Não — a app só mostra este ecrã a partir de
+ * "Quem vai", e "Quem vai" só existe na corrida, que já pede sessão. Mas a
+ * rota é pública no backend de propósito: o mesmo cartão serve se um dia o
+ * detalhe passar a ser partilhável.
+ */
+export async function getPublicProfile(id: string): Promise<ApiPublicProfile> {
+	const { data } = await client.get<ApiPublicProfile>(`/api/people/${id}`);
+	return data;
+}
+
+/* ---------- Troca de número de telefone (por OTP) ---------- */
+
+/**
+ * Pede o código para trocar de número. O WhatsApp vai para o número **novo**
+ * — a pessoa tem de provar que o recebe, senão qualquer erro de escrita
+ * deixava a conta noutra pessoa. O `otp` só volta quando o backend está com
+ * o preview ligado (muleta temporária enquanto o WAME não entrega).
+ */
+export async function requestPhoneChange(
+	phone: string,
+): Promise<{ status: boolean; phone: string; otp?: string }> {
+	const { data } = await client.post<{
+		status: boolean;
+		phone: string;
+		otp?: string;
+	}>('/api/account/phone/request', { phone });
+	return data;
+}
+
+/** Confirma o código e grava o número novo. As outras sessões caem. */
+export async function confirmPhoneChange(
+	code: string,
+): Promise<{ status: boolean; phone: string }> {
+	const { data } = await client.post<{ status: boolean; phone: string }>(
+		'/api/account/phone/confirm',
+		{ code },
+	);
 	return data;
 }
 

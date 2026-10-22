@@ -1,7 +1,9 @@
 import { createAuthClient } from 'better-auth/react';
+import { magicLinkClient } from 'better-auth/client/plugins';
 import { expoClient } from '@better-auth/expo/client';
 import * as SecureStore from 'expo-secure-store';
 import { API_URL } from '@env';
+import { STORAGE_PREFIX } from './cookie-storage';
 import type { ApiUser } from './api';
 
 /**
@@ -25,9 +27,18 @@ import type { ApiUser } from './api';
 export const authClient = createAuthClient({
 	baseURL: API_URL,
 	plugins: [
+		/*
+		 * Link mágico por email: o mesmo plugin que o servidor tem, para o
+		 * endpoint `/magic-link` existir no cliente. No telemóvel o verify
+		 * chega por deep link (`boleia://`), e o `expoClient` é quem faz o
+		 * `fetch` dessa URL e guarda o cookie da sessão que ela cria.
+		 */
+		magicLinkClient(),
 		expoClient({
 			scheme: 'boleia',
-			storagePrefix: 'boleia',
+			// Mesmo prefixo que o `cookie-storage.ts` usa — o listener do
+			// deep link escreve no sítio exato que este cliente lê.
+			storagePrefix: STORAGE_PREFIX,
 			storage: SecureStore,
 		}),
 	],

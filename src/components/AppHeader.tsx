@@ -21,9 +21,9 @@ import type {
  * essa faixa até ao canto do ecrã.
  *
  * Antes o inverso: o `SafeAreaView` empurrava tudo para baixo da barra, e nessa
- * faixa via-se a cor do ecrã (`background`) a encontrar o branco do header
- * (`card`) exactamente a meio. Duas cores emendadas onde não devem — e no
- * iPhone com notch, um rectângulo de cor errada ao lado da câmara.
+ * faixa via-se a cor do ecrã (`background`) a encontrar a cor do header
+ * exactamente a meio. Duas cores emendadas onde não devem — e no iPhone com
+ * notch, um rectângulo de cor errada ao lado da câmara.
  *
  * No Android 15+ a barra de notificação é transparente por lei: não há
  * `backgroundColor` para lhe pôr. Desenhar por baixo com a cor certa **é** o
@@ -89,9 +89,16 @@ export default function AppHeader() {
 				// é a própria barra de notificação.
 				paddingTop: insets.top + GAP,
 				paddingBottom: GAP,
-				backgroundColor: themeColors.card,
-				borderBottomWidth: 1,
-				borderBottomColor: themeColors.border,
+				/*
+				 * Barra na cor da marca, e não do cartão. Antes era `card`
+				 * com hairline — indistinguível do corpo do ecrã, e a faixa
+				 * da barra de notificação acima era "branco por acaso".
+				 * Sobre `primary` vão o lockup (que traz a própria placa
+				 * escura, logo não depende do fundo) e o avatar, que tem o
+				 * seu anel próprio — nenhum dos dois põe `text` sobre
+				 * `primary`, por isso não precisam de `onPrimary`.
+				 */
+				backgroundColor: themeColors.primary,
 			}}
 		>
 			<Pressable

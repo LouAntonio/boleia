@@ -25,6 +25,18 @@ export function initials(firstName: string, lastName: string): string {
 	return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase().trim();
 }
 
+/**
+ * Nome completo com o apelido a faltar quando não há.
+ *
+ * O backend guarda `surname` opcional; juntar os dois com `+` e cair no
+ * `null` é o tipo de coisa que se reescreve mal três vezes no mesmo ecrã.
+ */
+export function fullName(firstName: string, lastName?: string | null): string {
+	return [firstName.trim(), (lastName ?? '').trim()]
+		.filter(Boolean)
+		.join(' ');
+}
+
 /** 1234567 -> "1 234 567 Kz". */
 export function fmtKz(value: number): string {
 	const int = Math.round(value);

@@ -5,10 +5,19 @@ import SplashScreen from '../screens/SplashScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import BoleiaAuthNavigator from './BoleiaAuthNavigator';
 import BoleiaMainNavigator from './BoleiaMainNavigator';
+import { useMagicLinkResume } from '../hooks/useMagicLinkResume';
 
 const Stack = createNativeStackNavigator<BoleiaRootStackParamList>();
 
 export default function RootNavigator() {
+	/*
+	 * O deep link do link mágico precisa de uma casa dentro do container de
+	 * navegação: o hook escreve o cookie e depois navega de volta para a
+	 * app. Montá-lo aqui e não no `App` garante que o `navigationRef` já tem
+	 * um `Navigator` montado quando o reset corre.
+	 */
+	useMagicLinkResume();
+
 	return (
 		<Stack.Navigator
 			initialRouteName="Splash"
